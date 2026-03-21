@@ -1,0 +1,12 @@
+{
+  "name": "shut",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SHUT — static landing / scroll-stop demo",
+  "scripts": {
+    "start": "python3 -m http.server 3000",
+    "preview": "python3 -m http.server 3000",
+    "test": "echo \"no tests\" && exit 0"
+  },
+  "license": "MIT"
+}
