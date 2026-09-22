@@ -16,9 +16,9 @@ import { LiveControlScreen } from '../screens/broadcaster/LiveControlScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { ProfileScreen } from '../screens/viewer/ProfileScreen';
 import { TabAvatar } from '../components/ui/TabAvatar';
-// Tasks 10 & 11: swap PlaceholderScreen with real screens once created
-// import { MesFavorisScreen } from '../screens/MesFavorisScreen';
+// Task 11: swap DJ placeholder with MaDiscothequeScreen once created
 // import { MaDiscothequeScreen } from '../screens/MaDiscothequeScreen';
+import { MesFavorisScreen } from '../screens/MesFavorisScreen';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
 
@@ -123,10 +123,9 @@ export function MainTabs() {
   const isDJ = isAuthenticated && currentRole === 'broadcaster';
 
   const liveClubLabel = isDJ ? 'Ma discothèque' : 'Mes favoris';
-  // Swap PlaceholderScreen with MesFavorisScreen / MaDiscothequeScreen after Tasks 10 & 11
   const LiveClubComponent = isDJ
-    ? () => <PlaceholderScreen title="Ma discothèque" />
-    : () => <PlaceholderScreen title="Mes favoris" />;
+    ? () => <PlaceholderScreen title="Ma discothèque" />  // still placeholder until Task 11
+    : MesFavorisScreen;
 
   return (
     <Tab.Navigator
