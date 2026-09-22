@@ -9,13 +9,16 @@ import { useRole } from '../contexts/RoleContext';
 import { ShutDiffusionScreen } from '../screens/ShutDiffusionScreen';
 import { LivesScreen } from '../screens/LivesScreen';
 import { GoLiveScreen } from '../screens/GoLiveScreen';
-import { LiveClubScreen } from '../screens/LiveClubScreen';
 import { LivePlayerScreen } from '../screens/viewer/LivePlayerScreen';
 import { AudioCheckScreen } from '../screens/broadcaster/AudioCheckScreen';
 import { QuickStreamScreen } from '../screens/broadcaster/QuickStreamScreen';
 import { LiveControlScreen } from '../screens/broadcaster/LiveControlScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { ProfileScreen } from '../screens/viewer/ProfileScreen';
+import { TabAvatar } from '../components/ui/TabAvatar';
+// Tasks 10 & 11: swap PlaceholderScreen with real screens once created
+// import { MesFavorisScreen } from '../screens/MesFavorisScreen';
+// import { MaDiscothequeScreen } from '../screens/MaDiscothequeScreen';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
 
@@ -44,7 +47,7 @@ export type ParametresStackParamList = {
   Profile: undefined;
 };
 
-// ─── Placeholder screens ──────────────────────────────────────────────────────
+// ─── Placeholder (remove after Tasks 10 & 11) ────────────────────────────────
 
 function PlaceholderScreen({ title }: { title: string }) {
   return (
@@ -115,9 +118,15 @@ function ParametresStackScreen() {
 // ─── Main tabs ────────────────────────────────────────────────────────────────
 
 export function MainTabs() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isGuest, user } = useAuth();
   const { currentRole } = useRole();
   const isDJ = isAuthenticated && currentRole === 'broadcaster';
+
+  const liveClubLabel = isDJ ? 'Ma discothèque' : 'Mes favoris';
+  // Swap PlaceholderScreen with MesFavorisScreen / MaDiscothequeScreen after Tasks 10 & 11
+  const LiveClubComponent = isDJ
+    ? () => <PlaceholderScreen title="Ma discothèque" />
+    : () => <PlaceholderScreen title="Mes favoris" />;
 
   return (
     <Tab.Navigator
@@ -127,13 +136,26 @@ export function MainTabs() {
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
-        tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = 'globe-outline';
-          if (route.name === 'ShutDiffusion') iconName = 'globe-outline';
+        tabBarIcon: ({ color, size, focused }) => {
+          if (route.name === 'Parametres') {
+            return (
+              <TabAvatar
+                size={size}
+                color={color}
+                avatarUrl={user?.avatarUrl ?? null}
+                displayName={user?.username || user?.displayName || ''}
+                focused={focused}
+                isGuest={isGuest}
+              />
+            );
+          }
+          let iconName: keyof typeof Ionicons.glyphMap = 'compass-outline';
+          if (route.name === 'ShutDiffusion') iconName = 'compass-outline';
           else if (route.name === 'Live') iconName = 'videocam-outline';
           else if (route.name === 'GoLive') iconName = 'radio-outline';
-          else if (route.name === 'LiveClub') iconName = 'lock-closed-outline';
-          else if (route.name === 'Parametres') iconName = 'settings-outline';
+          else if (route.name === 'LiveClub') {
+            iconName = isDJ ? 'musical-notes-outline' : 'heart-outline';
+          }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
       })}
@@ -141,12 +163,12 @@ export function MainTabs() {
       <Tab.Screen
         name="ShutDiffusion"
         component={ShutDiffusionScreen}
-        options={{ tabBarLabel: 'Diffusion' }}
+        options={{ tabBarLabel: 'Explorer' }}
       />
       <Tab.Screen
         name="Live"
         component={LiveStackScreen}
-        options={{ tabBarLabel: 'Live' }}
+        options={{ tabBarLabel: 'En direct' }}
       />
       {isDJ && (
         <Tab.Screen
@@ -157,13 +179,13 @@ export function MainTabs() {
       )}
       <Tab.Screen
         name="LiveClub"
-        component={LiveClubScreen}
-        options={{ tabBarLabel: 'Live Club' }}
+        component={LiveClubComponent}
+        options={{ tabBarLabel: liveClubLabel }}
       />
       <Tab.Screen
         name="Parametres"
         component={ParametresStackScreen}
-        options={{ tabBarLabel: 'Paramètres' }}
+        options={{ tabBarLabel: 'Profil' }}
       />
     </Tab.Navigator>
   );
