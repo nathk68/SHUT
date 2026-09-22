@@ -56,16 +56,26 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     async (eventId: string) => {
       if (!user) return;
       const wasFav = state.favoriteIds.has(eventId);
+      // Optimistic update
       setState(prev => {
         const next = new Set(prev.favoriteIds);
-        if (wasFav) next.delete(eventId);
-        else next.add(eventId);
+        if (wasFav) next.delete(eventId); else next.add(eventId);
         return { ...prev, favoriteIds: next };
       });
-      if (wasFav) {
-        await favoritesService.removeFavorite(user.id, eventId);
-      } else {
-        await favoritesService.addFavorite(user.id, eventId);
+      // Backend sync with rollback
+      try {
+        if (wasFav) {
+          await favoritesService.removeFavorite(user.id, eventId);
+        } else {
+          await favoritesService.addFavorite(user.id, eventId);
+        }
+      } catch {
+        // Rollback on failure
+        setState(prev => {
+          const next = new Set(prev.favoriteIds);
+          if (wasFav) next.add(eventId); else next.delete(eventId);
+          return { ...prev, favoriteIds: next };
+        });
       }
     },
     [user, state.favoriteIds],
@@ -75,13 +85,23 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     async (eventId: string) => {
       if (!user) return;
       const wasLiked = state.likedIds.has(eventId);
+      // Optimistic update
       setState(prev => {
         const next = new Set(prev.likedIds);
-        if (wasLiked) next.delete(eventId);
-        else next.add(eventId);
+        if (wasLiked) next.delete(eventId); else next.add(eventId);
         return { ...prev, likedIds: next };
       });
-      await likesService.toggleLike(user.id, eventId);
+      // Backend sync with rollback
+      try {
+        await likesService.toggleLike(user.id, eventId);
+      } catch {
+        // Rollback on failure
+        setState(prev => {
+          const next = new Set(prev.likedIds);
+          if (wasLiked) next.add(eventId); else next.delete(eventId);
+          return { ...prev, likedIds: next };
+        });
+      }
     },
     [user, state.likedIds],
   );

@@ -28,6 +28,9 @@ export function MesFavorisScreen() {
     eventsService.getAllEvents().then((all) => {
       setEvents(all.filter(e => favoriteIds.has(e.id)));
       setLoadingEvents(false);
+    }).catch(() => {
+      setEvents([]);
+      setLoadingEvents(false);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [favoriteIdsKey]);
