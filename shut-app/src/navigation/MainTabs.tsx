@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,8 +16,7 @@ import { LiveControlScreen } from '../screens/broadcaster/LiveControlScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { ProfileScreen } from '../screens/viewer/ProfileScreen';
 import { TabAvatar } from '../components/ui/TabAvatar';
-// Task 11: swap DJ placeholder with MaDiscothequeScreen once created
-// import { MaDiscothequeScreen } from '../screens/MaDiscothequeScreen';
+import { MaDiscothequeScreen } from '../screens/MaDiscothequeScreen';
 import { MesFavorisScreen } from '../screens/MesFavorisScreen';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
@@ -46,30 +45,6 @@ export type ParametresStackParamList = {
   SettingsMain: undefined;
   Profile: undefined;
 };
-
-// ─── Placeholder (remove after Tasks 10 & 11) ────────────────────────────────
-
-function PlaceholderScreen({ title }: { title: string }) {
-  return (
-    <View style={placeholder.container}>
-      <Text style={placeholder.text}>{title}</Text>
-    </View>
-  );
-}
-
-const placeholder = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: {
-    color: colors.textPrimary,
-    fontFamily: fonts.heading.bold,
-    fontSize: fontSize.lg,
-  },
-});
 
 // ─── Stack navigators ─────────────────────────────────────────────────────────
 
@@ -123,9 +98,7 @@ export function MainTabs() {
   const isDJ = isAuthenticated && currentRole === 'broadcaster';
 
   const liveClubLabel = isDJ ? 'Ma discothèque' : 'Mes favoris';
-  const LiveClubComponent = isDJ
-    ? () => <PlaceholderScreen title="Ma discothèque" />  // still placeholder until Task 11
-    : MesFavorisScreen;
+  const LiveClubComponent = isDJ ? MaDiscothequeScreen : MesFavorisScreen;
 
   return (
     <Tab.Navigator
