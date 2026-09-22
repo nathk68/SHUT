@@ -3,3 +3,4 @@ export type { Festival } from './festival';
 export type { LiveEvent } from './event';
 export type { CameraConfig, StreamState } from './stream';
 export type { ChatMessage, Reaction } from './chat';
+export type { UserFavorite, UserLike } from './favorite';
