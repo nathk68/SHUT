@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
+import type { MainTabParamList } from '../navigation/MainTabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { eventsService } from '../services';
@@ -8,7 +10,7 @@ import { LiveEvent } from '../types/event';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
 
 export function MesFavorisScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProp<MainTabParamList>>();
   const { favoriteIds, isLoading } = useFavorites();
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
@@ -53,7 +55,7 @@ export function MesFavorisScreen() {
 
   const navigateToPlayer = (eventId: string) => {
     // LivePlayer lives inside the Live tab stack — navigate cross-tab
-    navigation.navigate('Live' as any, {
+    navigation.navigate('Live', {
       screen: 'LivePlayer',
       params: { eventId },
     });
@@ -87,6 +89,7 @@ export function MesFavorisScreen() {
 function EventCard({ event, onPress }: { event: LiveEvent; onPress: () => void }) {
   return (
     <Pressable
+      testID={`event-card-${event.id}`}
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
