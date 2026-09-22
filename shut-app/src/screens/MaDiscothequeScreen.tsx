@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
+import type { MainTabParamList } from '../navigation/MainTabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { eventsService } from '../services';
@@ -9,7 +11,7 @@ import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme'
 import { formatEventDate } from '../utils/formatDate';
 
 export function MaDiscothequeScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<NavigationProp<MainTabParamList>>();
   const { user } = useAuth();
   const [replays, setReplays] = useState<LiveEvent[] | null>(null);
 
@@ -22,11 +24,11 @@ export function MaDiscothequeScreen() {
           .filter(e => e.status === 'ended' && e.djName === user.displayName)
           .sort((a, b) => (b.scheduledStartTime > a.scheduledStartTime ? 1 : -1)),
       );
-    });
+    }).catch(() => setReplays([]));
   }, [user?.id]);
 
   const navigateToPlayer = (eventId: string) => {
-    navigation.navigate('Live' as any, {
+    navigation.navigate('Live', {
       screen: 'LivePlayer',
       params: { eventId },
     });
@@ -58,6 +60,7 @@ export function MaDiscothequeScreen() {
       {replays.map(event => (
         <Pressable
           key={event.id}
+          testID={`replay-card-${event.id}`}
           onPress={() => navigateToPlayer(event.id)}
           style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
         >
