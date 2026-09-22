@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import { FavoritesProvider } from '../contexts/FavoritesContext';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { colors } from '../config/theme';
+import { getStoredData } from '../utils/storage';
 
 const navTheme = {
   dark: true,
@@ -26,14 +28,29 @@ const navTheme = {
 
 export function RootNavigator() {
   const { isAuthenticated, isLoading, isGuest } = useAuth();
+  const [hasSeenSplash, setHasSeenSplash] = useState<boolean | null>(null);
 
-  if (isLoading) {
+  useEffect(() => {
+    getStoredData<boolean>('@shut_has_seen_splash').then(v => setHasSeenSplash(!!v));
+  }, []);
+
+  if (isLoading || hasSeenSplash === null) {
     return <LoadingSpinner message="Chargement..." />;
   }
 
   return (
     <NavigationContainer theme={navTheme}>
-      {isAuthenticated || isGuest ? <MainTabs /> : <AuthStack />}
+      {isAuthenticated || isGuest ? (
+        <FavoritesProvider>
+          <MainTabs />
+        </FavoritesProvider>
+      ) : (
+        // Comportement officiel
+        //<AuthStack initialRouteName={hasSeenSplash ? 'Login' : 'SplashLanding'} />
+
+        // Comportement modifié pour forcer l'affichage de SplashLanding
+        <AuthStack initialRouteName="SplashLanding" />
+      )}
     </NavigationContainer>
   );
 }
