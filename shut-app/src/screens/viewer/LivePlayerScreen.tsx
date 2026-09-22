@@ -20,6 +20,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
+import { LiveActionBar } from '../../components/live/LiveActionBar';
 import { REACTION_EMOJIS, ReactionType } from '../../config/constants';
 import { chatService, eventsService } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
@@ -93,6 +94,7 @@ export function LivePlayerScreen({ navigation, route }: Props) {
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; emoji: string }[]>([]);
   const [viewCount, setViewCount] = useState(0);
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null);
+  const [djName, setDjName] = useState('');
   const chatRef = useRef<FlatList>(null);
   // Track IDs of messages sent by this user to avoid duplicates from the listener
   const sentIdsRef = useRef<Set<string>>(new Set());
@@ -126,6 +128,7 @@ export function LivePlayerScreen({ navigation, route }: Props) {
     eventsService.getEventById(eventId).then((e) => {
       if (e) {
         setViewCount(e.viewerCount);
+        setDjName(e.djName);
         if (e.playbackUrl) {
           setPlaybackUrl(e.playbackUrl);
           videoPlayer.replaceAsync({ uri: e.playbackUrl }).then(() => videoPlayer.play());
@@ -237,6 +240,9 @@ export function LivePlayerScreen({ navigation, route }: Props) {
           <Text style={styles.viewerCountText}>{viewCount}</Text>
         </View>
       </View>
+
+      {/* TikTok action bar */}
+      <LiveActionBar eventId={eventId} djAvatarUrl={null} djName={djName} />
 
       {/* Floating emoji overlay */}
       {floatingEmojis.map((fe) => (
