@@ -1,10 +1,9 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { AvatarPicker } from '../../../components/profile/AvatarPicker';
 
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn().mockResolvedValue({ canceled: true }),
-  MediaTypeOptions: { Images: 'Images' },
 }));
 
 describe('AvatarPicker', () => {
@@ -34,8 +33,6 @@ describe('AvatarPicker', () => {
     const onPick = jest.fn();
     render(<AvatarPicker avatarUrl={null} displayName="DJ Test" editable onPick={onPick} />);
     fireEvent.press(screen.getByTestId('avatar-edit-button'));
-    await screen.findByTestId('avatar-edit-button');
-    // onPick called after library resolves
-    expect(launchImageLibraryAsync).toHaveBeenCalled();
+    await waitFor(() => expect(onPick).toHaveBeenCalledWith('file:///photo.jpg'));
   });
 });
