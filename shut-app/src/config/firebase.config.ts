@@ -5,6 +5,7 @@ import { getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 import { getFunctions } from 'firebase/functions';
+import { getStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ====================================================================
@@ -37,5 +38,8 @@ export const rtdb = getDatabase(app);
 
 // Cloud Functions (for Mux API calls - secrets stay server-side)
 export const functions = getFunctions(app, 'europe-west1');
+
+// Storage (for avatar uploads)
+export const storage = getStorage(app);
 
 export default app;

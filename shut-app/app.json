@@ -31,7 +31,8 @@
       "expo-video",
       "expo-splash-screen",
       "expo-status-bar",
-      "expo-audio"
+      "expo-audio",
+      ["expo-image-picker", { "photosPermission": "SHUT utilise tes photos pour personnaliser ton profil." }]
     ]
   }
 }

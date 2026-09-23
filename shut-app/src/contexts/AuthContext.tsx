@@ -2,17 +2,19 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { User, AuthState } from '../types';
 import { UserRole } from '../config/constants';
 import { getStoredData, setStoredData, removeStoredData } from '../utils/storage';
-import { authService } from '../services';
+import { authService, userService } from '../services';
+import type { UpdateProfilePayload } from '../types/profile';
 
 const STORAGE_KEY = '@shut_auth';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (email: string, password: string, displayName: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, displayName: string, role: UserRole) => Promise<{ success: boolean; error?: string; userId?: string }>;
   logout: () => Promise<void>;
   enterGuestMode: () => void;
   exitGuestMode: () => void;
   refreshUser: () => Promise<void>;
+  updateUser: (patch: UpdateProfilePayload) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -55,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await authService.register(email, password, displayName, role);
     if (result.success && result.user) {
       setState({ user: result.user, isAuthenticated: true, isLoading: false, isGuest: false });
-      return { success: true };
+      return { success: true, userId: result.user.id };
     }
     return { success: false, error: result.error };
   }, []);
@@ -80,8 +82,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, isGuest: false }));
   }, []);
 
+  const updateUser = useCallback(async (patch: UpdateProfilePayload) => {
+    if (!state.user) return;
+    const updated = await userService.updateProfile(state.user.id, patch);
+    setState((prev) => ({ ...prev, user: updated }));
+  }, [state.user]);
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, enterGuestMode, exitGuestMode, refreshUser }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, enterGuestMode, exitGuestMode, refreshUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
