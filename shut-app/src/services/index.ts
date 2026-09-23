@@ -7,6 +7,7 @@ import { MuxStreamingService } from './streaming/streaming.mux';
 import { FirebaseChatService } from './chat/chat.firebase';
 import { FirebaseFavoritesService } from './favorites/favorites.firebase';
 import { FirebaseLikesService } from './likes/likes.firebase';
+import { FirebaseFollowService } from './follow/follow.firebase';
 
 // Mock service imports (for development/demo without API keys)
 import { MockAuthService } from './auth/auth.mock';
@@ -15,6 +16,7 @@ import { MockStreamingService } from './streaming/streaming.mock';
 import { MockChatService } from './chat/chat.mock';
 import { MockFavoritesService } from './favorites/favorites.mock';
 import { MockLikesService } from './likes/likes.mock';
+import { MockFollowService } from './follow/follow.mock';
 
 // ====================================================================
 // SERVICE FACTORY
@@ -44,3 +46,7 @@ export const favoritesService = USE_MOCK
 export const likesService = USE_MOCK
   ? new MockLikesService()
   : new FirebaseLikesService();
+
+export const followService = USE_MOCK
+  ? new MockFollowService()
+  : new FirebaseFollowService();
