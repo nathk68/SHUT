@@ -29,11 +29,7 @@ const EXPERIENCE_OPTIONS: { value: ExperienceLevel; label: string }[] = [
 
 export function EditProfileScreen() {
   const navigation = useNavigation<Nav>();
-  const { state, updateUser } = useAuth() as {
-    state: { user: { id: string; bio?: string; artistName?: string; firstName?: string; lastName?: string; representedCityName?: string; experience?: ExperienceLevel; genres?: string[]; musicGenres?: string[]; socialLinks?: { instagram?: string; soundcloud?: string; youtube?: string }; role: string; avatarUrl?: string | null; displayName?: string } | null };
-    updateUser: (patch: UpdateProfilePayload) => Promise<void>;
-  };
-  const user = state?.user ?? null;
+  const { user, updateUser } = useAuth();
 
   const [bio, setBio] = useState(user?.bio ?? '');
   const [artistName, setArtistName] = useState(user?.artistName ?? '');
@@ -42,7 +38,7 @@ export function EditProfileScreen() {
   const [representedCity, setRepresentedCity] = useState(user?.representedCityName ?? '');
   const [experience, setExperience] = useState<ExperienceLevel | undefined>(user?.experience);
   const [selectedGenres, setSelectedGenres] = useState<string[]>(
-    user?.genres ?? user?.musicGenres ?? []
+    user?.genres ?? []
   );
   const [instagram, setInstagram] = useState(user?.socialLinks?.instagram ?? '');
   const [soundcloud, setSoundcloud] = useState(user?.socialLinks?.soundcloud ?? '');

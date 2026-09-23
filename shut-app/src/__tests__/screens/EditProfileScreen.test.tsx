@@ -15,19 +15,17 @@ jest.mock('expo-image-picker', () => ({
 const mockUpdateUser = jest.fn().mockResolvedValue(undefined);
 jest.mock('../../contexts/AuthContext', () => ({
   useAuth: () => ({
-    state: {
-      user: {
-        id: 'user-dj-001',
-        email: 'luca@example.com',
-        username: 'lucar',
-        displayName: 'Luca R',
-        artistName: 'Luca R',
-        role: 'broadcaster',
-        createdAt: '2026-01-01T00:00:00.000Z',
-        musicGenres: ['Techno'],
-        bio: 'My bio',
-        experience: 'confirme',
-      },
+    user: {
+      id: 'user-dj-001',
+      email: 'luca@example.com',
+      username: 'lucar',
+      displayName: 'Luca R',
+      artistName: 'Luca R',
+      role: 'broadcaster',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      genres: ['Techno'],
+      bio: 'My bio',
+      experience: 'confirme',
     },
     updateUser: mockUpdateUser,
   }),
