@@ -32,6 +32,7 @@ export type MainTabParamList = {
 export type LiveStackParamList = {
   LivesMain: { countryCode?: string } | undefined;
   LivePlayer: { eventId: string };
+  PublicProfile: { userId: string };
 };
 
 export type GoLiveStackParamList = {
@@ -44,6 +45,8 @@ export type GoLiveStackParamList = {
 export type ParametresStackParamList = {
   SettingsMain: undefined;
   Profile: undefined;
+  EditProfile: undefined;
+  PublicProfile: { userId: string };
 };
 
 // ─── Stack navigators ─────────────────────────────────────────────────────────
