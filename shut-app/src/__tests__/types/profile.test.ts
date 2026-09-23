@@ -11,7 +11,7 @@ describe('Profile types', () => {
       birthDate: '1995-03-15',
       avatarUrl: 'https://example.com/avatar.jpg',
       bio: 'Test bio',
-      musicGenres: ['Techno', 'House'],
+      genres: ['Techno', 'House'],
       representedCityName: 'Lausanne',
       representedCountryCode: 'CH',
       experience: 'confirme',
