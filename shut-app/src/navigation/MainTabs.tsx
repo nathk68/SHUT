@@ -18,6 +18,7 @@ import { ProfileScreen } from '../screens/viewer/ProfileScreen';
 import { TabAvatar } from '../components/ui/TabAvatar';
 import { MaDiscothequeScreen } from '../screens/MaDiscothequeScreen';
 import { MesFavorisScreen } from '../screens/MesFavorisScreen';
+import { EditProfileScreen } from '../screens/EditProfileScreen';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
 
@@ -89,6 +90,7 @@ function ParametresStackScreen() {
     <ParametresStack.Navigator screenOptions={{ headerShown: false }}>
       <ParametresStack.Screen name="SettingsMain" component={SettingsScreen} />
       <ParametresStack.Screen name="Profile" component={ProfileScreen} />
+      <ParametresStack.Screen name="EditProfile" component={EditProfileScreen} />
     </ParametresStack.Navigator>
   );
 }
