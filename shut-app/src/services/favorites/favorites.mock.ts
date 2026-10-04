@@ -23,4 +23,8 @@ export class MockFavoritesService implements IFavoritesService {
   async isFavorite(userId: string, eventId: string): Promise<boolean> {
     return this.getSet(userId).has(eventId);
   }
+
+  async getFavoritesCountForItem(_eventId: string): Promise<number> {
+    return 0;
+  }
 }

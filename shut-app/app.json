@@ -12,7 +12,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nathk68.shut-app"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +22,13 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,7 +39,12 @@
       "expo-splash-screen",
       "expo-status-bar",
       "expo-audio",
-      ["expo-image-picker", { "photosPermission": "SHUT utilise tes photos pour personnaliser ton profil." }]
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "SHUT utilise tes photos pour personnaliser ton profil."
+        }
+      ]
     ]
   }
 }

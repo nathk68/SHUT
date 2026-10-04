@@ -1,4 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { deleteDoc, doc } from 'firebase/firestore';
+import { deleteObject, ref as storageRef } from 'firebase/storage';
+import { deleteUser, getAuth } from 'firebase/auth';
+import { db, storage } from '../config/firebase.config';
 import { User, AuthState } from '../types';
 import { UserRole } from '../config/constants';
 import { getStoredData, setStoredData, removeStoredData } from '../utils/storage';
@@ -11,6 +15,7 @@ interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (email: string, password: string, displayName: string, role: UserRole) => Promise<{ success: boolean; error?: string; userId?: string }>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   enterGuestMode: () => void;
   exitGuestMode: () => void;
   refreshUser: () => Promise<void>;
@@ -82,6 +87,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, isGuest: false }));
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    const userId = state.user?.id;
+    if (!userId) return;
+
+    // 1. Delete Firestore user document
+    await deleteDoc(doc(db, 'users', userId));
+
+    // 2. Delete Storage avatar (ignore if missing)
+    try {
+      await deleteObject(storageRef(storage, `avatars/${userId}.jpg`));
+    } catch {}
+
+    // 3. Delete Firebase Auth user
+    const fbUser = getAuth().currentUser;
+    if (fbUser) await deleteUser(fbUser);
+
+    // 4. Clear local state
+    await removeStoredData(STORAGE_KEY);
+    setState({ user: null, isAuthenticated: false, isLoading: false, isGuest: false });
+
+    // Note: userFollows + likes cleanup requires a Cloud Function
+    // (client-side deletion of others' documents is blocked by Firestore rules)
+  }, [state.user]);
+
   const updateUser = useCallback(async (patch: UpdateProfilePayload) => {
     if (!state.user) return;
     const updated = await userService.updateProfile(state.user.id, patch);
@@ -89,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.user]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, enterGuestMode, exitGuestMode, refreshUser, updateUser }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, deleteAccount, enterGuestMode, exitGuestMode, refreshUser, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

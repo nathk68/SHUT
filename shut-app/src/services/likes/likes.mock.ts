@@ -25,4 +25,8 @@ export class MockLikesService implements ILikesService {
   async isLiked(userId: string, eventId: string): Promise<boolean> {
     return this.getSet(userId).has(eventId);
   }
+
+  async getLikesCountForItems(_itemIds: string[]): Promise<number> {
+    return 0;
+  }
 }

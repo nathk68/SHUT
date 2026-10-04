@@ -12,14 +12,24 @@ import { GoLiveScreen } from '../screens/GoLiveScreen';
 import { LivePlayerScreen } from '../screens/viewer/LivePlayerScreen';
 import { AudioCheckScreen } from '../screens/broadcaster/AudioCheckScreen';
 import { QuickStreamScreen } from '../screens/broadcaster/QuickStreamScreen';
+import { PhoneCameraScreen } from '../screens/broadcaster/PhoneCameraScreen';
 import { LiveControlScreen } from '../screens/broadcaster/LiveControlScreen';
+import { PostLiveScreen } from '../screens/broadcaster/PostLiveScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
-import { ProfileScreen } from '../screens/viewer/ProfileScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
 import { TabAvatar } from '../components/ui/TabAvatar';
 import { MaDiscothequeScreen } from '../screens/MaDiscothequeScreen';
 import { MesFavorisScreen } from '../screens/MesFavorisScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { PublicProfileScreen } from '../screens/PublicProfileScreen';
+import { LanguageScreen } from '../screens/settings/LanguageScreen';
+import { QualityScreen } from '../screens/settings/QualityScreen';
+import { NotificationsScreen } from '../screens/settings/NotificationsScreen';
+import { PrivacyPolicyScreen } from '../screens/legal/PrivacyPolicyScreen';
+import { TermsScreen } from '../screens/legal/TermsScreen';
+import { RGPDScreen } from '../screens/legal/RGPDScreen';
+import { ReplayPlayerScreen } from '../screens/viewer/ReplayPlayerScreen';
+import { FollowListScreen } from '../screens/FollowListScreen';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
 
@@ -31,32 +41,92 @@ export type MainTabParamList = {
   Parametres: undefined;
 };
 
+export type ExploreStackParamList = {
+  ExploreMain: undefined;
+  PublicProfile: { userId: string };
+  LivePlayer: { eventId: string };
+  ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
+  PostLive: { eventId: string };
+  FollowList: { userId: string; mode: 'followers' | 'following' };
+};
+
 export type LiveStackParamList = {
   LivesMain: { countryCode?: string } | undefined;
   LivePlayer: { eventId: string };
   PublicProfile: { userId: string };
+  FollowList: { userId: string; mode: 'followers' | 'following' };
 };
 
 export type GoLiveStackParamList = {
   GoLiveMain: undefined;
   AudioCheck: undefined;
-  QuickStream: undefined;
+  QuickStream: { cameraId?: string };
+  PhoneCamera: { rtmpUrl: string; streamKey: string; eventId?: string; mode?: 'phone' | 'external' };
   LiveControl: { eventId: string };
+  PostLive: { eventId: string };
+};
+
+export type LiveClubStackParamList = {
+  DiscothequeMain: undefined;
+  PostLive: { eventId: string };
+  ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
+};
+
+export type FavorisStackParamList = {
+  FavorisMain: undefined;
+  ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
 };
 
 export type ParametresStackParamList = {
-  SettingsMain: undefined;
   Profile: undefined;
+  SettingsMain: undefined;
   EditProfile: undefined;
   PublicProfile: { userId: string };
+  ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
+  PostLive: { eventId: string };
+  FollowList: { userId: string; mode: 'followers' | 'following' };
+  Language: undefined;
+  Quality: undefined;
+  Notifications: undefined;
+  PrivacyPolicy: undefined;
+  Terms: undefined;
+  RGPD: undefined;
 };
 
 // ─── Stack navigators ─────────────────────────────────────────────────────────
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
+const ExploreStack = createNativeStackNavigator<ExploreStackParamList>();
 const LiveStack = createNativeStackNavigator<LiveStackParamList>();
 const GoLiveStack = createNativeStackNavigator<GoLiveStackParamList>();
+const LiveClubStack = createNativeStackNavigator<LiveClubStackParamList>();
+const FavorisStack = createNativeStackNavigator<FavorisStackParamList>();
 const ParametresStack = createNativeStackNavigator<ParametresStackParamList>();
+
+function ExploreStackScreen() {
+  return (
+    <ExploreStack.Navigator screenOptions={{ headerShown: false }}>
+      <ExploreStack.Screen name="ExploreMain" component={ShutDiffusionScreen} />
+      <ExploreStack.Screen name="PublicProfile" component={PublicProfileScreen} />
+      <ExploreStack.Screen
+        name="LivePlayer"
+        component={LivePlayerScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+      <ExploreStack.Screen
+        name="ReplayPlayer"
+        component={ReplayPlayerScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+      <ExploreStack.Screen
+        name="PostLive"
+        component={PostLiveScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+      <ExploreStack.Screen name="FollowList" component={FollowListScreen} />
+    </ExploreStack.Navigator>
+  );
+}
 
 function LiveStackScreen() {
   return (
@@ -68,6 +138,7 @@ function LiveStackScreen() {
         options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
       />
       <LiveStack.Screen name="PublicProfile" component={PublicProfileScreen} />
+      <LiveStack.Screen name="FollowList" component={FollowListScreen} />
     </LiveStack.Navigator>
   );
 }
@@ -79,21 +150,79 @@ function GoLiveStackScreen() {
       <GoLiveStack.Screen name="AudioCheck" component={AudioCheckScreen} />
       <GoLiveStack.Screen name="QuickStream" component={QuickStreamScreen} />
       <GoLiveStack.Screen
+        name="PhoneCamera"
+        component={PhoneCameraScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+      <GoLiveStack.Screen
         name="LiveControl"
         component={LiveControlScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+      <GoLiveStack.Screen
+        name="PostLive"
+        component={PostLiveScreen}
         options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
       />
     </GoLiveStack.Navigator>
   );
 }
 
+function LiveClubStackScreen() {
+  return (
+    <LiveClubStack.Navigator screenOptions={{ headerShown: false }}>
+      <LiveClubStack.Screen name="DiscothequeMain" component={MaDiscothequeScreen} />
+      <LiveClubStack.Screen
+        name="PostLive"
+        component={PostLiveScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+      <LiveClubStack.Screen
+        name="ReplayPlayer"
+        component={ReplayPlayerScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+    </LiveClubStack.Navigator>
+  );
+}
+
+function FavorisStackScreen() {
+  return (
+    <FavorisStack.Navigator screenOptions={{ headerShown: false }}>
+      <FavorisStack.Screen name="FavorisMain" component={MesFavorisScreen} />
+      <FavorisStack.Screen
+        name="ReplayPlayer"
+        component={ReplayPlayerScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+    </FavorisStack.Navigator>
+  );
+}
+
 function ParametresStackScreen() {
   return (
     <ParametresStack.Navigator screenOptions={{ headerShown: false }}>
-      <ParametresStack.Screen name="SettingsMain" component={SettingsScreen} />
       <ParametresStack.Screen name="Profile" component={ProfileScreen} />
+      <ParametresStack.Screen name="SettingsMain" component={SettingsScreen} />
       <ParametresStack.Screen name="EditProfile" component={EditProfileScreen} />
       <ParametresStack.Screen name="PublicProfile" component={PublicProfileScreen} />
+      <ParametresStack.Screen
+        name="ReplayPlayer"
+        component={ReplayPlayerScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+      <ParametresStack.Screen
+        name="PostLive"
+        component={PostLiveScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+      <ParametresStack.Screen name="Language" component={LanguageScreen} />
+      <ParametresStack.Screen name="Quality" component={QualityScreen} />
+      <ParametresStack.Screen name="Notifications" component={NotificationsScreen} />
+      <ParametresStack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+      <ParametresStack.Screen name="Terms" component={TermsScreen} />
+      <ParametresStack.Screen name="RGPD" component={RGPDScreen} />
+      <ParametresStack.Screen name="FollowList" component={FollowListScreen} />
     </ParametresStack.Navigator>
   );
 }
@@ -106,7 +235,7 @@ export function MainTabs() {
   const isDJ = isAuthenticated && currentRole === 'broadcaster';
 
   const liveClubLabel = isDJ ? 'Ma discothèque' : 'Mes favoris';
-  const LiveClubComponent = isDJ ? MaDiscothequeScreen : MesFavorisScreen;
+  const LiveClubComponent = isDJ ? LiveClubStackScreen : FavorisStackScreen;
 
   return (
     <Tab.Navigator
@@ -142,7 +271,7 @@ export function MainTabs() {
     >
       <Tab.Screen
         name="ShutDiffusion"
-        component={ShutDiffusionScreen}
+        component={ExploreStackScreen}
         options={{ tabBarLabel: 'Explorer' }}
       />
       <Tab.Screen

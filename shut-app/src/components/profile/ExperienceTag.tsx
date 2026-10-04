@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
   label: {
     color: colors.accent,

@@ -9,6 +9,7 @@ import { FirebaseFavoritesService } from './favorites/favorites.firebase';
 import { FirebaseLikesService } from './likes/likes.firebase';
 import { FirebaseFollowService } from './follow/follow.firebase';
 import { FirebaseUserService } from './user/user.firebase';
+import { FirebaseReplaysService } from './replays/replays.firebase';
 
 // Mock service imports (for development/demo without API keys)
 import { MockAuthService } from './auth/auth.mock';
@@ -19,6 +20,7 @@ import { MockFavoritesService } from './favorites/favorites.mock';
 import { MockLikesService } from './likes/likes.mock';
 import { MockFollowService } from './follow/follow.mock';
 import { MockUserService } from './user/user.mock';
+import { MockReplaysService } from './replays/replays.mock';
 
 // ====================================================================
 // SERVICE FACTORY
@@ -56,3 +58,7 @@ export const followService = USE_MOCK
 export const userService = USE_MOCK
   ? new MockUserService()
   : new FirebaseUserService();
+
+export const replaysService = USE_MOCK
+  ? new MockReplaysService()
+  : new FirebaseReplaysService();

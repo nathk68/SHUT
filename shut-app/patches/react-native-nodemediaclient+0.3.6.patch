@@ -1,0 +1,119 @@
+diff --git a/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m b/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m
+index c8b3efb..patched 100644
+--- a/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m
++++ b/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m
+@@ -9,6 +9,7 @@
+ #import "RCTNodePublisherView.h"
+ #import "RCTNodeMediaClient.h"
+ #import <NodeMediaClient/NodeMediaClient.h>
++#import <AVFoundation/AVFoundation.h>
+
+ @interface RCTNodePublisherView () <NodePublisherDelegate>
+
+@@ -23,9 +24,16 @@
+ - (id)init {
+   self = [super init];
+   if (self) {
+       _np = [[NodePublisher alloc] initWithLicense:[RCTNodeMediaClient license]];
+       [_np setNodePublisherDelegate:self];
+       [_np attachView:self];
++      [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
++      [[NSNotificationCenter defaultCenter] addObserver:self
++                                               selector:@selector(deviceOrientationDidChange)
++                                                   name:UIDeviceOrientationDidChangeNotification
++                                                 object:nil];
+   }
+   return self;
+ }
+
+@@ -33,6 +41,8 @@
+ - (void)dealloc
+ {
++    [[NSNotificationCenter defaultCenter] removeObserver:self];
++    [[UIDevice currentDevice] endGeneratingDeviceOrientationNotifications];
+     [_np detachView];
+     [_np closeCamera];
+     [_np stop];
+ }
+
+@@ -131,12 +148,58 @@ -(int)startPreview {
+ -(int)startPreview {
+     _isPreview = true;
+     NSLog(@"suze %f %f",self.bounds.size.width,self.bounds.size.height);
+-    return [_np openCameraDevice:_cameraDevice withFront:_frontCamera];;
++    int result = [_np openCameraDevice:_cameraDevice withFront:_frontCamera];
++    __weak typeof(self) weakSelf = self;
++    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(300 * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
++        [weakSelf setNeedsLayout];
++        [weakSelf applyPreviewOrientation];
++    });
++    return result;
+ }
+
+ -(int)stopPreview {
+     _isPreview = false;
+     return [_np closeCamera];
+ }
+
++- (AVCaptureVideoOrientation)preferredVideoOrientation {
++    switch ([UIDevice currentDevice].orientation) {
++        case UIDeviceOrientationLandscapeLeft:
++            return AVCaptureVideoOrientationLandscapeRight;
++        case UIDeviceOrientationLandscapeRight:
++            return AVCaptureVideoOrientationLandscapeLeft;
++        case UIDeviceOrientationPortraitUpsideDown:
++            return AVCaptureVideoOrientationPortraitUpsideDown;
++        default:
++            return AVCaptureVideoOrientationPortrait;
++    }
++}
++
++- (CGFloat)rotationAngleForCurrentOrientation {
++    switch ([UIDevice currentDevice].orientation) {
++        case UIDeviceOrientationLandscapeLeft:      return 0.0;
++        case UIDeviceOrientationLandscapeRight:     return 180.0;
++        case UIDeviceOrientationPortraitUpsideDown: return 270.0;
++        default: /* Portrait */                     return 90.0;
++    }
++}
++
++- (void)applyPreviewOrientation {
++    for (CALayer *layer in self.layer.sublayers) {
++        if (![layer isKindOfClass:[AVCaptureVideoPreviewLayer class]]) continue;
++        AVCaptureVideoPreviewLayer *previewLayer = (AVCaptureVideoPreviewLayer *)layer;
++        previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
++        if (previewLayer.connection == nil) {
++            __weak typeof(self) weakSelf = self;
++            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(200 * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
++                if (weakSelf.isPreview) [weakSelf applyPreviewOrientation];
++            });
++            return;
++        }
++        if (@available(iOS 17.0, *)) {
++            CGFloat angle = [self rotationAngleForCurrentOrientation];
++            if ([previewLayer.connection isVideoRotationAngleSupported:angle]) {
++                previewLayer.connection.videoRotationAngle = angle;
++            }
++        } else {
++            if (previewLayer.connection.isVideoOrientationSupported) {
++                previewLayer.connection.videoOrientation = [self preferredVideoOrientation];
++            }
++        }
++        return;
++    }
++}
++
++- (void)deviceOrientationDidChange {
++    if (_isPreview) {
++        [self applyPreviewOrientation];
++    }
++}
++
++- (void)layoutSubviews {
++    [super layoutSubviews];
++    for (CALayer *layer in self.layer.sublayers) {
++        layer.frame = self.bounds;
++    }
++}
++
+ @end

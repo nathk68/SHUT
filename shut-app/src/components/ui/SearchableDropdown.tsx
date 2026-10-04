@@ -24,9 +24,11 @@ export function SearchableDropdown({ options, label, placeholder, value, onSelec
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | undefined>(value);
 
-  // Sync when parent drives selection (e.g. map tap → update dropdown)
+  // Sync when parent drives selection (e.g. map tap → update dropdown, or parent resets to undefined)
   useEffect(() => {
     setSelectedId(value);
+    setIsOpen(false);
+    setSearch('');
   }, [value]);
 
   const selectedOption = options.find((o) => o.id === selectedId);

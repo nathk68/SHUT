@@ -14,6 +14,10 @@ export class MockUserService implements IUserService {
     return this.users.get(userId) ?? null;
   }
 
+  async getDJs(): Promise<User[]> {
+    return [...this.users.values()].filter((u) => u.role === 'broadcaster');
+  }
+
   async updateProfile(userId: string, payload: UpdateProfilePayload): Promise<User> {
     const user = this.users.get(userId);
     if (!user) throw new Error(`User ${userId} not found`);

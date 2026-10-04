@@ -20,6 +20,7 @@ import {
 } from '@expo-google-fonts/jetbrains-mono';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { RoleProvider } from './src/contexts/RoleContext';
+import { PreferencesProvider } from './src/contexts/PreferencesContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 SplashScreen.preventAutoHideAsync();
@@ -48,11 +49,13 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <RoleProvider>
-            <RootNavigator />
-          </RoleProvider>
-        </AuthProvider>
+        <PreferencesProvider>
+          <AuthProvider>
+            <RoleProvider>
+              <RootNavigator />
+            </RoleProvider>
+          </AuthProvider>
+        </PreferencesProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

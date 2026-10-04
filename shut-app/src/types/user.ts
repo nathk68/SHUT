@@ -37,6 +37,7 @@ export interface User {
   experience?: 'debutant' | 'intermediaire' | 'confirme' | 'professionnel';
   followersCount?: number;
   followingCount?: number;
+  totalLikesCount?: number;
 }
 
 export interface AuthState {

@@ -1,22 +1,23 @@
-import React, { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SearchableDropdown } from '../components/ui/SearchableDropdown';
 import { WorldMapSVG } from '../components/ui/WorldMapSVG';
 import {
   COUNTRIES,
-  CITIES,
-  DJ_PROFILES,
-  DJProfile,
   getRegionsForCountry,
   getCitiesForRegion,
   getCitiesForCountry,
-  getDJsForCity,
-  getDJsForRegion,
-  getDJsForCountry,
 } from '../services/_mock-data/countries';
+import { City as CscCity } from 'country-state-city';
+import { userService } from '../services';
+import { User } from '../types/user';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
+import type { ExploreStackParamList } from '../navigation/MainTabs';
+
+type Nav = NativeStackNavigationProp<ExploreStackParamList>;
 
 // ─── Genre badge colors ────────────────────────────────────────────────────────
 
@@ -28,34 +29,68 @@ const GENRE_COLORS: Record<string, string> = {
   Other: colors.textMuted,
 };
 
+// ─── DJ filtering helpers (real users) ────────────────────────────────────────
+
+function getDJsForCountry(djs: User[], countryCode: string): User[] {
+  return djs.filter((dj) => dj.countryCode === countryCode);
+}
+
+function getDJsForRegion(djs: User[], regionId: string): User[] {
+  const sep = regionId.indexOf('__');
+  const countryCode = regionId.slice(0, sep);
+  const stateCode = regionId.slice(sep + 2);
+  const cityNames = new Set(
+    (CscCity.getCitiesOfState(countryCode, stateCode) ?? []).map((c) => c.name),
+  );
+  return djs.filter(
+    (dj) => dj.countryCode === countryCode && cityNames.has(dj.cityName ?? ''),
+  );
+}
+
+function getDJsForCity(djs: User[], cityId: string): User[] {
+  const sep = cityId.indexOf('__');
+  const countryCode = cityId.slice(0, sep);
+  const cityName = cityId.slice(cityId.lastIndexOf('__') + 2);
+  return djs.filter(
+    (dj) => dj.countryCode === countryCode && dj.cityName === cityName,
+  );
+}
+
 // ─── DJ profile card ──────────────────────────────────────────────────────────
 
-function DJCard({ dj }: { dj: DJProfile }) {
-  const city = CITIES.find((c) => c.id === dj.cityId);
+function DJCard({ dj, onPress }: { dj: User; onPress: () => void }) {
   const country = COUNTRIES.find((c) => c.code === dj.countryCode);
-  const initials = dj.name
+  const name = dj.artistName || dj.displayName;
+  const initials = name
     .split(' ')
     .map((w) => w[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
-  const genreColor = GENRE_COLORS[dj.genre] ?? colors.textMuted;
+  const mainGenre = dj.genres?.[0] ?? '';
+  const genreColor = GENRE_COLORS[mainGenre] ?? colors.textMuted;
 
   return (
-    <View style={cardStyles.card}>
-      <View style={[cardStyles.avatar, { backgroundColor: genreColor + '33' }]}>
-        <Text style={[cardStyles.avatarText, { color: genreColor }]}>{initials}</Text>
-      </View>
+    <Pressable onPress={onPress} style={({ pressed }) => [cardStyles.card, pressed && cardStyles.cardPressed]}>
+      {dj.avatarUrl ? (
+        <Image source={{ uri: dj.avatarUrl }} style={cardStyles.avatar} />
+      ) : (
+        <View style={[cardStyles.avatar, { backgroundColor: genreColor + '33' }]}>
+          <Text style={[cardStyles.avatarText, { color: genreColor }]}>{initials}</Text>
+        </View>
+      )}
       <View style={cardStyles.info}>
-        <Text style={cardStyles.name}>{dj.name}</Text>
+        <Text style={cardStyles.name}>{name}</Text>
         <Text style={cardStyles.location}>
-          {country?.flag} {city?.name ?? '—'}
+          {country?.flag} {dj.cityName}
         </Text>
       </View>
-      <View style={[cardStyles.genreBadge, { borderColor: genreColor }]}>
-        <Text style={[cardStyles.genreText, { color: genreColor }]}>{dj.genre}</Text>
-      </View>
-    </View>
+      {mainGenre ? (
+        <View style={[cardStyles.genreBadge, { borderColor: genreColor }]}>
+          <Text style={[cardStyles.genreText, { color: genreColor }]}>{mainGenre}</Text>
+        </View>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -69,6 +104,10 @@ const cardStyles = StyleSheet.create({
     gap: spacing.md,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
+  },
+  cardPressed: {
+    backgroundColor: 'rgba(124,58,237,0.06)',
+    borderColor: 'rgba(124,58,237,0.2)',
   },
   avatar: {
     width: 44,
@@ -110,10 +149,22 @@ const cardStyles = StyleSheet.create({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export function ShutDiffusionScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<Nav>();
   const { width: screenWidth } = useWindowDimensions();
 
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Real DJ data from Firestore
+  const [allDJs, setAllDJs] = useState<User[]>([]);
+  const [loadingDJs, setLoadingDJs] = useState(true);
+
+  useEffect(() => {
+    userService
+      .getDJs()
+      .then(setAllDJs)
+      .catch((e) => console.warn('[Explorer] getDJs error:', e))
+      .finally(() => setLoadingDJs(false));
+  }, []);
 
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
@@ -134,13 +185,13 @@ export function ShutDiffusionScreen() {
   })();
 
   const djOptions = (() => {
-    let djs = DJ_PROFILES;
-    if (selectedCity) djs = getDJsForCity(selectedCity);
-    else if (selectedRegion) djs = getDJsForRegion(selectedRegion);
-    else if (selectedCountry) djs = getDJsForCountry(selectedCountry);
+    let djs = allDJs;
+    if (selectedCity) djs = getDJsForCity(allDJs, selectedCity);
+    else if (selectedRegion) djs = getDJsForRegion(allDJs, selectedRegion);
+    else if (selectedCountry) djs = getDJsForCountry(allDJs, selectedCountry);
     return [
       { id: 'all', label: 'Tous les DJs' },
-      ...djs.map((dj) => ({ id: dj.id, label: dj.name })),
+      ...djs.map((dj) => ({ id: dj.id, label: dj.artistName || dj.displayName })),
     ];
   })();
 
@@ -165,23 +216,23 @@ export function ShutDiffusionScreen() {
     setShowDJResults(false);
   }
 
-  function getFilteredDJs(): DJProfile[] {
+  function getFilteredDJs(): User[] {
     if (selectedDJ && selectedDJ !== 'all') {
-      const found = DJ_PROFILES.find((dj) => dj.id === selectedDJ);
+      const found = allDJs.find((dj) => dj.id === selectedDJ);
       return found ? [found] : [];
     }
-    if (selectedCity) return getDJsForCity(selectedCity);
-    if (selectedRegion) return getDJsForRegion(selectedRegion);
-    if (selectedCountry) return getDJsForCountry(selectedCountry);
-    return DJ_PROFILES;
+    if (selectedCity) return getDJsForCity(allDJs, selectedCity);
+    if (selectedRegion) return getDJsForRegion(allDJs, selectedRegion);
+    if (selectedCountry) return getDJsForCountry(allDJs, selectedCountry);
+    return allDJs;
   }
 
   function handleViewLives() {
     setShowDJResults(false);
     if (selectedCountry) {
-      navigation.navigate('Live', { countryCode: selectedCountry });
+      navigation.getParent()?.navigate('Live', { countryCode: selectedCountry });
     } else {
-      navigation.navigate('Live');
+      navigation.getParent()?.navigate('Live');
     }
   }
 
@@ -239,27 +290,27 @@ export function ShutDiffusionScreen() {
         />
 
         <SearchableDropdown
-          key={selectedCountry ?? 'no-country'}
           options={regionOptions}
           label="Choisir une région"
+          value={selectedRegion ?? undefined}
           onSelect={handleRegionSelect}
           disabled={!selectedCountry}
           leftIcon="map-outline"
         />
 
         <SearchableDropdown
-          key={(selectedRegion ?? selectedCountry ?? '') + '-city'}
           options={cityOptions}
           label="Choisir une ville"
+          value={selectedCity ?? undefined}
           onSelect={handleCitySelect}
           disabled={!selectedCountry}
           leftIcon="location-outline"
         />
 
         <SearchableDropdown
-          key={(selectedCity ?? selectedRegion ?? '') + '-dj'}
           options={djOptions}
           label="Choisir un DJ"
+          value={selectedDJ ?? undefined}
           onSelect={setSelectedDJ}
           disabled={false}
           leftIcon="person-outline"
@@ -293,17 +344,27 @@ export function ShutDiffusionScreen() {
             scrollViewRef.current?.scrollTo({ y: e.nativeEvent.layout.y, animated: true })
           }
         >
-          <Text style={styles.djResultsTitle}>
-            {filteredDJs.length} DJ{filteredDJs.length !== 1 ? 's' : ''} trouvé{filteredDJs.length !== 1 ? 's' : ''}
-          </Text>
-          {filteredDJs.length === 0 ? (
-            <Text style={styles.djResultsEmpty}>Aucun DJ trouvé pour cette sélection.</Text>
+          {loadingDJs ? (
+            <ActivityIndicator size="large" color={colors.accent} style={{ paddingVertical: spacing.xl }} />
           ) : (
-            <View style={styles.djList}>
-              {filteredDJs.map((dj) => (
-                <DJCard key={dj.id} dj={dj} />
-              ))}
-            </View>
+            <>
+              <Text style={styles.djResultsTitle}>
+                {filteredDJs.length} DJ{filteredDJs.length !== 1 ? 's' : ''} trouvé{filteredDJs.length !== 1 ? 's' : ''}
+              </Text>
+              {filteredDJs.length === 0 ? (
+                <Text style={styles.djResultsEmpty}>Aucun DJ trouvé pour cette sélection.</Text>
+              ) : (
+                <View style={styles.djList}>
+                  {filteredDJs.map((dj) => (
+                    <DJCard
+                      key={dj.id}
+                      dj={dj}
+                      onPress={() => navigation.navigate('PublicProfile', { userId: dj.id })}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
           )}
         </View>
       )}

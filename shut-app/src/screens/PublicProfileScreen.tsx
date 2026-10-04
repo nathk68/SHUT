@@ -1,40 +1,63 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { LiveStackParamList } from '../navigation/MainTabs';
 import { useAuth } from '../contexts/AuthContext';
-import { userService, followService } from '../services';
+import { userService, followService, replaysService, likesService } from '../services';
 import { ProfileHeader } from '../components/profile/ProfileHeader';
 import { GenreTagList } from '../components/profile/GenreTagList';
-import { SocialLinks } from '../components/profile/SocialLinks';
+import { ReplayList } from '../components/profile/ReplayList';
+
 import { colors, fonts, fontSize, spacing } from '../config/theme';
 import type { User } from '../types/user';
 
 type Route = RouteProp<LiveStackParamList, 'PublicProfile'>;
 
 export function PublicProfileScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<LiveStackParamList>>();
   const route = useRoute<Route>();
   const { userId } = route.params;
   const { user: currentUser } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [totalLikes, setTotalLikes] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     Promise.all([
       userService.getUserById(userId),
       currentUser ? followService.isFollowing(currentUser.id, userId) : Promise.resolve(false),
+      followService.getFollowers(userId),
+      followService.getFollowing(userId),
     ])
-      .then(([user, following]) => {
+      .then(([user, following, followers, followingList]) => {
         if (cancelled) return;
         setProfileUser(user);
         setIsFollowing(following);
+        setFollowersCount(followers.length);
+        setFollowingCount(followingList.length);
+        // Compute total likes for broadcasters
+        if (user?.role === 'broadcaster') {
+          replaysService.getReplaysByUser(user.id).then((replays) => {
+            const ids = replays.map((r) => r.id);
+            if (ids.length === 0 || cancelled) return;
+            likesService.getLikesCountForItems(ids).then((count) => {
+              if (!cancelled) setTotalLikes(count);
+            });
+          });
+        }
       })
-      .catch(() => {
+      .catch((e) => {
+        console.warn('[PublicProfile] load error:', e);
         if (!cancelled) setProfileUser(null);
       })
       .finally(() => {
@@ -51,12 +74,13 @@ export function PublicProfileScreen() {
     try {
       if (wasFollowing) {
         await followService.unfollow(currentUser.id, profileUser.id);
-        setProfileUser((prev) => prev ? { ...prev, followersCount: Math.max(0, (prev.followersCount ?? 1) - 1) } : prev);
+        setFollowersCount((c) => Math.max(0, c - 1));
       } else {
         await followService.follow(currentUser.id, profileUser.id);
-        setProfileUser((prev) => prev ? { ...prev, followersCount: (prev.followersCount ?? 0) + 1 } : prev);
+        setFollowersCount((c) => c + 1);
       }
-    } catch {
+    } catch (e) {
+      console.warn('[PublicProfile] follow error:', e);
       setIsFollowing(wasFollowing);
     } finally {
       setFollowLoading(false);
@@ -65,7 +89,7 @@ export function PublicProfileScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, { paddingTop: insets.top }]}>
         <ActivityIndicator color={colors.accent} />
       </View>
     );
@@ -73,24 +97,27 @@ export function PublicProfileScreen() {
 
   if (!profileUser) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.errorText}>Profil introuvable</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.md }]}>
       <ProfileHeader
-        user={profileUser}
+        user={{ ...profileUser, totalLikesCount: totalLikes, followersCount, followingCount }}
         isOwnProfile={currentUser?.id === profileUser.id}
         isFollowing={isFollowing}
         followLoading={followLoading}
         onFollowPress={handleFollowPress}
+        onFollowersTap={() => navigation.navigate('FollowList' as any, { userId: profileUser.id, mode: 'followers' })}
+        onFollowingTap={() => navigation.navigate('FollowList' as any, { userId: profileUser.id, mode: 'following' })}
       />
 
       {profileUser.bio ? (
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Bio</Text>
           <Text style={styles.bio}>{profileUser.bio}</Text>
         </View>
       ) : null}
@@ -102,11 +129,21 @@ export function PublicProfileScreen() {
         </View>
       ) : null}
 
-      {profileUser.socialLinks && Object.values(profileUser.socialLinks).some(Boolean) ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Réseaux</Text>
-          <SocialLinks links={profileUser.socialLinks} />
-        </View>
+      {profileUser.role === 'broadcaster' ? (
+        <ReplayList
+          userId={profileUser.id}
+          onPress={(replay) => {
+            (navigation as any).navigate('ReplayPlayer', {
+              playbackUrl: replay.playbackUrl,
+              title: replay.title || 'Rediffusion',
+              trimStart: replay.trimStart ?? 0,
+              trimEnd: replay.trimEnd ?? 0,
+              replayId: replay.id,
+              djUserId: replay.userId,
+              eventId: replay.eventId,
+            });
+          }}
+        />
       ) : null}
     </ScrollView>
   );

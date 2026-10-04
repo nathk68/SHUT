@@ -16,5 +16,5 @@ export interface IStreamingService {
   startStream(eventId: string, cameraId: string): Promise<StreamState>;
   stopStream(eventId: string): Promise<void>;
   // Ad-hoc stream (DJ tab — no pre-existing event required)
-  startQuickStream(userId: string): Promise<QuickStreamCredentials>;
+  startQuickStream(userId: string, options?: { record?: boolean }): Promise<QuickStreamCredentials>;
 }

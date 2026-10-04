@@ -49,4 +49,13 @@ export class FirebaseFavoritesService implements IFavoritesService {
     const snap = await getDocs(q);
     return !snap.empty;
   }
+
+  async getFavoritesCountForItem(eventId: string): Promise<number> {
+    const q = query(
+      collection(db, 'userFavorites'),
+      where('eventId', '==', eventId),
+    );
+    const snap = await getDocs(q);
+    return snap.size;
+  }
 }

@@ -57,6 +57,19 @@ jest.mock('../../services/_mock-data/countries', () => ({
     };
     return map[id] ?? [];
   },
+  getRegionsForCountry: (_code: string) => [],
+  getCitiesForRegion: (_id: string) => [],
+  getDJsForRegion: (_id: string) => [],
+  getDJsForCountry: (code: string) => {
+    const map: Record<string, { id: string; name: string; cityId: string; countryCode: string; genre: string }[]> = {
+      CH: [
+        { id: 'dj-1', name: 'Luca R', cityId: 'city-lausanne', countryCode: 'CH', genre: 'Techno' },
+        { id: 'dj-2', name: 'Sophie V', cityId: 'city-geneve', countryCode: 'CH', genre: 'House' },
+      ],
+      FR: [{ id: 'dj-3', name: 'K-NT', cityId: 'city-paris', countryCode: 'FR', genre: 'Minimal' }],
+    };
+    return map[code] ?? [];
+  },
   searchDJs: (query: string) => {
     const djs = [
       { id: 'dj-1', name: 'Luca R', cityId: 'city-lausanne', countryCode: 'CH', genre: 'Techno' },

@@ -5,7 +5,7 @@ import {
   getDocs,
   addDoc,
   deleteDoc,
-  runTransaction,
+  updateDoc,
   doc,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -21,15 +21,18 @@ export class FirebaseFollowService implements IFollowService {
     );
     if (!existing.empty) return;
 
-    await runTransaction(db, async (tx) => {
-      const followerRef = doc(db, 'users', followerId);
-      const followeeRef = doc(db, 'users', followeeId);
-      const [followerSnap, followeeSnap] = await Promise.all([tx.get(followerRef), tx.get(followeeRef)]);
-      tx.update(followerRef, { followingCount: (followerSnap.data()?.followingCount ?? 0) + 1 });
-      tx.update(followeeRef, { followersCount: (followeeSnap.data()?.followersCount ?? 0) + 1 });
-    });
+    // Only update current user's followingCount (own doc → allowed by rules).
+    // The followee's followersCount should be maintained by a Cloud Function
+    // or computed from the userFollows collection on read.
+    const followerRef = doc(db, 'users', followerId);
+    const followerSnap = await getDocs(query(this.col, where('followerId', '==', followerId)));
+    const newFollowingCount = followerSnap.size + 1;
 
     await addDoc(this.col, { followerId, followeeId, followedAt: serverTimestamp() });
+    // Best-effort update of own counter
+    try {
+      await updateDoc(followerRef, { followingCount: newFollowingCount });
+    } catch { /* counter update failed, not critical */ }
   }
 
   async unfollow(followerId: string, followeeId: string): Promise<void> {
@@ -38,15 +41,14 @@ export class FirebaseFollowService implements IFollowService {
     );
     if (snap.empty) return;
 
-    await runTransaction(db, async (tx) => {
-      const followerRef = doc(db, 'users', followerId);
-      const followeeRef = doc(db, 'users', followeeId);
-      const [followerSnap, followeeSnap] = await Promise.all([tx.get(followerRef), tx.get(followeeRef)]);
-      tx.update(followerRef, { followingCount: Math.max(0, (followerSnap.data()?.followingCount ?? 1) - 1) });
-      tx.update(followeeRef, { followersCount: Math.max(0, (followeeSnap.data()?.followersCount ?? 1) - 1) });
-    });
-
     for (const d of snap.docs) await deleteDoc(d.ref);
+
+    // Best-effort update of own counter
+    try {
+      const followerRef = doc(db, 'users', followerId);
+      const remaining = await getDocs(query(this.col, where('followerId', '==', followerId)));
+      await updateDoc(followerRef, { followingCount: remaining.size });
+    } catch { /* counter update failed, not critical */ }
   }
 
   async isFollowing(followerId: string, followeeId: string): Promise<boolean> {

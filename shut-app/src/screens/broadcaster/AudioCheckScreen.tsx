@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Alert,
   Animated,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import {
   useAudioRecorder,
+  useAudioRecorderState,
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
   RecordingPresets,
@@ -20,7 +21,7 @@ import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/the
 
 // ─── Audio source options ──────────────────────────────────────────────────────
 
-type AudioSourceId = 'mixer-osmo' | 'usb-interface' | 'builtin';
+type AudioSourceId = 'mixer-camera' | 'usb-interface' | 'builtin';
 
 interface AudioOption {
   id: AudioSourceId;
@@ -29,27 +30,19 @@ interface AudioOption {
   badge: string;
   badgeColor: string;
   description: string;
-  steps: string[];
+  steps?: string[];
   warning?: string;
 }
 
 const AUDIO_OPTIONS: AudioOption[] = [
   {
-    id: 'mixer-osmo',
-    icon: 'git-network-outline',
-    label: 'Table de mix → Osmo Pocket 3',
+    id: 'mixer-camera',
+    icon: 'videocam-outline',
+    label: 'Table de mix → Caméra',
     badge: 'RECOMMANDÉ',
     badgeColor: colors.accent,
     description:
-      "Sortie BOOTH ou REC de ta table de mix → câble TRS 3.5mm → entrée mic de l'Osmo. Son ultra-propre, zéro latence.",
-    steps: [
-      "Branche un câble TRS 3.5mm sur la sortie BOOTH ou REC de ta table de mix",
-      "Connecte l'autre extrémité à l'entrée mic de l'Osmo Pocket 3",
-      "Règle le volume de sortie de la table à 30–40% max pour éviter la saturation",
-      "Dans DJI Mimo, onglet Live → vérifie le niveau audio dans les réglages",
-    ],
-    warning:
-      "La sortie ligne d'une table de mix est bien plus forte qu'un micro. Commence à 30% et monte doucement.",
+      "Connecte la sortie BOOTH ou REC de ta table à ta caméra. Choisis ton modèle ci-dessous pour le tutoriel complet.",
   },
   {
     id: 'usb-interface',
@@ -69,9 +62,7 @@ const AUDIO_OPTIONS: AudioOption[] = [
   {
     id: 'builtin',
     icon: 'mic-outline',
-    label: 'Micro intégré iPhone / Osmo',
-    badge: 'TEST SEULEMENT',
-    badgeColor: colors.textMuted,
+    label: 'Micro intégré iPhone',
     description:
       "Qualité insuffisante pour un live DJ professionnel. Utilise cette option uniquement pour tester l'app.",
     steps: [
@@ -81,38 +72,181 @@ const AUDIO_OPTIONS: AudioOption[] = [
   },
 ];
 
+// ─── Camera configs ────────────────────────────────────────────────────────────
+
+interface CameraConfig {
+  id: string;
+  name: string;
+  brand: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  compatible: boolean;
+  incompatibleReason?: string;
+  appName?: string;
+  steps?: string[];
+  warning?: string;
+}
+
+const CAMERAS: CameraConfig[] = [
+  {
+    id: 'dji-pocket-3',
+    name: 'Osmo Pocket 3',
+    brand: 'DJI',
+    icon: 'videocam-outline',
+    compatible: true,
+    appName: 'DJI Mimo',
+    steps: [
+      "Branche un câble TRS 3.5mm sur la sortie BOOTH ou REC de ta table de mix",
+      "Connecte l'autre extrémité à l'entrée mic de l'Osmo Pocket 3",
+      "Règle le volume de sortie à 30–40% pour éviter la saturation",
+      "Ouvre DJI Mimo → onglet Live → \"RTMP personnalisé\"",
+      "Colle l'URL complète SHUT dans le champ RTMP, puis démarre",
+    ],
+    warning: "La sortie ligne est bien plus forte qu'un micro. Commence à 30% et monte doucement.",
+  },
+  {
+    id: 'dji-pocket-2',
+    name: 'Osmo Pocket 2',
+    brand: 'DJI',
+    icon: 'videocam-outline',
+    compatible: true,
+    appName: 'DJI Mimo',
+    steps: [
+      "Branche un câble TRS 3.5mm sur la sortie BOOTH ou REC de ta table de mix",
+      "Connecte l'autre extrémité à l'entrée mic de l'Osmo Pocket 2",
+      "Règle le volume de sortie à 30–40% pour éviter la saturation",
+      "Ouvre DJI Mimo → onglet Live → \"RTMP personnalisé\"",
+      "Colle l'URL complète SHUT dans le champ RTMP, puis démarre",
+    ],
+    warning: "Commence à 30% et monte doucement pour éviter la saturation.",
+  },
+  {
+    id: 'dji-action-4',
+    name: 'Osmo Action 4',
+    brand: 'DJI',
+    icon: 'videocam-outline',
+    compatible: true,
+    appName: 'DJI Mimo',
+    steps: [
+      "Connecte la sortie BOOTH/REC de ta table sur l'entrée micro de l'Action 4",
+      "Ouvre DJI Mimo → onglet Live → \"RTMP personnalisé\"",
+      "Colle l'URL complète SHUT dans le champ RTMP",
+      "Vérifie le niveau audio dans les réglages Mimo, puis démarre",
+    ],
+  },
+  {
+    id: 'dji-action-3',
+    name: 'Osmo Action 3',
+    brand: 'DJI',
+    icon: 'videocam-outline',
+    compatible: true,
+    appName: 'DJI Mimo',
+    steps: [
+      "Connecte la sortie BOOTH/REC de ta table sur l'entrée micro de l'Action 3",
+      "Ouvre DJI Mimo → onglet Live → \"RTMP personnalisé\"",
+      "Colle l'URL complète SHUT dans le champ RTMP",
+      "Vérifie le niveau audio dans les réglages Mimo, puis démarre",
+    ],
+  },
+  {
+    id: 'iphone',
+    name: 'iPhone (caméra)',
+    brand: 'Apple',
+    icon: 'phone-portrait-outline',
+    compatible: true,
+    appName: 'Larix Broadcaster',
+    steps: [
+      "Installe Larix Broadcaster sur un 2ème iPhone (App Store, gratuit)",
+      "Branche la sortie BOOTH/REC de ta table sur l'entrée jack de l'iPhone (adaptateur requis)",
+      "Dans Larix : Réglages → Connexions → + → colle l'URL RTMP complète SHUT",
+      "Sélectionne la caméra et la source audio (entrée jack), puis démarre",
+    ],
+    warning: "L'entrée jack et la charge USB-C/Lightning ne sont pas simultanées. Pense à charger le téléphone avant.",
+  },
+  {
+    id: 'gopro',
+    name: 'Hero 9 / 10 / 11 / 12 / 13',
+    brand: 'GoPro',
+    icon: 'camera-outline',
+    compatible: true,
+    appName: 'GoPro Labs',
+    steps: [
+      "Télécharge le firmware GoPro Labs sur gopro.com/labs (gratuit, officiel)",
+      "Installe-le sur ta GoPro via la carte SD selon les instructions du site",
+      "Génère ton URL RTMP SHUT dans l'écran suivant",
+      "Ouvre l'app GoPro Quik → Labs QR → génère un QR code avec ton URL RTMP",
+      "Sur la GoPro : maintiens le bouton Mode → scanne le QR code avec l'appareil",
+      "Démarre le live depuis la GoPro — elle stream vers SHUT",
+    ],
+    warning: "GoPro Labs est un firmware expérimental officiel. Il ne couvre pas les modèles Hero 8 et antérieurs.",
+  },
+  {
+    id: 'sony',
+    name: 'Sony ZV-1 / ZV-E10',
+    brand: 'Sony',
+    icon: 'camera-outline',
+    compatible: false,
+    incompatibleReason: "Les appareils Sony ne proposent pas de streaming RTMP vers des serveurs tiers. Non compatible avec SHUT.",
+  },
+  {
+    id: 'dslr',
+    name: 'Reflex / Hybride (Canon, Nikon…)',
+    brand: 'Autre',
+    icon: 'camera-outline',
+    compatible: false,
+    incompatibleReason: "Les appareils photo ne supportent généralement pas le streaming RTMP direct. Tu peux utiliser un PC avec OBS entre les deux.",
+  },
+];
+
+// ─── Recording options with explicit metering interval ────────────────────────
+
+// meteringIntervalMillis forces the native module to emit metering events
+const RECORDING_OPTIONS: any = {
+  ...RecordingPresets.HIGH_QUALITY,
+  isMeteringEnabled: true,
+  android: { ...RecordingPresets.HIGH_QUALITY.android, meteringIntervalMillis: 80 },
+  ios: { ...RecordingPresets.HIGH_QUALITY.ios, meteringIntervalMillis: 80 },
+};
+
+function formatInputLabel(input: { name: string; type?: string } | undefined): string {
+  if (!input) return 'Micro intégré iPhone';
+  const t = (input.type ?? '').toLowerCase();
+  if (t.includes('usb')) return `Interface USB · ${input.name}`;
+  if (t.includes('bluetooth')) return `Bluetooth · ${input.name}`;
+  if (t.includes('wired') || t.includes('headset')) return `Micro filaire · ${input.name}`;
+  if (t.includes('builtin') || t.includes('built')) return 'Micro intégré iPhone';
+  return input.name;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AudioCheckScreen() {
   const navigation = useNavigation<any>();
-  const [selectedSource, setSelectedSource] = useState<AudioSourceId>('mixer-osmo');
+  const [selectedSource, setSelectedSource] = useState<AudioSourceId>('mixer-camera');
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+  const [cameraPickerOpen, setCameraPickerOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [signalDetected, setSignalDetected] = useState(false);
+  const [activeInputLabel, setActiveInputLabel] = useState('Micro intégré iPhone');
   const meterAnim = useRef(new Animated.Value(0)).current;
 
-  // expo-audio hook — statusListener fires on each metering update
-  const recorder = useAudioRecorder(
-    { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true },
-    (status) => {
-      if (!status.isRecording || status.metering === undefined) return;
-      // metering: -160 to 0 dBFS — map -60..0 to 0..1
-      const normalized = Math.max(0, Math.min(1, (status.metering + 60) / 60));
-      Animated.timing(meterAnim, {
-        toValue: normalized,
-        duration: 80,
-        useNativeDriver: false,
-      }).start();
-      if (normalized > 0.04) setSignalDetected(true);
-    },
-  );
+  // ─── VU meter ───────────────────────────────────────────────────────────────
+
+  const recorder = useAudioRecorder(RECORDING_OPTIONS);
+
+  // useAudioRecorderState polls the native recorder at the given interval (ms)
+  // and returns a fresh RecordingStatus including metering
+  const recorderState = useAudioRecorderState(recorder, 80);
+
+  useEffect(() => {
+    if (!isTesting || !recorderState.isRecording || recorderState.metering === undefined) return;
+    const normalized = Math.max(0, Math.min(1, (recorderState.metering + 60) / 60));
+    Animated.timing(meterAnim, { toValue: normalized, duration: 80, useNativeDriver: false }).start();
+    if (normalized > 0.04) setSignalDetected(true);
+  }, [isTesting, recorderState, meterAnim]);
 
   const stopTest = useCallback(async () => {
-    try {
-      await recorder.stop();
-    } catch {}
-    try {
-      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: false });
-    } catch {}
+    try { await recorder.stop(); } catch {}
+    try { await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: false }); } catch {}
     setIsTesting(false);
     Animated.timing(meterAnim, { toValue: 0, duration: 300, useNativeDriver: false }).start();
   }, [recorder, meterAnim]);
@@ -121,32 +255,47 @@ export function AudioCheckScreen() {
     try {
       const { granted } = await requestRecordingPermissionsAsync();
       if (!granted) {
-        Alert.alert(
-          'Permission refusée',
-          "L'accès au micro est nécessaire pour tester le niveau audio.",
-        );
+        Alert.alert('Permission refusée', "L'accès au micro est nécessaire pour tester le niveau audio.");
         return;
       }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
+
+      // Detect active audio input via native audio session
+      try {
+        const input = (recorder as any).getCurrentInput?.();
+        setActiveInputLabel(formatInputLabel(input));
+      } catch {}
+
       recorder.record();
       setIsTesting(true);
       setSignalDetected(false);
     } catch {
-      Alert.alert(
-        'Erreur',
-        "Impossible d'accéder au micro. Vérifie les permissions dans les réglages iOS.",
-      );
+      Alert.alert('Erreur', "Impossible d'accéder au micro. Vérifie les permissions dans les réglages iOS.");
     }
   }
+
+  // ─── Event handlers ─────────────────────────────────────────────────────────
 
   function handleSelectSource(id: AudioSourceId) {
     if (isTesting) stopTest();
     setSelectedSource(id);
     setSignalDetected(false);
+    if (id !== 'mixer-camera') {
+      setSelectedCameraId(null);
+      setCameraPickerOpen(false);
+    }
   }
 
-  const selectedOption = AUDIO_OPTIONS.find((o) => o.id === selectedSource)!;
+  function handleSelectCamera(cameraId: string) {
+    setSelectedCameraId(cameraId);
+    setCameraPickerOpen(false);
+  }
+
+  // ─── Derived values ──────────────────────────────────────────────────────────
+
+  const selectedCamera = selectedCameraId ? CAMERAS.find((c) => c.id === selectedCameraId) : null;
+  const canContinue = selectedSource !== 'mixer-camera' || selectedCamera?.compatible === true;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -191,8 +340,129 @@ export function AudioCheckScreen() {
               </View>
             </View>
 
-            {/* Steps — only shown when selected */}
-            {isSelected && (
+            {/* Camera picker — only for mixer-camera when selected */}
+            {isSelected && option.id === 'mixer-camera' && (
+              <View style={styles.stepsContainer}>
+                <Text style={styles.cameraPickerLabel}>Ta caméra</Text>
+
+                {/* Dropdown trigger */}
+                <Pressable
+                  onPress={() => setCameraPickerOpen((v) => !v)}
+                  style={styles.cameraPickerRow}
+                >
+                  <View style={styles.cameraPickerLeft}>
+                    <Ionicons
+                      name={selectedCamera ? selectedCamera.icon : 'camera-outline'}
+                      size={15}
+                      color={selectedCamera ? colors.accentLight : colors.textMuted}
+                    />
+                    <Text
+                      style={[
+                        styles.cameraPickerValue,
+                        !selectedCamera && styles.cameraPickerPlaceholder,
+                      ]}
+                    >
+                      {selectedCamera
+                        ? `${selectedCamera.brand} ${selectedCamera.name}`
+                        : 'Sélectionne ta caméra'}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={cameraPickerOpen ? 'chevron-up' : 'chevron-down'}
+                    size={15}
+                    color={colors.textMuted}
+                  />
+                </Pressable>
+
+                {/* Inline camera list */}
+                {cameraPickerOpen && (
+                  <View style={styles.cameraList}>
+                    {CAMERAS.map((cam) => (
+                      <Pressable
+                        key={cam.id}
+                        onPress={() => handleSelectCamera(cam.id)}
+                        style={[
+                          styles.cameraListItem,
+                          selectedCameraId === cam.id && styles.cameraListItemSelected,
+                        ]}
+                      >
+                        <View style={styles.cameraListItemLeft}>
+                          <Ionicons
+                            name={cam.icon}
+                            size={14}
+                            color={cam.compatible ? colors.textSecondary : colors.textMuted}
+                          />
+                          <Text
+                            style={[
+                              styles.cameraListItemName,
+                              !cam.compatible && styles.cameraListItemNameMuted,
+                            ]}
+                          >
+                            {cam.brand} {cam.name}
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.compatBadge,
+                            { backgroundColor: cam.compatible ? '#22c55e22' : '#ef444422' },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.compatBadgeText,
+                              { color: cam.compatible ? '#22c55e' : '#ef4444' },
+                            ]}
+                          >
+                            {cam.compatible ? '✓' : '✗'}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+
+                {/* Tutorial or incompatible message for selected camera */}
+                {selectedCamera && !cameraPickerOpen && (
+                  selectedCamera.compatible ? (
+                    <View style={styles.cameraTutorial}>
+                      {selectedCamera.appName && (
+                        <View style={styles.cameraTutorialHeader}>
+                          <Ionicons name="phone-portrait-outline" size={13} color={colors.accentLight} />
+                          <Text style={styles.cameraTutorialHeaderText}>
+                            App requise : {selectedCamera.appName}
+                          </Text>
+                        </View>
+                      )}
+                      {selectedCamera.steps!.map((step, i) => (
+                        <View key={i} style={styles.stepRow}>
+                          <View style={styles.stepNumberCircle}>
+                            <Text style={styles.stepNumberText}>{i + 1}</Text>
+                          </View>
+                          <Text style={styles.stepText}>{step}</Text>
+                        </View>
+                      ))}
+                      {selectedCamera.warning && (
+                        <View style={styles.warningBox}>
+                          <Ionicons name="warning-outline" size={15} color={colors.warning} />
+                          <Text style={styles.warningText}>{selectedCamera.warning}</Text>
+                        </View>
+                      )}
+                    </View>
+                  ) : (
+                    <View style={styles.incompatibleBox}>
+                      <Ionicons name="close-circle-outline" size={20} color="#ef4444" />
+                      <View style={styles.incompatibleContent}>
+                        <Text style={styles.incompatibleTitle}>Désolé, pas compatible</Text>
+                        <Text style={styles.incompatibleText}>{selectedCamera.incompatibleReason}</Text>
+                      </View>
+                    </View>
+                  )
+                )}
+              </View>
+            )}
+
+            {/* Steps for non-camera options */}
+            {isSelected && option.id !== 'mixer-camera' && option.steps && (
               <View style={styles.stepsContainer}>
                 {option.steps.map((step, i) => (
                   <View key={i} style={styles.stepRow}>
@@ -213,6 +483,25 @@ export function AudioCheckScreen() {
           </Pressable>
         );
       })}
+
+      {/* Active audio input indicator */}
+      <View style={styles.activeInputBanner}>
+        <Ionicons
+          name="mic-outline"
+          size={13}
+          color={isTesting && signalDetected ? '#22c55e' : colors.textMuted}
+        />
+        <Text
+          style={[
+            styles.activeInputText,
+            isTesting && signalDetected && styles.activeInputTextConfirmed,
+          ]}
+        >
+          {isTesting && signalDetected
+            ? `Signal confirmé · ${activeInputLabel}`
+            : `Entrée active : ${activeInputLabel}`}
+        </Text>
+      </View>
 
       {/* VU-meter section */}
       <View style={styles.vuSection}>
@@ -281,8 +570,17 @@ export function AudioCheckScreen() {
 
       {/* Continue button */}
       <Pressable
-        onPress={() => navigation.navigate('QuickStream')}
-        style={styles.continueButton}
+        onPress={() => {
+          if (!canContinue) {
+            Alert.alert(
+              'Caméra incompatible',
+              "Cette caméra n'est pas compatible avec SHUT. Choisis une autre caméra ou une autre option audio.",
+            );
+            return;
+          }
+          navigation.navigate('QuickStream', { cameraId: selectedCameraId ?? undefined });
+        }}
+        style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
       >
         <Text style={styles.continueButtonText}>Configurer la caméra →</Text>
       </Pressable>
@@ -381,6 +679,128 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     lineHeight: 16,
   },
+  // ── Camera picker ────────────────────────────────────────────────────────────
+  cameraPickerLabel: {
+    color: colors.textMuted,
+    fontFamily: fonts.body.medium,
+    fontSize: fontSize.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.xs,
+  },
+  cameraPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  cameraPickerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cameraPickerValue: {
+    color: colors.textPrimary,
+    fontFamily: fonts.body.medium,
+    fontSize: fontSize.sm,
+  },
+  cameraPickerPlaceholder: {
+    color: colors.textMuted,
+    fontFamily: fonts.body.regular,
+  },
+  cameraList: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    marginBottom: spacing.sm,
+    overflow: 'hidden',
+  },
+  cameraListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  cameraListItemSelected: {
+    backgroundColor: `${colors.accent}18`,
+  },
+  cameraListItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cameraListItemName: {
+    color: colors.textSecondary,
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.sm,
+  },
+  cameraListItemNameMuted: {
+    color: colors.textMuted,
+  },
+  compatBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compatBadgeText: {
+    fontFamily: fonts.body.bold,
+    fontSize: 11,
+  },
+  // ── Camera tutorial ──────────────────────────────────────────────────────────
+  cameraTutorial: {
+    gap: spacing.sm,
+  },
+  cameraTutorialHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.xs,
+  },
+  cameraTutorialHeaderText: {
+    color: colors.accentLight,
+    fontFamily: fonts.body.medium,
+    fontSize: fontSize.xs,
+  },
+  // ── Incompatible ─────────────────────────────────────────────────────────────
+  incompatibleBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: '#ef444412',
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: '#ef444425',
+    padding: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  incompatibleContent: {
+    flex: 1,
+  },
+  incompatibleTitle: {
+    color: '#ef4444',
+    fontFamily: fonts.body.semiBold,
+    fontSize: fontSize.sm,
+    marginBottom: 2,
+  },
+  incompatibleText: {
+    color: '#ef444499',
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    lineHeight: 16,
+  },
+  // ── Steps (shared) ───────────────────────────────────────────────────────────
   stepsContainer: {
     marginTop: spacing.md,
     paddingTop: spacing.md,
@@ -433,8 +853,26 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     lineHeight: 16,
   },
+  // ── Active input indicator ────────────────────────────────────────────────────
+  activeInputBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.xs,
+  },
+  activeInputText: {
+    color: colors.textMuted,
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+  },
+  activeInputTextConfirmed: {
+    color: '#22c55e',
+  },
+  // ── VU meter ─────────────────────────────────────────────────────────────────
   vuSection: {
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: borderRadius.lg,
     borderWidth: 1,
@@ -527,11 +965,15 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     letterSpacing: 0.5,
   },
+  // ── Continue button ───────────────────────────────────────────────────────────
   continueButton: {
     backgroundColor: colors.accent,
     borderRadius: 100,
     paddingVertical: spacing.md,
     alignItems: 'center',
+  },
+  continueButtonDisabled: {
+    opacity: 0.4,
   },
   continueButtonText: {
     color: colors.white,

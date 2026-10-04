@@ -103,4 +103,18 @@ export class FirebaseEventsService implements IEventsService {
       callback(events);
     });
   }
+
+  onLiveEvents(callback: (events: LiveEvent[]) => void): () => void {
+    const q = query(collection(db, COLLECTION), where('status', '==', 'live'));
+    return onSnapshot(q, (snapshot) => {
+      const events = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as LiveEvent));
+      callback(events);
+    });
+  }
+
+  onEventChange(id: string, callback: (event: LiveEvent | null) => void): () => void {
+    return onSnapshot(doc(db, COLLECTION, id), (snap) => {
+      callback(snap.exists() ? ({ id: snap.id, ...snap.data() } as LiveEvent) : null);
+    });
+  }
 }

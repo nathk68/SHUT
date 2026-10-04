@@ -1,81 +1,93 @@
-/**
- * TDD — Tests écrits AVANT l'implémentation de src/services/_mock-data/countries.ts
- * Ces tests définissent le contrat attendu des données pays/villes/DJs.
- */
-
 import {
   COUNTRIES,
-  CITIES,
   DJ_PROFILES,
   getCitiesForCountry,
+  getCitiesForRegion,
+  getRegionsForCountry,
   getDJsForCity,
+  getDJsForCountry,
   searchDJs,
   type Country,
-  type City,
   type DJProfile,
   type MusicGenre,
 } from '../../services/_mock-data/countries';
 
-describe('countries mock data', () => {
-  // ─── COUNTRIES ───────────────────────────────────────────────────────────
-
+describe('countries data (country-state-city)', () => {
   describe('COUNTRIES', () => {
-    it('contient au moins un pays', () => {
-      expect(COUNTRIES.length).toBeGreaterThan(0);
+    it('contient tous les pays du monde (>200)', () => {
+      expect(COUNTRIES.length).toBeGreaterThan(200);
     });
 
     it('chaque pays a les champs requis', () => {
-      COUNTRIES.forEach((country: Country) => {
-        expect(typeof country.code).toBe('string');
-        expect(country.code.length).toBeGreaterThan(0);
-        expect(typeof country.name).toBe('string');
-        expect(country.name.length).toBeGreaterThan(0);
-        expect(typeof country.flag).toBe('string');
+      COUNTRIES.forEach((c: Country) => {
+        expect(typeof c.code).toBe('string');
+        expect(c.code.length).toBeGreaterThan(0);
+        expect(typeof c.name).toBe('string');
+        expect(c.name.length).toBeGreaterThan(0);
       });
     });
 
-    it('les codes pays sont uniques', () => {
+    it('codes uniques', () => {
       const codes = COUNTRIES.map((c) => c.code);
       expect(new Set(codes).size).toBe(codes.length);
     });
 
-    it('contient la Suisse (pays partenaire de lancement)', () => {
-      const ch = COUNTRIES.find((c) => c.code === 'CH');
-      expect(ch).toBeDefined();
-      expect(ch?.name).toBe('Suisse');
+    it('contient les pays clés en français', () => {
+      const map = Object.fromEntries(COUNTRIES.map((c) => [c.code, c.name]));
+      expect(map['CH']).toBe('Suisse');
+      expect(map['FR']).toBe('France');
+      expect(map['DE']).toBe('Allemagne');
+      expect(map['CA']).toBe('Canada');
+      expect(map['US']).toBe('États-Unis');
     });
   });
 
-  // ─── CITIES ──────────────────────────────────────────────────────────────
-
-  describe('CITIES', () => {
-    it('contient au moins une ville', () => {
-      expect(CITIES.length).toBeGreaterThan(0);
+  describe('getRegionsForCountry', () => {
+    it('retourne les régions françaises (>10)', () => {
+      const regions = getRegionsForCountry('FR');
+      expect(regions.length).toBeGreaterThan(10);
+      regions.forEach((r) => expect(r.countryCode).toBe('FR'));
     });
 
-    it('chaque ville a les champs requis', () => {
-      CITIES.forEach((city: City) => {
-        expect(typeof city.id).toBe('string');
-        expect(city.id.length).toBeGreaterThan(0);
-        expect(typeof city.name).toBe('string');
-        expect(typeof city.countryCode).toBe('string');
-      });
+    it('retourne les provinces canadiennes', () => {
+      const regions = getRegionsForCountry('CA');
+      expect(regions.length).toBeGreaterThan(0);
     });
 
-    it('chaque ville référence un pays valide', () => {
-      const countryCodes = new Set(COUNTRIES.map((c) => c.code));
-      CITIES.forEach((city) => {
-        expect(countryCodes.has(city.countryCode)).toBe(true);
-      });
-    });
-
-    it('les IDs de villes sont uniques', () => {
-      const ids = CITIES.map((c) => c.id);
-      expect(new Set(ids).size).toBe(ids.length);
+    it('tableau vide pour un code inconnu', () => {
+      expect(getRegionsForCountry('XX')).toEqual([]);
     });
   });
 
-  // ─── DJ_PROFILES ─────────────────────────────────────────────────────────
+  describe('getCitiesForRegion', () => {
+    it('retourne des villes pour Grand Est (FR__GES) dont Nancy', () => {
+      const cities = getCitiesForRegion('FR__GES');
+      const names = cities.map((c) => c.name);
+      expect(names).toContain('Nancy');
+      expect(names).toContain('Strasbourg');
+    });
+
+    it('retourne des villes pour Ontario (CA__ON) dont Toronto', () => {
+      const cities = getCitiesForRegion('CA__ON');
+      expect(cities.some((c) => c.name === 'Toronto')).toBe(true);
+    });
+
+    it('tableau vide pour un ID inconnu', () => {
+      expect(getCitiesForRegion('XX__UNKNOWN')).toEqual([]);
+    });
+  });
+
+  describe('getCitiesForCountry', () => {
+    it('retourne les villes suisses', () => {
+      const cities = getCitiesForCountry('CH');
+      expect(cities.length).toBeGreaterThan(0);
+      cities.forEach((c) => expect(c.countryCode).toBe('CH'));
+    });
+
+    it('tableau vide pour un code inconnu', () => {
+      expect(getCitiesForCountry('XX')).toEqual([]);
+    });
+  });
 
   describe('DJ_PROFILES', () => {
     it('contient au moins un DJ', () => {
@@ -83,94 +95,58 @@ describe('countries mock data', () => {
     });
 
     it('chaque DJ a les champs requis', () => {
+      const validGenres: MusicGenre[] = ['Techno', 'House', 'Progressive', 'Minimal', 'Drum & Bass', 'Trance', 'Other'];
       DJ_PROFILES.forEach((dj: DJProfile) => {
         expect(typeof dj.id).toBe('string');
         expect(typeof dj.name).toBe('string');
-        expect(dj.name.length).toBeGreaterThan(0);
-        expect(typeof dj.cityId).toBe('string');
+        expect(typeof dj.cityName).toBe('string');
         expect(typeof dj.countryCode).toBe('string');
-        expect(typeof dj.genre).toBe('string');
-      });
-    });
-
-    it('chaque DJ référence une ville valide', () => {
-      const cityIds = new Set(CITIES.map((c) => c.id));
-      DJ_PROFILES.forEach((dj) => {
-        expect(cityIds.has(dj.cityId)).toBe(true);
+        expect(validGenres).toContain(dj.genre);
       });
     });
 
     it('chaque DJ référence un pays valide', () => {
-      const countryCodes = new Set(COUNTRIES.map((c) => c.code));
-      DJ_PROFILES.forEach((dj) => {
-        expect(countryCodes.has(dj.countryCode)).toBe(true);
-      });
-    });
-
-    it('les genres sont parmi les valeurs attendues', () => {
-      const validGenres: MusicGenre[] = ['Techno', 'House', 'Progressive', 'Minimal', 'Other'];
-      DJ_PROFILES.forEach((dj) => {
-        expect(validGenres).toContain(dj.genre);
-      });
+      const codes = new Set(COUNTRIES.map((c) => c.code));
+      DJ_PROFILES.forEach((dj) => expect(codes.has(dj.countryCode)).toBe(true));
     });
   });
-
-  // ─── getCitiesForCountry ──────────────────────────────────────────────────
-
-  describe('getCitiesForCountry', () => {
-    it('retourne uniquement les villes du pays donné', () => {
-      const ch = COUNTRIES.find((c) => c.code === 'CH');
-      if (!ch) return;
-      const cities = getCitiesForCountry(ch.code);
-      expect(cities.length).toBeGreaterThan(0);
-      cities.forEach((city) => {
-        expect(city.countryCode).toBe(ch.code);
-      });
-    });
-
-    it('retourne un tableau vide pour un code inconnu', () => {
-      const cities = getCitiesForCountry('XX');
-      expect(cities).toEqual([]);
-    });
-  });
-
-  // ─── getDJsForCity ────────────────────────────────────────────────────────
 
   describe('getDJsForCity', () => {
-    it('retourne uniquement les DJs de la ville donnée', () => {
-      const city = CITIES[0];
-      const djs = getDJsForCity(city.id);
-      djs.forEach((dj) => {
-        expect(dj.cityId).toBe(city.id);
-      });
+    it('retourne Rainer K pour Berlin (DE__BE__Berlin)', () => {
+      const djs = getDJsForCity('DE__BE__Berlin');
+      expect(djs.some((dj) => dj.name === 'Rainer K')).toBe(true);
     });
 
-    it('retourne un tableau vide pour un ID inconnu', () => {
-      const djs = getDJsForCity('city-inexistante');
-      expect(djs).toEqual([]);
+    it('tableau vide pour un ID inconnu', () => {
+      expect(getDJsForCity('XX__XX__Inexistante')).toEqual([]);
     });
   });
 
-  // ─── searchDJs ────────────────────────────────────────────────────────────
+  describe('getDJsForCountry', () => {
+    it('retourne des DJs français', () => {
+      const djs = getDJsForCountry('FR');
+      expect(djs.length).toBeGreaterThan(0);
+      djs.forEach((dj) => expect(dj.countryCode).toBe('FR'));
+    });
+
+    it('tableau vide pour un code inconnu', () => {
+      expect(getDJsForCountry('XX')).toEqual([]);
+    });
+  });
 
   describe('searchDJs', () => {
-    it('retourne tous les DJs quand la recherche est vide', () => {
-      const result = searchDJs('');
-      expect(result.length).toBe(DJ_PROFILES.length);
+    it('retourne tous les DJs si vide', () => {
+      expect(searchDJs('').length).toBe(DJ_PROFILES.length);
     });
 
-    it('filtre les DJs par nom (insensible à la casse)', () => {
-      const firstName = DJ_PROFILES[0].name.split(' ')[0].toLowerCase();
-      const result = searchDJs(firstName);
+    it('filtre par nom (insensible à la casse)', () => {
+      const result = searchDJs('luca');
       expect(result.length).toBeGreaterThan(0);
-      result.forEach((dj) => {
-        expect(dj.name.toLowerCase()).toContain(firstName);
-      });
+      result.forEach((dj) => expect(dj.name.toLowerCase()).toContain('luca'));
     });
 
-    it('retourne un tableau vide si aucun DJ ne correspond', () => {
-      const result = searchDJs('zzzinexistantzzzz');
-      expect(result).toEqual([]);
+    it('tableau vide si aucun match', () => {
+      expect(searchDJs('zzzinexistantzzzz')).toEqual([]);
     });
   });
 });

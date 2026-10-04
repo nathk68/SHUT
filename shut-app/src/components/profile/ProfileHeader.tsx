@@ -4,6 +4,7 @@ import type { User } from '../../types/user';
 import { AvatarPicker } from './AvatarPicker';
 import { ExperienceTag } from './ExperienceTag';
 import { FollowButton } from './FollowButton';
+import { SocialLinks } from './SocialLinks';
 import { colors, fonts, fontSize, spacing } from '../../config/theme';
 
 interface Props {
@@ -14,10 +15,13 @@ interface Props {
   onEditPress?: () => void;
   onFollowPress?: () => void;
   onAvatarPick?: (uri: string) => void;
+  onFollowersTap?: () => void;
+  onFollowingTap?: () => void;
 }
 
-export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followLoading = false, onEditPress, onFollowPress, onAvatarPick }: Props) {
-  const displayLabel = user.artistName ?? user.displayName;
+export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followLoading = false, onEditPress, onFollowPress, onAvatarPick, onFollowersTap, onFollowingTap }: Props) {
+  const displayLabel = user.artistName ?? user.firstName ?? user.displayName;
+  const hasSocials = user.socialLinks && Object.values(user.socialLinks).some(Boolean);
 
   return (
     <View style={styles.container}>
@@ -28,24 +32,30 @@ export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followL
         size={88}
         onPick={onAvatarPick}
       />
-      <Text style={styles.name}>{displayLabel}</Text>
-      {user.username ? <Text style={styles.username}>@{user.username}</Text> : null}
+      <View style={styles.nameGroup}>
+        <Text style={styles.name}>{displayLabel}</Text>
+        {user.username ? <Text style={styles.username}>@{user.username}</Text> : null}
+      </View>
 
       <View style={styles.stats}>
-        <View style={styles.stat}>
+        <Pressable style={styles.stat} onPress={onFollowersTap}>
           <Text style={styles.statValue}>{user.followersCount ?? 0}</Text>
           <Text style={styles.statLabel}>Abonnés</Text>
-        </View>
+        </Pressable>
         <View style={styles.statDivider} />
-        <View style={styles.stat}>
+        <Pressable style={styles.stat} onPress={onFollowingTap}>
           <Text style={styles.statValue}>{user.followingCount ?? 0}</Text>
           <Text style={styles.statLabel}>Abonnements</Text>
+        </Pressable>
+        <View style={styles.statDivider} />
+        <View style={styles.stat}>
+          <Text style={styles.statValue}>{user.totalLikesCount ?? 0}</Text>
+          <Text style={styles.statLabel}>Likes</Text>
         </View>
       </View>
 
-      {user.experience ? <ExperienceTag level={user.experience} /> : null}
-
-      <View style={styles.actions}>
+      <View style={[styles.metaRow, !user.experience && styles.metaRowCenter]}>
+        {user.experience ? <ExperienceTag level={user.experience} /> : null}
         {isOwnProfile ? (
           <Pressable testID="edit-profile-button" style={styles.editButton} onPress={onEditPress}>
             <Text style={styles.editButtonText}>Modifier le profil</Text>
@@ -54,20 +64,35 @@ export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followL
           <FollowButton isFollowing={isFollowing} onPress={onFollowPress ?? (() => {})} loading={followLoading} />
         )}
       </View>
+
+      {hasSocials ? (
+        <View style={styles.socials}>
+          <SocialLinks links={user.socialLinks!} />
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
+  nameGroup: { alignItems: 'center', gap: 2 },
   name: { color: colors.textPrimary, fontFamily: fonts.heading.bold, fontSize: fontSize.xl },
-  username: { color: colors.textSecondary, fontFamily: fonts.body.regular, fontSize: fontSize.sm },
+  username: { color: colors.textMuted, fontFamily: fonts.body.regular, fontSize: fontSize.sm },
   stats: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   stat: { alignItems: 'center' },
   statValue: { color: colors.textPrimary, fontFamily: fonts.heading.bold, fontSize: fontSize.lg },
   statLabel: { color: colors.textSecondary, fontFamily: fonts.body.regular, fontSize: fontSize.xs },
   statDivider: { width: 1, height: 24, backgroundColor: 'rgba(240,239,244,0.2)' },
-  actions: { flexDirection: 'row', gap: spacing.md },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    alignSelf: 'stretch',
+    paddingHorizontal: spacing.lg,
+  },
+  metaRowCenter: {},
   editButton: {
     borderWidth: 1,
     borderColor: 'rgba(240,239,244,0.3)',
@@ -76,4 +101,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   editButtonText: { color: colors.textPrimary, fontFamily: fonts.body.medium, fontSize: fontSize.sm },
+  socials: { alignSelf: 'stretch', paddingHorizontal: spacing.lg, alignItems: 'center' },
 });

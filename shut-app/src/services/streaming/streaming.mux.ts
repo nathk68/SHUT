@@ -75,7 +75,7 @@ export class MuxStreamingService implements IStreamingService {
     await fn({ eventId });
   }
 
-  async startQuickStream(userId: string): Promise<QuickStreamCredentials> {
+  async startQuickStream(userId: string, options?: { record?: boolean }): Promise<QuickStreamCredentials> {
     // Reuse the existing createLiveStream Cloud Function.
     // Create a minimal event doc first so the CF can update it.
     // Doc must be in 'events' so the CF's .update() succeeds
@@ -86,7 +86,7 @@ export class MuxStreamingService implements IStreamingService {
       createdAt: new Date().toISOString(),
     });
     const fn = httpsCallable(functions, 'createLiveStream');
-    const result = await fn({ eventId: eventRef.id, cameraId: '' });
+    const result = await fn({ eventId: eventRef.id, cameraId: '', record: options?.record ?? false });
     const data = result.data as any;
     return {
       eventId: eventRef.id,

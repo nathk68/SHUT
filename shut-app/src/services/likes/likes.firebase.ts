@@ -48,4 +48,20 @@ export class FirebaseLikesService implements ILikesService {
     const snap = await getDocs(q);
     return !snap.empty;
   }
+
+  async getLikesCountForItems(itemIds: string[]): Promise<number> {
+    if (itemIds.length === 0) return 0;
+    // Firestore 'in' queries are limited to 30 values, so batch
+    let total = 0;
+    for (let i = 0; i < itemIds.length; i += 30) {
+      const batch = itemIds.slice(i, i + 30);
+      const q = query(
+        collection(db, 'userLikes'),
+        where('eventId', 'in', batch),
+      );
+      const snap = await getDocs(q);
+      total += snap.size;
+    }
+    return total;
+  }
 }
