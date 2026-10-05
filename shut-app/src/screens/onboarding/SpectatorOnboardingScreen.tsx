@@ -24,6 +24,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { MUSIC_GENRES } from '../../config/constants';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
+import { useUsernameCheck } from '../../hooks/useUsernameCheck';
+import { reserveUsername } from '../../services/username/username.service';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'SpectatorOnboarding'>;
@@ -54,7 +56,7 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
   const [step, setStep] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  const [username, setUsername] = useState('');
+  const { username, setUsername, status: usernameStatus, error: usernameError } = useUsernameCheck();
   const [firstName, setFirstName] = useState('');
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -85,7 +87,9 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
     switch (step) {
       case 0:
         if (!username.trim()) e.username = 'Pseudo requis';
-        else if (username.trim().length < 3) e.username = 'Minimum 3 caractères';
+        else if (usernameError) e.username = usernameError;
+        else if (usernameStatus === 'checking') e.username = 'Vérification en cours...';
+        else if (usernameStatus !== 'available') e.username = 'Pseudo non disponible';
         break;
       case 1:
         if (!firstName.trim()) e.firstName = 'Prénom requis';
@@ -125,6 +129,7 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
     }
     if (result.userId) {
       try {
+        await reserveUsername(username.trim(), result.userId);
         const birthDateStr = birthDate
           ? `${String(birthDate.getDate()).padStart(2, '0')}/${String(birthDate.getMonth() + 1).padStart(2, '0')}/${birthDate.getFullYear()}`
           : '';
@@ -137,8 +142,10 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
           countryCode: location.countryCode ?? '',
           cityId: location.cityId ?? '',
         }, { merge: true });
-      } catch (err) {
-        console.error('Profile save error:', err);
+      } catch (err: any) {
+        setLoading(false);
+        Alert.alert('Erreur', err?.message ?? 'Ce pseudo est déjà pris');
+        return;
       }
     }
     setLoading(false);
@@ -177,16 +184,27 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
             <Text style={styles.stepSubtitle}>{STEP_SUBTITLES[step]}</Text>
 
             {step === 0 && (
-              <Input
-                label="Pseudo"
-                placeholder="ex: beathead99"
-                icon="at-outline"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-                autoCorrect={false}
-                error={errors.username}
-              />
+              <View>
+                <Input
+                  label="Pseudo"
+                  placeholder="ex: beathead99"
+                  icon="at-outline"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  error={errors.username}
+                />
+                {usernameStatus === 'available' && !errors.username && (
+                  <View style={styles.usernameAvailable}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.success ?? '#4CAF50'} />
+                    <Text style={styles.usernameAvailableText}>Pseudo disponible</Text>
+                  </View>
+                )}
+                {usernameStatus === 'checking' && !errors.username && (
+                  <Text style={styles.usernameChecking}>Vérification...</Text>
+                )}
+              </View>
             )}
 
             {step === 1 && (
@@ -464,6 +482,25 @@ const styles = StyleSheet.create({
   },
   iosPicker: {
     backgroundColor: colors.backgroundElevated,
+  },
+  usernameAvailable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  usernameAvailableText: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    color: colors.success,
+  },
+  usernameChecking: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
   },
   errorText: {
     fontFamily: fonts.body.regular,

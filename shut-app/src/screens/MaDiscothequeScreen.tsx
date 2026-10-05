@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { GlobalSearchOverlay } from '../components/search/GlobalSearchOverlay';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { replaysService, userService } from '../services';
@@ -75,6 +76,7 @@ export function MaDiscothequeScreen() {
 
   // ── Sub-tab ──
   const [activeTab, setActiveTab] = useState<SubTab>('discotheque');
+  const [searchVisible, setSearchVisible] = useState(false);
 
   // ── Pull-to-refresh animation ──
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -409,6 +411,8 @@ export function MaDiscothequeScreen() {
   };
 
   return (
+    <>
+    {pullIndicator}
     <Animated.ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
@@ -416,9 +420,14 @@ export function MaDiscothequeScreen() {
       onScroll={scrollHandler}
       scrollEventThrottle={16}
     >
-      {pullIndicator}
-
-      <ScreenHeader title="Ma discothèque" />
+      <ScreenHeader
+        title="Mes sets"
+        rightAction={
+          <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
+            <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
+          </Pressable>
+        }
+      />
 
       {/* Sub-tabs */}
       <View style={styles.tabRow}>
@@ -468,6 +477,9 @@ export function MaDiscothequeScreen() {
       {/* Content */}
       {activeTab === 'discotheque' ? renderDiscothequeContent() : renderFavorisContent()}
     </Animated.ScrollView>
+
+    <GlobalSearchOverlay visible={searchVisible} onClose={() => setSearchVisible(false)} />
+    </>
   );
 }
 
@@ -484,8 +496,10 @@ const styles = StyleSheet.create({
 
   // ── Pull indicator ──
   pullIndicator: {
+    position: 'absolute',
+    top: spacing.sm,
     alignSelf: 'center',
-    marginBottom: spacing.xs,
+    zIndex: 10,
     width: 34,
     height: 34,
     borderRadius: 17,

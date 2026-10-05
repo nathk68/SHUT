@@ -4,18 +4,14 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SearchableDropdown } from '../components/ui/SearchableDropdown';
+import { LocationSelector, LocationValue } from '../components/ui/LocationSelector';
 import { WorldMapSVG } from '../components/ui/WorldMapSVG';
-import {
-  COUNTRIES,
-  getRegionsForCountry,
-  getCitiesForRegion,
-  getCitiesForCountry,
-} from '../services/_mock-data/countries';
-import { City as CscCity } from 'country-state-city';
+import { COUNTRIES } from '../services/_mock-data/countries';
 import { userService } from '../services';
 import { User } from '../types/user';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
 import type { ExploreStackParamList } from '../navigation/MainTabs';
+import { GlobalSearchOverlay } from '../components/search/GlobalSearchOverlay';
 
 type Nav = NativeStackNavigationProp<ExploreStackParamList>;
 
@@ -31,35 +27,27 @@ const GENRE_COLORS: Record<string, string> = {
 
 // ─── DJ filtering helpers (real users) ────────────────────────────────────────
 
-function getDJsForCountry(djs: User[], countryCode: string): User[] {
-  return djs.filter((dj) => dj.countryCode === countryCode);
+function getDJCountry(dj: User): string | undefined {
+  return dj.representedCountryCode;
 }
 
-function getDJsForRegion(djs: User[], regionId: string): User[] {
-  const sep = regionId.indexOf('__');
-  const countryCode = regionId.slice(0, sep);
-  const stateCode = regionId.slice(sep + 2);
-  const cityNames = new Set(
-    (CscCity.getCitiesOfState(countryCode, stateCode) ?? []).map((c) => c.name),
-  );
-  return djs.filter(
-    (dj) => dj.countryCode === countryCode && cityNames.has(dj.cityName ?? ''),
-  );
+function getDJCity(dj: User): string | undefined {
+  return dj.representedCityName;
+}
+
+function getDJsForCountry(djs: User[], countryCode: string): User[] {
+  return djs.filter((dj) => getDJCountry(dj) === countryCode);
 }
 
 function getDJsForCity(djs: User[], cityId: string): User[] {
-  const sep = cityId.indexOf('__');
-  const countryCode = cityId.slice(0, sep);
   const cityName = cityId.slice(cityId.lastIndexOf('__') + 2);
-  return djs.filter(
-    (dj) => dj.countryCode === countryCode && dj.cityName === cityName,
-  );
+  return djs.filter((dj) => getDJCity(dj) === cityName);
 }
 
 // ─── DJ profile card ──────────────────────────────────────────────────────────
 
 function DJCard({ dj, onPress }: { dj: User; onPress: () => void }) {
-  const country = COUNTRIES.find((c) => c.code === dj.countryCode);
+  const country = COUNTRIES.find((c) => c.code === dj.representedCountryCode);
   const name = dj.artistName || dj.displayName;
   const initials = name
     .split(' ')
@@ -82,7 +70,7 @@ function DJCard({ dj, onPress }: { dj: User; onPress: () => void }) {
       <View style={cardStyles.info}>
         <Text style={cardStyles.name}>{name}</Text>
         <Text style={cardStyles.location}>
-          {country?.flag} {dj.cityName}
+          {country?.flag} {dj.representedCityName}
         </Text>
       </View>
       {mainGenre ? (
@@ -167,27 +155,14 @@ export function ShutDiffusionScreen() {
   }, []);
 
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [cityLocation, setCityLocation] = useState<LocationValue>({});
   const [selectedDJ, setSelectedDJ] = useState<string | null>(null);
   const [showDJResults, setShowDJResults] = useState(false);
 
-  const countryOptions = COUNTRIES.map((c) => ({ id: c.code, label: c.name, prefix: c.flag }));
-
-  const regionOptions = selectedCountry
-    ? getRegionsForCountry(selectedCountry).map((r) => ({ id: r.id, label: r.name }))
-    : [];
-
-  const cityOptions = (() => {
-    if (selectedRegion) return getCitiesForRegion(selectedRegion).map((c) => ({ id: c.id, label: c.name }));
-    if (selectedCountry) return getCitiesForCountry(selectedCountry).map((c) => ({ id: c.id, label: c.name }));
-    return [];
-  })();
-
   const djOptions = (() => {
     let djs = allDJs;
-    if (selectedCity) djs = getDJsForCity(allDJs, selectedCity);
-    else if (selectedRegion) djs = getDJsForRegion(allDJs, selectedRegion);
+    if (cityLocation.cityId) djs = getDJsForCity(allDJs, cityLocation.cityId);
     else if (selectedCountry) djs = getDJsForCountry(allDJs, selectedCountry);
     return [
       { id: 'all', label: 'Tous les DJs' },
@@ -197,21 +172,14 @@ export function ShutDiffusionScreen() {
 
   function handleCountrySelect(code: string) {
     setSelectedCountry(code);
-    setSelectedRegion(null);
-    setSelectedCity(null);
+    setCityLocation({});
     setSelectedDJ(null);
     setShowDJResults(false);
   }
 
-  function handleRegionSelect(regionId: string) {
-    setSelectedRegion(regionId);
-    setSelectedCity(null);
-    setSelectedDJ(null);
-    setShowDJResults(false);
-  }
-
-  function handleCitySelect(cityId: string) {
-    setSelectedCity(cityId);
+  function handleCityChange(loc: LocationValue) {
+    setCityLocation(loc);
+    if (loc.countryCode) setSelectedCountry(loc.countryCode);
     setSelectedDJ(null);
     setShowDJResults(false);
   }
@@ -221,16 +189,16 @@ export function ShutDiffusionScreen() {
       const found = allDJs.find((dj) => dj.id === selectedDJ);
       return found ? [found] : [];
     }
-    if (selectedCity) return getDJsForCity(allDJs, selectedCity);
-    if (selectedRegion) return getDJsForRegion(allDJs, selectedRegion);
+    if (cityLocation.cityId) return getDJsForCity(allDJs, cityLocation.cityId);
     if (selectedCountry) return getDJsForCountry(allDJs, selectedCountry);
     return allDJs;
   }
 
   function handleViewLives() {
+    const country = cityLocation.countryCode || selectedCountry;
     setShowDJResults(false);
-    if (selectedCountry) {
-      navigation.getParent()?.navigate('Live', { countryCode: selectedCountry });
+    if (country) {
+      navigation.getParent()?.navigate('Live', { countryCode: country });
     } else {
       navigation.getParent()?.navigate('Live');
     }
@@ -242,17 +210,23 @@ export function ShutDiffusionScreen() {
 
   const filteredDJs = showDJResults ? getFilteredDJs() : [];
 
-  // Full screen width (container uses negative margins to break out of content padding)
+  // Map ratio matches the cropped viewBox (VIEW_W=110, VIEW_H=80)
   const mapWidth = screenWidth;
-  const mapHeight = Math.round(mapWidth * (375 / 960));
+  const mapHeight = Math.round(mapWidth * (80 / 110));
 
   return (
+    <>
     <ScrollView ref={scrollViewRef} style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
-      <Text style={styles.title}>
-        {'SHUT '}
-        <Text style={styles.titleAccent}>DIFFUSION</Text>
-      </Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>
+          {'SHUT '}
+          <Text style={styles.titleAccent}>DIFFUSION</Text>
+        </Text>
+        <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
+          <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
+        </Pressable>
+      </View>
       <Text style={styles.subtitle}>
         Découvrez les pays partenaires et leurs scènes live.
       </Text>
@@ -281,30 +255,12 @@ export function ShutDiffusionScreen() {
 
       {/* Filters */}
       <View style={styles.filters}>
-        <SearchableDropdown
-          options={countryOptions}
-          label="Choisir un pays"
-          value={selectedCountry ?? undefined}
-          onSelect={handleCountrySelect}
-          leftIcon="globe-outline"
-        />
-
-        <SearchableDropdown
-          options={regionOptions}
-          label="Choisir une région"
-          value={selectedRegion ?? undefined}
-          onSelect={handleRegionSelect}
-          disabled={!selectedCountry}
-          leftIcon="map-outline"
-        />
-
-        <SearchableDropdown
-          options={cityOptions}
-          label="Choisir une ville"
-          value={selectedCity ?? undefined}
-          onSelect={handleCitySelect}
-          disabled={!selectedCountry}
-          leftIcon="location-outline"
+        <LocationSelector
+          value={cityLocation}
+          onChange={handleCityChange}
+          label="Rechercher une ville"
+          placeholder="Tape le nom d'une ville..."
+          restrictToCountries={['FR', 'CH']}
         />
 
         <SearchableDropdown
@@ -369,6 +325,9 @@ export function ShutDiffusionScreen() {
         </View>
       )}
     </ScrollView>
+
+    <GlobalSearchOverlay visible={searchVisible} onClose={() => setSearchVisible(false)} />
+    </>
   );
 }
 
@@ -382,12 +341,17 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
     paddingBottom: spacing.xxl,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
   title: {
     color: colors.textPrimary,
     fontFamily: fonts.heading.bold,
     fontSize: fontSize.xxl,
     letterSpacing: 2,
-    marginBottom: spacing.xs,
   },
   titleAccent: {
     color: colors.accent,

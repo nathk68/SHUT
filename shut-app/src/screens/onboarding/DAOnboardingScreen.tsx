@@ -21,6 +21,8 @@ import { LocationSelector, LocationValue } from '../../components/ui/LocationSel
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
+import { useUsernameCheck } from '../../hooks/useUsernameCheck';
+import { reserveUsername } from '../../services/username/username.service';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'DAOnboarding'>;
@@ -53,7 +55,7 @@ export function DAOnboardingScreen({ navigation }: Props) {
   const [step, setStep] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  const [username, setUsername] = useState('');
+  const { username, setUsername, status: usernameStatus, error: usernameError } = useUsernameCheck();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [venueName, setVenueName] = useState('');
@@ -81,7 +83,9 @@ export function DAOnboardingScreen({ navigation }: Props) {
     switch (step) {
       case 0:
         if (!username.trim()) e.username = 'Pseudo requis';
-        else if (username.trim().length < 3) e.username = 'Minimum 3 caractères';
+        else if (usernameError) e.username = usernameError;
+        else if (usernameStatus === 'checking') e.username = 'Vérification en cours...';
+        else if (usernameStatus !== 'available') e.username = 'Pseudo non disponible';
         if (!firstName.trim()) e.firstName = 'Prénom requis';
         if (!lastName.trim()) e.lastName = 'Nom requis';
         if (!venueName.trim()) e.venueName = 'Nom du lieu requis';
@@ -123,6 +127,7 @@ export function DAOnboardingScreen({ navigation }: Props) {
     }
     if (result.userId) {
       try {
+        await reserveUsername(username.trim(), result.userId);
         await Promise.all([
           setDoc(doc(db, 'users', result.userId), {
             username: username.trim(),
@@ -149,8 +154,10 @@ export function DAOnboardingScreen({ navigation }: Props) {
             submittedAt: new Date().toISOString(),
           }),
         ]);
-      } catch (err) {
-        console.error('DA application save error:', err);
+      } catch (err: any) {
+        setLoading(false);
+        Alert.alert('Erreur', err?.message ?? 'Ce pseudo est déjà pris');
+        return;
       }
     }
     setLoading(false);
@@ -203,6 +210,15 @@ export function DAOnboardingScreen({ navigation }: Props) {
                   autoCorrect={false}
                   error={errors.username}
                 />
+                {usernameStatus === 'available' && !errors.username && (
+                  <View style={styles.usernameAvailable}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                    <Text style={styles.usernameAvailableText}>Pseudo disponible</Text>
+                  </View>
+                )}
+                {usernameStatus === 'checking' && !errors.username && (
+                  <Text style={styles.usernameChecking}>Vérification...</Text>
+                )}
                 <View style={styles.row}>
                   <View style={styles.rowItem}>
                     <Input
@@ -455,6 +471,25 @@ const styles = StyleSheet.create({
     height: 100,
     textAlignVertical: 'top',
     paddingTop: spacing.md,
+  },
+  usernameAvailable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  usernameAvailableText: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    color: colors.success,
+  },
+  usernameChecking: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
   },
   errorText: {
     fontFamily: fonts.body.regular,

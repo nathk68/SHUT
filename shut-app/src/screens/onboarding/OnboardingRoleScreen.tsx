@@ -61,25 +61,39 @@ export function OnboardingRoleScreen({ navigation }: Props) {
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </Pressable>
 
-        {/* Séparateur */}
-        <View style={styles.separator}>
-          <View style={styles.separatorLine} />
-          <Text style={styles.separatorText}>ou</Text>
-          <View style={styles.separatorLine} />
+        {/* Organisateur — bientôt disponible */}
+        <View style={styles.cardDisabled}>
+          <View style={styles.iconWrapper}>
+            <Ionicons name="business-outline" size={24} color={colors.textMuted} />
+          </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitleDisabled}>Organisateur</Text>
+            <Text style={styles.cardDescDisabled}>
+              Collectif, club ou festival.
+            </Text>
+            <View style={styles.badgeDisabled}>
+              <Text style={styles.badgeDisabledText}>Bientôt disponible</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
         </View>
 
-        {/* Directeur Artistique — lien discret */}
-        <Pressable
-          style={styles.daRow}
-          onPress={() => navigation.navigate('DAOnboarding')}
-        >
-          <Ionicons name="business-outline" size={15} color={colors.textMuted} style={styles.daIcon} />
-          <Text style={styles.daText}>
-            Vous gérez un club ou festival et cherchez de nouveaux talents ?{' '}
-            <Text style={styles.daTextAccent}>Candidature Directeur Artistique</Text>
-          </Text>
-          <Ionicons name="chevron-forward" size={14} color={colors.textMuted} style={styles.daIcon} />
-        </Pressable>
+        {/* Directeur Artistique — bientôt disponible */}
+        <View style={styles.cardDisabled}>
+          <View style={styles.iconWrapper}>
+            <Ionicons name="people-outline" size={24} color={colors.textMuted} />
+          </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitleDisabled}>Directeur Artistique</Text>
+            <Text style={styles.cardDescDisabled}>
+              Tu recherches des talents où programmer.
+            </Text>
+            <View style={styles.badgeDisabled}>
+              <Text style={styles.badgeDisabledText}>Bientôt disponible</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </View>
 
         {/* Déjà un compte */}
         <Pressable onPress={() => navigation.navigate('Login')} style={styles.loginLink}>
@@ -179,48 +193,41 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.accent,
   },
-  // Séparateur "ou"
-  separator: {
+  // Cartes désactivées (bientôt disponible)
+  cardDisabled: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginVertical: spacing.xs,
-  },
-  separatorLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  separatorText: {
-    fontFamily: fonts.body.regular,
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-  },
-  // Lien Directeur Artistique
-  daRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    gap: spacing.md,
     backgroundColor: colors.backgroundCard,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
+    padding: spacing.md,
+    opacity: 0.5,
   },
-  daIcon: {
-    marginTop: 2,
+  cardTitleDisabled: {
+    fontFamily: fonts.heading.bold,
+    fontSize: fontSize.lg,
+    color: colors.textMuted,
   },
-  daText: {
-    flex: 1,
+  cardDescDisabled: {
     fontFamily: fonts.body.regular,
     fontSize: fontSize.sm,
     color: colors.textMuted,
-    lineHeight: 20,
+    lineHeight: 18,
   },
-  daTextAccent: {
-    fontFamily: fonts.body.medium,
-    color: colors.textSecondary,
+  badgeDisabled: {
+    alignSelf: 'flex-start',
+    backgroundColor: `${colors.textMuted}20`,
+    borderRadius: borderRadius.full,
+    paddingVertical: 2,
+    paddingHorizontal: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  badgeDisabledText: {
+    fontFamily: fonts.body.semiBold,
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
   },
   // Lien login
   loginLink: {

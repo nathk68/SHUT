@@ -20,6 +20,8 @@ export interface UpdateProfilePayload {
   avatarUrl?: string;
   bio?: string;
   genres?: string[];
+  cityName?: string;
+  countryCode?: string;
   representedCityName?: string;
   representedCountryCode?: string;
   experience?: ExperienceLevel;

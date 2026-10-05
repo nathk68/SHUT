@@ -55,6 +55,7 @@ export type LiveStackParamList = {
   LivePlayer: { eventId: string };
   PublicProfile: { userId: string };
   FollowList: { userId: string; mode: 'followers' | 'following' };
+  ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
 };
 
 export type GoLiveStackParamList = {
@@ -70,11 +71,15 @@ export type LiveClubStackParamList = {
   DiscothequeMain: undefined;
   PostLive: { eventId: string };
   ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
+  PublicProfile: { userId: string };
+  LivePlayer: { eventId: string };
 };
 
 export type FavorisStackParamList = {
   FavorisMain: undefined;
   ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
+  PublicProfile: { userId: string };
+  LivePlayer: { eventId: string };
 };
 
 export type ParametresStackParamList = {
@@ -139,6 +144,11 @@ function LiveStackScreen() {
       />
       <LiveStack.Screen name="PublicProfile" component={PublicProfileScreen} />
       <LiveStack.Screen name="FollowList" component={FollowListScreen} />
+      <LiveStack.Screen
+        name="ReplayPlayer"
+        component={ReplayPlayerScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
     </LiveStack.Navigator>
   );
 }
@@ -182,6 +192,12 @@ function LiveClubStackScreen() {
         component={ReplayPlayerScreen}
         options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
       />
+      <LiveClubStack.Screen name="PublicProfile" component={PublicProfileScreen} />
+      <LiveClubStack.Screen
+        name="LivePlayer"
+        component={LivePlayerScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
     </LiveClubStack.Navigator>
   );
 }
@@ -193,6 +209,12 @@ function FavorisStackScreen() {
       <FavorisStack.Screen
         name="ReplayPlayer"
         component={ReplayPlayerScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+      <FavorisStack.Screen name="PublicProfile" component={PublicProfileScreen} />
+      <FavorisStack.Screen
+        name="LivePlayer"
+        component={LivePlayerScreen}
         options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
       />
     </FavorisStack.Navigator>
@@ -234,7 +256,7 @@ export function MainTabs() {
   const { currentRole } = useRole();
   const isDJ = isAuthenticated && currentRole === 'broadcaster';
 
-  const liveClubLabel = isDJ ? 'Ma discothèque' : 'Mes favoris';
+  const liveClubLabel = isDJ ? 'Mes sets' : 'Mes favoris';
   const LiveClubComponent = isDJ ? LiveClubStackScreen : FavorisStackScreen;
 
   return (

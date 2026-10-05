@@ -1,11 +1,20 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import type { User } from '../../types/user';
 import { AvatarPicker } from './AvatarPicker';
 import { ExperienceTag } from './ExperienceTag';
 import { FollowButton } from './FollowButton';
 import { SocialLinks } from './SocialLinks';
 import { colors, fonts, fontSize, spacing } from '../../config/theme';
+
+function countryFlag(code: string): string {
+  return code
+    .toUpperCase()
+    .split('')
+    .map(c => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
+    .join('');
+}
 
 interface Props {
   user: User;
@@ -35,6 +44,15 @@ export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followL
       <View style={styles.nameGroup}>
         <Text style={styles.name}>{displayLabel}</Text>
         {user.username ? <Text style={styles.username}>@{user.username}</Text> : null}
+        {user.representedCityName ? (
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={13} color={colors.textMuted} />
+            <Text style={styles.locationText}>
+              {user.representedCountryCode ? countryFlag(user.representedCountryCode) + ' ' : ''}
+              {user.representedCityName}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.stats}>
@@ -79,6 +97,8 @@ const styles = StyleSheet.create({
   nameGroup: { alignItems: 'center', gap: 2 },
   name: { color: colors.textPrimary, fontFamily: fonts.heading.bold, fontSize: fontSize.xl },
   username: { color: colors.textMuted, fontFamily: fonts.body.regular, fontSize: fontSize.sm },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  locationText: { color: colors.textMuted, fontFamily: fonts.body.regular, fontSize: fontSize.xs },
   stats: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   stat: { alignItems: 'center' },
   statValue: { color: colors.textPrimary, fontFamily: fonts.heading.bold, fontSize: fontSize.lg },

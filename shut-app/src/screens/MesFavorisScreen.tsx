@@ -6,6 +6,7 @@ import type { FavorisStackParamList } from '../navigation/MainTabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { GlobalSearchOverlay } from '../components/search/GlobalSearchOverlay';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { replaysService, userService } from '../services';
 import type { Replay } from '../types';
@@ -35,6 +36,7 @@ export function MesFavorisScreen() {
   const [djMap, setDjMap] = useState<Record<string, User>>({});
   const [loadingReplays, setLoadingReplays] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('recent');
+  const [searchVisible, setSearchVisible] = useState(false);
 
   const favoriteIdsKey = Array.from(favoriteIds).sort().join(',');
 
@@ -81,114 +83,126 @@ export function MesFavorisScreen() {
     );
   }
 
-  if (favoriteIds.size === 0 || replays.length === 0) {
-    return (
-      <View style={[styles.centered, { paddingTop: insets.top }]}>
-        <View style={styles.emptyIconWrap}>
-          <Ionicons name="heart-outline" size={32} color={colors.accent} />
-        </View>
-        <Text style={styles.emptyTitle}>Aucun favori</Text>
-        <Text style={styles.emptyText}>
-          Ajoute des rediffusions en favoris{'\n'}pour les retrouver ici
-        </Text>
-      </View>
-    );
-  }
+  const isEmpty = favoriteIds.size === 0 || replays.length === 0;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}>
+    <>
+    <ScrollView style={styles.container} contentContainerStyle={isEmpty ? styles.containerEmpty : { paddingBottom: insets.bottom + spacing.xl }}>
       <ScreenHeader
         title="Mes favoris"
-        subtitle={`${replays.length} rediffusion${replays.length > 1 ? 's' : ''}`}
+        subtitle={!isEmpty ? `${replays.length} rediffusion${replays.length > 1 ? 's' : ''}` : undefined}
+        rightAction={
+          <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
+            <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
+          </Pressable>
+        }
       />
 
-      {/* Sort chips */}
-      <View style={styles.sortRow}>
-        {SORT_OPTIONS.map(({ mode, label, icon }) => {
-          const isActive = sortMode === mode;
-          return (
-            <Pressable
-              key={mode}
-              onPress={() => setSortMode(mode)}
-              style={[styles.sortChip, isActive && styles.sortChipActive]}
-            >
-              <Ionicons name={icon} size={13} color={isActive ? colors.white : colors.textSecondary} />
-              <Text style={[styles.sortChipText, isActive && styles.sortChipTextActive]}>
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Cards */}
-      <View style={styles.cardList}>
-        {sortedReplays.map((replay) => {
-          const dj = djMap[replay.userId];
-          const djLabel = dj ? (dj.artistName ?? dj.firstName ?? dj.displayName) : '';
-          return (
-            <Pressable
-              key={replay.id}
-              onPress={() =>
-                navigation.navigate('ReplayPlayer', {
-                  playbackUrl: replay.playbackUrl,
-                  title: replay.title || 'Rediffusion',
-                  trimStart: replay.trimStart ?? 0,
-                  trimEnd: replay.trimEnd ?? 0,
-                  replayId: replay.id,
-                  djUserId: replay.userId,
-                  eventId: replay.eventId,
-                })
-              }
-              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-            >
-              {/* Thumbnail */}
-              {replay.thumbnailUrl ? (
-                <Image source={{ uri: replay.thumbnailUrl }} style={styles.thumbnail} />
-              ) : (
-                <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
-                  <Ionicons name="musical-notes-outline" size={22} color={colors.textMuted} />
-                </View>
-              )}
-
-              {/* Duration badge */}
-              {replay.duration > 0 && (
-                <View style={styles.durationBadge}>
-                  <Text style={styles.durationText}>{formatDuration(replay.duration)}</Text>
-                </View>
-              )}
-
-              {/* Info */}
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardTitle} numberOfLines={1}>
-                  {replay.title || 'Sans titre'}
-                </Text>
-                {djLabel ? (
-                  <Text style={styles.cardDj} numberOfLines={1}>{djLabel}</Text>
-                ) : null}
-                {replay.genres.length > 0 && (
-                  <Text style={styles.cardGenres} numberOfLines={1}>
-                    {replay.genres.join(' · ')}
+      {isEmpty ? (
+        <View style={styles.emptyBlock}>
+          <View style={styles.emptyIconWrap}>
+            <Ionicons name="heart-outline" size={32} color={colors.accent} />
+          </View>
+          <Text style={styles.emptyTitle}>Aucun favori</Text>
+          <Text style={styles.emptyText}>
+            Ajoute des rediffusions en favoris{'\n'}pour les retrouver ici
+          </Text>
+        </View>
+      ) : (
+        <>
+          {/* Sort chips */}
+          <View style={styles.sortRow}>
+            {SORT_OPTIONS.map(({ mode, label, icon }) => {
+              const isActive = sortMode === mode;
+              return (
+                <Pressable
+                  key={mode}
+                  onPress={() => setSortMode(mode)}
+                  style={[styles.sortChip, isActive && styles.sortChipActive]}
+                >
+                  <Ionicons name={icon} size={13} color={isActive ? colors.white : colors.textSecondary} />
+                  <Text style={[styles.sortChipText, isActive && styles.sortChipTextActive]}>
+                    {label}
                   </Text>
-                )}
-              </View>
+                </Pressable>
+              );
+            })}
+          </View>
 
-              <Ionicons
-                name="play-circle"
-                size={30}
-                color={colors.accent}
-                style={styles.playIcon}
-              />
-            </Pressable>
-          );
-        })}
-      </View>
+          {/* Cards */}
+          <View style={styles.cardList}>
+            {sortedReplays.map((replay) => {
+              const dj = djMap[replay.userId];
+              const djLabel = dj ? (dj.artistName ?? dj.firstName ?? dj.displayName) : '';
+              return (
+                <Pressable
+                  key={replay.id}
+                  onPress={() =>
+                    navigation.navigate('ReplayPlayer', {
+                      playbackUrl: replay.playbackUrl,
+                      title: replay.title || 'Rediffusion',
+                      trimStart: replay.trimStart ?? 0,
+                      trimEnd: replay.trimEnd ?? 0,
+                      replayId: replay.id,
+                      djUserId: replay.userId,
+                      eventId: replay.eventId,
+                    })
+                  }
+                  style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+                >
+                  {/* Thumbnail */}
+                  {replay.thumbnailUrl ? (
+                    <Image source={{ uri: replay.thumbnailUrl }} style={styles.thumbnail} />
+                  ) : (
+                    <View style={[styles.thumbnail, styles.thumbnailPlaceholder]}>
+                      <Ionicons name="musical-notes-outline" size={22} color={colors.textMuted} />
+                    </View>
+                  )}
+
+                  {/* Duration badge */}
+                  {replay.duration > 0 && (
+                    <View style={styles.durationBadge}>
+                      <Text style={styles.durationText}>{formatDuration(replay.duration)}</Text>
+                    </View>
+                  )}
+
+                  {/* Info */}
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>
+                      {replay.title || 'Sans titre'}
+                    </Text>
+                    {djLabel ? (
+                      <Text style={styles.cardDj} numberOfLines={1}>{djLabel}</Text>
+                    ) : null}
+                    {replay.genres.length > 0 && (
+                      <Text style={styles.cardGenres} numberOfLines={1}>
+                        {replay.genres.join(' · ')}
+                      </Text>
+                    )}
+                  </View>
+
+                  <Ionicons
+                    name="play-circle"
+                    size={30}
+                    color={colors.accent}
+                    style={styles.playIcon}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+        </>
+      )}
     </ScrollView>
+
+    <GlobalSearchOverlay visible={searchVisible} onClose={() => setSearchVisible(false)} />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  containerEmpty: { flexGrow: 1 },
   centered: {
     flex: 1,
     backgroundColor: colors.background,
@@ -199,6 +213,13 @@ const styles = StyleSheet.create({
   },
 
   // ── Empty state ──
+  emptyBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+  },
   emptyIconWrap: {
     width: 64,
     height: 64,

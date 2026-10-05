@@ -22,6 +22,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { MUSIC_GENRES } from '../../config/constants';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
+import { useUsernameCheck } from '../../hooks/useUsernameCheck';
+import { reserveUsername } from '../../services/username/username.service';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'DJOnboarding'>;
@@ -48,12 +50,14 @@ export function DJOnboardingScreen({ navigation }: Props) {
   const [step, setStep] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
-  const [username, setUsername] = useState('');
+  const { username, setUsername, status: usernameStatus, error: usernameError } = useUsernameCheck();
   const [artistName, setArtistName] = useState('');
   const [bio, setBio] = useState('');
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [worksLinks, setWorksLinks] = useState<string[]>(['']);
   const [location, setLocation] = useState<LocationValue>({});
+  const [sameAsResidence, setSameAsResidence] = useState(true);
+  const [representedLocation, setRepresentedLocation] = useState<LocationValue>({});
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -79,7 +83,9 @@ export function DJOnboardingScreen({ navigation }: Props) {
     switch (step) {
       case 0:
         if (!username.trim()) e.username = 'Pseudo requis';
-        else if (username.trim().length < 3) e.username = 'Minimum 3 caractères';
+        else if (usernameError) e.username = usernameError;
+        else if (usernameStatus === 'checking') e.username = 'Vérification en cours...';
+        else if (usernameStatus !== 'available') e.username = 'Pseudo non disponible';
         if (!artistName.trim()) e.artistName = 'Nom d\'artiste requis';
         if (!bio.trim()) e.bio = 'Présentation requise';
         break;
@@ -89,6 +95,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
       case 2:
         if (!worksLinks.some(l => l.trim())) e.worksLinks = 'Ajoute au moins un lien';
         if (!location.cityName) e.location = 'Sélectionne ta ville';
+        if (!sameAsResidence && !representedLocation.cityName) e.representedLocation = 'Sélectionne la ville que tu représentes';
         break;
       case 3:
         if (!email.trim()) e.email = 'Email requis';
@@ -117,6 +124,8 @@ export function DJOnboardingScreen({ navigation }: Props) {
     }
     if (result.userId) {
       try {
+        await reserveUsername(username.trim(), result.userId);
+        const repLoc = sameAsResidence ? location : representedLocation;
         await Promise.all([
           setDoc(doc(db, 'users', result.userId), {
             username: username.trim(),
@@ -124,6 +133,8 @@ export function DJOnboardingScreen({ navigation }: Props) {
             cityName: location.cityName ?? '',
             countryCode: location.countryCode ?? '',
             cityId: location.cityId ?? '',
+            representedCityName: repLoc.cityName ?? '',
+            representedCountryCode: repLoc.countryCode ?? '',
             applicationRole: 'dj',
           }, { merge: true }),
           addDoc(collection(db, 'dj_applications'), {
@@ -139,8 +150,10 @@ export function DJOnboardingScreen({ navigation }: Props) {
             submittedAt: new Date().toISOString(),
           }),
         ]);
-      } catch (err) {
-        console.error('DJ application save error:', err);
+      } catch (err: any) {
+        setLoading(false);
+        Alert.alert('Erreur', err?.message ?? 'Ce pseudo est déjà pris');
+        return;
       }
     }
     setLoading(false);
@@ -193,6 +206,15 @@ export function DJOnboardingScreen({ navigation }: Props) {
                   autoCorrect={false}
                   error={errors.username}
                 />
+                {usernameStatus === 'available' && !errors.username && (
+                  <View style={styles.usernameAvailable}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                    <Text style={styles.usernameAvailableText}>Pseudo disponible</Text>
+                  </View>
+                )}
+                {usernameStatus === 'checking' && !errors.username && (
+                  <Text style={styles.usernameChecking}>Vérification...</Text>
+                )}
                 <Input
                   label="Nom d'artiste"
                   placeholder="ex: DJ Koze, Reinier Zonneveld..."
@@ -273,7 +295,30 @@ export function DJOnboardingScreen({ navigation }: Props) {
                 )}
                 <View style={styles.locationSeparator} />
                 {errors.location ? <Text style={styles.errorText}>{errors.location}</Text> : null}
-                <LocationSelector value={location} onChange={setLocation} />
+                <LocationSelector value={location} onChange={setLocation} label="Ville où tu habites" />
+
+                <Pressable
+                  style={styles.checkboxRow}
+                  onPress={() => setSameAsResidence(prev => !prev)}
+                >
+                  <View style={[styles.checkbox, sameAsResidence && styles.checkboxActive]}>
+                    {sameAsResidence && <Ionicons name="checkmark" size={14} color={colors.white} />}
+                  </View>
+                  <Text style={styles.checkboxLabel}>Même ville que ma résidence</Text>
+                </Pressable>
+
+                {!sameAsResidence && (
+                  <>
+                    {errors.representedLocation ? <Text style={styles.errorText}>{errors.representedLocation}</Text> : null}
+                    <LocationSelector
+                      value={representedLocation}
+                      onChange={setRepresentedLocation}
+                      label="Ville que tu représentes"
+                      placeholder="Rechercher la ville..."
+                      restrictToCountries={['FR', 'CH']}
+                    />
+                  </>
+                )}
               </View>
             )}
 
@@ -453,6 +498,50 @@ const styles = StyleSheet.create({
   },
   locationSeparator: {
     height: spacing.md,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  checkboxActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  checkboxLabel: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  usernameAvailable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  usernameAvailableText: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    color: colors.success,
+  },
+  usernameChecking: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.sm,
   },
   errorText: {
     fontFamily: fonts.body.regular,

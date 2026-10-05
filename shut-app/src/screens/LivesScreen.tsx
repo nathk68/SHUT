@@ -14,6 +14,7 @@ import { LiveEvent } from '../types/event';
 import { User } from '../types/user';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { GlobalSearchOverlay } from '../components/search/GlobalSearchOverlay';
 
 const GENRES = ['Tous', 'Techno', 'House', 'Progressive', 'Minimal'] as const;
 const MAX_VISIBLE_GENRES = 3;
@@ -31,6 +32,7 @@ export function LivesScreen() {
   const [lives, setLives] = useState<LiveEvent[] | null>(null);
   const [djProfiles, setDjProfiles] = useState<Record<string, User>>({});
   const [activeGenre, setActiveGenre] = useState<string>('Tous');
+  const [searchVisible, setSearchVisible] = useState(false);
 
   // Real-time listener — updates when a live starts, ends, or playbackUrl changes
   useEffect(() => {
@@ -79,8 +81,17 @@ export function LivesScreen() {
     : [];
 
   return (
+    <>
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <ScreenHeader title="En direct" subtitle="Tous les DJ en live autour de vous" />
+      <ScreenHeader
+        title="En direct"
+        subtitle="Tous les DJ en live autour de vous"
+        rightAction={
+          <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
+            <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
+          </Pressable>
+        }
+      />
 
       {/* Genre pills */}
       <ScrollView
@@ -188,6 +199,9 @@ export function LivesScreen() {
         );
       })}
     </ScrollView>
+
+    <GlobalSearchOverlay visible={searchVisible} onClose={() => setSearchVisible(false)} />
+    </>
   );
 }
 

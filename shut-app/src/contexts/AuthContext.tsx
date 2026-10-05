@@ -3,6 +3,7 @@ import { deleteDoc, doc } from 'firebase/firestore';
 import { deleteObject, ref as storageRef } from 'firebase/storage';
 import { deleteUser, getAuth } from 'firebase/auth';
 import { db, storage } from '../config/firebase.config';
+import { releaseUsername } from '../services/username/username.service';
 import { User, AuthState } from '../types';
 import { UserRole } from '../config/constants';
 import { getStoredData, setStoredData, removeStoredData } from '../utils/storage';
@@ -91,19 +92,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const userId = state.user?.id;
     if (!userId) return;
 
-    // 1. Delete Firestore user document
+    // 1. Release username reservation
+    if (state.user?.username) {
+      try { await releaseUsername(state.user.username); } catch {}
+    }
+
+    // 2. Delete Firestore user document
     await deleteDoc(doc(db, 'users', userId));
 
-    // 2. Delete Storage avatar (ignore if missing)
+    // 3. Delete Storage avatar (ignore if missing)
     try {
       await deleteObject(storageRef(storage, `avatars/${userId}.jpg`));
     } catch {}
 
-    // 3. Delete Firebase Auth user
+    // 4. Delete Firebase Auth user
     const fbUser = getAuth().currentUser;
     if (fbUser) await deleteUser(fbUser);
 
-    // 4. Clear local state
+    // 5. Clear local state
     await removeStoredData(STORAGE_KEY);
     setState({ user: null, isAuthenticated: false, isLoading: false, isGuest: false });
 

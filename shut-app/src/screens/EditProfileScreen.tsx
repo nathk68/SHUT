@@ -1,5 +1,9 @@
 import React, { useCallback, useState } from 'react';
 import {
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,15 +12,20 @@ import {
   View,
   ActivityIndicator,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParametresStackParamList } from '../navigation/MainTabs';
 import { useAuth } from '../contexts/AuthContext';
 import { userService } from '../services';
 import { AvatarPicker } from '../components/profile/AvatarPicker';
+import { LocationSelector, LocationValue } from '../components/ui/LocationSelector';
 import { colors, fonts, fontSize, spacing } from '../config/theme';
 import type { UpdateProfilePayload, ExperienceLevel } from '../types/profile';
 import { MUSIC_GENRES } from '../config/constants';
+import { useUsernameCheck } from '../hooks/useUsernameCheck';
+import { changeUsername } from '../services/username/username.service';
 
 type Nav = NativeStackNavigationProp<ParametresStackParamList, 'EditProfile'>;
 
@@ -31,11 +40,31 @@ export function EditProfileScreen() {
   const navigation = useNavigation<Nav>();
   const { user, updateUser } = useAuth();
 
+  const { username: editedUsername, setUsername: setEditedUsername, status: usernameStatus, error: usernameError } = useUsernameCheck(user?.username);
+
+  const parsedBirth = (() => {
+    if (!user?.birthDate) return null;
+    const parts = user.birthDate.split('/');
+    if (parts.length === 3) {
+      const d = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      return isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+  })();
+  const [birthDate, setBirthDate] = useState<Date | null>(parsedBirth);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [bio, setBio] = useState(user?.bio ?? '');
   const [artistName, setArtistName] = useState(user?.artistName ?? '');
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
   const [lastName, setLastName] = useState(user?.lastName ?? '');
-  const [representedCity, setRepresentedCity] = useState(user?.representedCityName ?? '');
+  const [residenceLocation, setResidenceLocation] = useState<LocationValue>({
+    cityName: user?.cityName,
+    countryCode: user?.countryCode,
+  });
+  const [location, setLocation] = useState<LocationValue>({
+    cityName: user?.representedCityName,
+    countryCode: user?.representedCountryCode,
+  });
   const [experience, setExperience] = useState<ExperienceLevel | undefined>(user?.experience);
   const [selectedGenres, setSelectedGenres] = useState<string[]>(
     user?.genres ?? []
@@ -58,14 +87,31 @@ export function EditProfileScreen() {
   }, []);
 
   const handleSave = useCallback(async () => {
+    if (editedUsername && usernameStatus !== 'available' && editedUsername !== user?.username) {
+      Alert.alert('Erreur', usernameError ?? 'Ce pseudo n\'est pas disponible');
+      return;
+    }
     setSaving(true);
     try {
+      // Handle username change atomically
+      const usernameChanged = editedUsername && editedUsername !== (user?.username ?? '');
+      if (usernameChanged && user) {
+        await changeUsername(user.username ?? '', editedUsername, user.id);
+      }
+      const birthDateStr = birthDate
+        ? `${String(birthDate.getDate()).padStart(2, '0')}/${String(birthDate.getMonth() + 1).padStart(2, '0')}/${birthDate.getFullYear()}`
+        : undefined;
       const payload: UpdateProfilePayload = {
+        ...(usernameChanged ? { username: editedUsername } : {}),
+        birthDate: birthDateStr,
         bio: bio.trim() || undefined,
         artistName: artistName.trim() || undefined,
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
-        representedCityName: representedCity.trim() || undefined,
+        cityName: residenceLocation.cityName || undefined,
+        countryCode: residenceLocation.countryCode || undefined,
+        representedCityName: location.cityName || undefined,
+        representedCountryCode: location.countryCode || undefined,
         experience,
         genres: selectedGenres.length > 0 ? selectedGenres : undefined,
         socialLinks: {
@@ -76,10 +122,12 @@ export function EditProfileScreen() {
       };
       await updateUser(payload);
       navigation.goBack();
+    } catch (err: any) {
+      Alert.alert('Erreur', err?.message ?? 'Impossible de sauvegarder');
     } finally {
       setSaving(false);
     }
-  }, [bio, artistName, firstName, lastName, representedCity, experience, selectedGenres, instagram, soundcloud, youtube, updateUser, navigation]);
+  }, [editedUsername, usernameStatus, usernameError, user, birthDate, bio, artistName, firstName, lastName, residenceLocation, location, experience, selectedGenres, instagram, soundcloud, youtube, updateUser, navigation]);
 
   if (!user) return null;
 
@@ -95,6 +143,34 @@ export function EditProfileScreen() {
           size={88}
           onPick={handleAvatarPick}
         />
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Pseudo</Text>
+        <View style={styles.usernameInputRow}>
+          <Text style={styles.atPrefix}>@</Text>
+          <TextInput
+            style={[styles.input, styles.usernameInput]}
+            value={editedUsername}
+            onChangeText={setEditedUsername}
+            placeholderTextColor={colors.textSecondary}
+            placeholder="ton_pseudo"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+        {usernameStatus === 'available' && editedUsername !== (user?.username ?? '') && (
+          <View style={styles.usernameStatusRow}>
+            <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+            <Text style={styles.usernameAvailableText}>Pseudo disponible</Text>
+          </View>
+        )}
+        {usernameStatus === 'checking' && (
+          <Text style={styles.usernameCheckingText}>Vérification...</Text>
+        )}
+        {usernameError && (
+          <Text style={styles.usernameErrorText}>{usernameError}</Text>
+        )}
       </View>
 
       {isDJ ? (
@@ -147,14 +223,98 @@ export function EditProfileScreen() {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Ville représentée</Text>
-        <TextInput
-          testID="input-city"
-          style={styles.input}
-          value={representedCity}
-          onChangeText={setRepresentedCity}
-          placeholderTextColor={colors.textSecondary}
+        <Text style={styles.label}>Date de naissance</Text>
+        <Pressable style={styles.dateTrigger} onPress={() => setShowDatePicker(true)}>
+          <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
+          <Text style={[styles.dateValue, !birthDate && styles.datePlaceholder]}>
+            {birthDate
+              ? `${String(birthDate.getDate()).padStart(2, '0')}/${String(birthDate.getMonth() + 1).padStart(2, '0')}/${birthDate.getFullYear()}`
+              : 'Sélectionner'}
+          </Text>
+        </Pressable>
+
+        {Platform.OS === 'ios' && (
+          <Modal visible={showDatePicker} transparent animationType="slide">
+            <View style={styles.dateModalOverlay}>
+              <View style={styles.dateModalContent}>
+                <View style={styles.dateModalHeader}>
+                  <Text style={styles.dateModalTitle}>Date de naissance</Text>
+                  <Pressable onPress={() => setShowDatePicker(false)} style={styles.dateModalDone}>
+                    <Text style={styles.dateModalDoneText}>Confirmer</Text>
+                  </Pressable>
+                </View>
+                <DateTimePicker
+                  value={birthDate ?? new Date(2000, 0, 1)}
+                  mode="date"
+                  display="spinner"
+                  maximumDate={new Date()}
+                  minimumDate={new Date(1920, 0, 1)}
+                  onChange={(_, selected) => { if (selected) setBirthDate(selected); }}
+                  locale="fr-FR"
+                  themeVariant="dark"
+                  textColor={colors.textPrimary}
+                />
+              </View>
+            </View>
+          </Modal>
+        )}
+
+        {Platform.OS === 'android' && showDatePicker && (
+          <DateTimePicker
+            value={birthDate ?? new Date(2000, 0, 1)}
+            mode="date"
+            display="default"
+            maximumDate={new Date()}
+            minimumDate={new Date(1920, 0, 1)}
+            onChange={(_, selected) => {
+              setShowDatePicker(false);
+              if (selected) setBirthDate(selected);
+            }}
+          />
+        )}
+      </View>
+
+      <LocationSelector
+        value={residenceLocation}
+        onChange={setResidenceLocation}
+        label="Ville de résidence"
+        placeholder="Rechercher ta ville..."
+      />
+
+      {isDJ ? (
+        <LocationSelector
+          value={location}
+          onChange={setLocation}
+          label="Ville représentée"
+          placeholder="Rechercher la ville que tu représentes..."
+          restrictToCountries={['FR', 'CH']}
         />
+      ) : null}
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Genres musicaux</Text>
+        <View style={styles.genreGrid}>
+          {MUSIC_GENRES.map((genre) => (
+            <TouchableOpacity
+              key={genre}
+              testID={`genre-${genre}`}
+              style={[
+                styles.optionChip,
+                selectedGenres.includes(genre) && styles.optionChipActive,
+              ]}
+              onPress={() => toggleGenre(genre)}
+            >
+              <Text
+                style={[
+                  styles.optionLabel,
+                  selectedGenres.includes(genre) && styles.optionLabelActive,
+                ]}
+              >
+                {genre}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {isDJ ? (
@@ -176,32 +336,6 @@ export function EditProfileScreen() {
                     ]}
                   >
                     {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Genres musicaux</Text>
-            <View style={styles.genreGrid}>
-              {MUSIC_GENRES.slice(0, 20).map((genre) => (
-                <TouchableOpacity
-                  key={genre}
-                  testID={`genre-${genre}`}
-                  style={[
-                    styles.optionChip,
-                    selectedGenres.includes(genre) && styles.optionChipActive,
-                  ]}
-                  onPress={() => toggleGenre(genre)}
-                >
-                  <Text
-                    style={[
-                      styles.optionLabel,
-                      selectedGenres.includes(genre) && styles.optionLabelActive,
-                    ]}
-                  >
-                    {genre}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -259,6 +393,10 @@ export function EditProfileScreen() {
           <Text style={styles.saveButtonText}>Enregistrer</Text>
         )}
       </TouchableOpacity>
+
+      <Pressable style={styles.cancelButton} onPress={() => navigation.goBack()}>
+        <Text style={styles.cancelButtonText}>Quitter sans modifier</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -286,6 +424,94 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(240,239,244,0.05)',
   },
   bioInput: { minHeight: 80, textAlignVertical: 'top' },
+  dateTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(240,239,244,0.2)',
+    borderRadius: 8,
+    padding: spacing.md,
+    backgroundColor: 'rgba(240,239,244,0.05)',
+    gap: spacing.sm,
+  },
+  dateValue: {
+    flex: 1,
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+  datePlaceholder: { color: colors.textMuted },
+  dateModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  dateModalContent: {
+    backgroundColor: colors.backgroundElevated ?? colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: spacing.xl,
+  },
+  dateModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(240,239,244,0.1)',
+  },
+  dateModalTitle: {
+    fontFamily: fonts.heading.bold,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+  },
+  dateModalDone: { padding: spacing.xs },
+  dateModalDoneText: {
+    fontFamily: fonts.body.semiBold,
+    fontSize: fontSize.md,
+    color: colors.accent,
+  },
+  usernameInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  atPrefix: {
+    color: colors.textMuted,
+    fontFamily: fonts.body.medium,
+    fontSize: fontSize.md,
+    paddingLeft: spacing.md,
+    position: 'absolute',
+    zIndex: 1,
+    left: 0,
+  },
+  usernameInput: {
+    flex: 1,
+    paddingLeft: spacing.xl,
+  },
+  usernameStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  usernameAvailableText: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    color: colors.success,
+  },
+  usernameCheckingText: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  usernameErrorText: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    color: colors.error,
+    marginTop: 2,
+  },
   optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   genreGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   optionChip: {
@@ -313,5 +539,15 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontFamily: fonts.heading.bold,
     fontSize: fontSize.md,
+  },
+  cancelButton: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
+  },
+  cancelButtonText: {
+    color: colors.textMuted,
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.sm,
   },
 });

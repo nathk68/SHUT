@@ -265,8 +265,8 @@ export function ReplayPlayerScreen() {
   const [favsCount, setFavsCount] = useState(0);
   useEffect(() => {
     if (!eventIdForSocial || eventIdForSocial === 'replay') return;
-    likesService.getLikesCountForItems([eventIdForSocial]).then(setLikesCount);
-    favoritesService.getFavoritesCountForItem(eventIdForSocial).then(setFavsCount);
+    likesService.getLikesCountForItems([eventIdForSocial]).then(setLikesCount).catch(() => {});
+    favoritesService.getFavoritesCountForItem(eventIdForSocial).then(setFavsCount).catch(() => {});
   }, [eventIdForSocial]);
 
   const handleToggleLike = async () => {

@@ -17,6 +17,7 @@ import {
 } from 'expo-audio';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 
 // ─── Audio source options ──────────────────────────────────────────────────────
@@ -299,14 +300,10 @@ export function AudioCheckScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <Text style={styles.title}>
-        {'ENTRÉE '}
-        <Text style={styles.titleAccent}>AUDIO</Text>
-      </Text>
-      <Text style={styles.subtitle}>
-        Choisis comment connecter ta table de mix avant de streamer.
-      </Text>
+      <ScreenHeader
+        title="Entrée audio"
+        subtitle="Choisis comment connecter ta table de mix avant de streamer."
+      />
 
       {/* Audio source cards */}
       {AUDIO_OPTIONS.map((option) => {
@@ -503,14 +500,13 @@ export function AudioCheckScreen() {
         </Text>
       </View>
 
-      {/* VU-meter section */}
+      {/* VU-meter section — désactivé temporairement
       <View style={styles.vuSection}>
         <Text style={styles.vuTitle}>Test du niveau audio</Text>
         <Text style={styles.vuSubtitle}>
           Vérifie que le signal arrive bien dans l'app avant de passer à la caméra.
         </Text>
 
-        {/* Meter bar */}
         <View style={styles.meterTrack}>
           <Animated.View
             style={[
@@ -534,7 +530,6 @@ export function AudioCheckScreen() {
           </View>
         </View>
 
-        {/* Signal indicator */}
         <View style={styles.signalRow}>
           <View
             style={[
@@ -552,7 +547,6 @@ export function AudioCheckScreen() {
           </Text>
         </View>
 
-        {/* Test button */}
         <Pressable
           onPress={isTesting ? stopTest : startTest}
           style={[styles.testButton, isTesting && styles.testButtonStop]}
@@ -567,6 +561,7 @@ export function AudioCheckScreen() {
           </Text>
         </Pressable>
       </View>
+      */}
 
       {/* Continue button */}
       <Pressable
