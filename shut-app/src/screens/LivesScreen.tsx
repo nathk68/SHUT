@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { eventsService, userService } from '../services';
 import { LiveEvent } from '../types/event';
 import { User } from '../types/user';
@@ -16,7 +17,7 @@ import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme'
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { GlobalSearchOverlay } from '../components/search/GlobalSearchOverlay';
 
-const GENRES = ['Tous', 'Techno', 'House', 'Progressive', 'Minimal'] as const;
+const GENRE_KEYS = ['all', 'Techno', 'House', 'Progressive', 'Minimal'] as const;
 const MAX_VISIBLE_GENRES = 3;
 
 /** Extract Mux playback ID from a playback URL like https://stream.mux.com/{ID}.m3u8 */
@@ -29,10 +30,13 @@ function getMuxThumbnailUrl(playbackUrl: string | null): string | null {
 
 export function LivesScreen() {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
   const [lives, setLives] = useState<LiveEvent[] | null>(null);
   const [djProfiles, setDjProfiles] = useState<Record<string, User>>({});
-  const [activeGenre, setActiveGenre] = useState<string>('Tous');
+  const [activeGenre, setActiveGenre] = useState<string>('all');
   const [searchVisible, setSearchVisible] = useState(false);
+
+  const getGenreLabel = (key: string) => key === 'all' ? t('common.all') : key;
 
   // Real-time listener — updates when a live starts, ends, or playbackUrl changes
   useEffect(() => {
@@ -71,7 +75,7 @@ export function LivesScreen() {
 
   // Filter by genre — check both event.genre and DJ profile genres
   const filtered = livesLoaded
-    ? activeGenre === 'Tous'
+    ? activeGenre === 'all'
       ? lives
       : lives.filter((l) => {
           if (l.genre === activeGenre) return true;
@@ -84,8 +88,8 @@ export function LivesScreen() {
     <>
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <ScreenHeader
-        title="En direct"
-        subtitle="Tous les DJ en live autour de vous"
+        title={t('live.title')}
+        subtitle={t('live.subtitle')}
         rightAction={
           <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
             <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
@@ -100,14 +104,14 @@ export function LivesScreen() {
         style={styles.pillsRow}
         contentContainerStyle={styles.pillsContent}
       >
-        {GENRES.map((genre) => (
+        {GENRE_KEYS.map((genre) => (
           <Pressable
             key={genre}
             onPress={() => setActiveGenre(genre)}
             style={[styles.pill, activeGenre === genre && styles.pillActive]}
           >
             <Text style={[styles.pillText, activeGenre === genre && styles.pillTextActive]}>
-              {genre}
+              {getGenreLabel(genre)}
             </Text>
           </Pressable>
         ))}
@@ -117,7 +121,7 @@ export function LivesScreen() {
       {livesLoaded && filtered.length === 0 && (
         <View style={styles.emptyContainer}>
           <Ionicons name="radio-outline" size={40} color={colors.textMuted} />
-          <Text style={styles.emptyText}>Aucun live en cours</Text>
+          <Text style={styles.emptyText}>{t('live.noLives')}</Text>
         </View>
       )}
 

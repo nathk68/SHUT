@@ -15,10 +15,12 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParametresStackParamList } from '../navigation/MainTabs';
 import { useAuth } from '../contexts/AuthContext';
 import { userService } from '../services';
+import i18n from '../i18n';
 import { AvatarPicker } from '../components/profile/AvatarPicker';
 import { LocationSelector, LocationValue } from '../components/ui/LocationSelector';
 import { colors, fonts, fontSize, spacing } from '../config/theme';
@@ -29,16 +31,17 @@ import { changeUsername } from '../services/username/username.service';
 
 type Nav = NativeStackNavigationProp<ParametresStackParamList, 'EditProfile'>;
 
-const EXPERIENCE_OPTIONS: { value: ExperienceLevel; label: string }[] = [
-  { value: 'debutant', label: 'Débutant' },
-  { value: 'intermediaire', label: 'Intermédiaire' },
-  { value: 'confirme', label: 'Confirmé' },
-  { value: 'professionnel', label: 'Professionnel' },
-];
+const EXPERIENCE_VALUES: ExperienceLevel[] = ['debutant', 'intermediaire', 'confirme', 'professionnel'];
 
 export function EditProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
   const { user, updateUser } = useAuth();
+
+  const experienceOptions = EXPERIENCE_VALUES.map((v) => ({
+    value: v,
+    label: t(`editProfile.experienceOptions.${v}`),
+  }));
 
   const { username: editedUsername, setUsername: setEditedUsername, status: usernameStatus, error: usernameError } = useUsernameCheck(user?.username);
 
@@ -88,7 +91,7 @@ export function EditProfileScreen() {
 
   const handleSave = useCallback(async () => {
     if (editedUsername && usernameStatus !== 'available' && editedUsername !== user?.username) {
-      Alert.alert('Erreur', usernameError ?? 'Ce pseudo n\'est pas disponible');
+      Alert.alert(t('common.error'), usernameError ?? t('validation.usernameNotAvailable'));
       return;
     }
     setSaving(true);
@@ -123,7 +126,7 @@ export function EditProfileScreen() {
       await updateUser(payload);
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert('Erreur', err?.message ?? 'Impossible de sauvegarder');
+      Alert.alert(t('common.error'), err?.message ?? t('validation.cannotSave'));
     } finally {
       setSaving(false);
     }
@@ -146,7 +149,7 @@ export function EditProfileScreen() {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Pseudo</Text>
+        <Text style={styles.label}>{t('editProfile.username')}</Text>
         <View style={styles.usernameInputRow}>
           <Text style={styles.atPrefix}>@</Text>
           <TextInput
@@ -154,7 +157,7 @@ export function EditProfileScreen() {
             value={editedUsername}
             onChangeText={setEditedUsername}
             placeholderTextColor={colors.textSecondary}
-            placeholder="ton_pseudo"
+            placeholder={t('editProfile.usernamePlaceholder')}
             autoCapitalize="none"
             autoCorrect={false}
           />
@@ -162,11 +165,11 @@ export function EditProfileScreen() {
         {usernameStatus === 'available' && editedUsername !== (user?.username ?? '') && (
           <View style={styles.usernameStatusRow}>
             <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-            <Text style={styles.usernameAvailableText}>Pseudo disponible</Text>
+            <Text style={styles.usernameAvailableText}>{t('common.usernameAvailable')}</Text>
           </View>
         )}
         {usernameStatus === 'checking' && (
-          <Text style={styles.usernameCheckingText}>Vérification...</Text>
+          <Text style={styles.usernameCheckingText}>{t('common.usernameChecking')}</Text>
         )}
         {usernameError && (
           <Text style={styles.usernameErrorText}>{usernameError}</Text>
@@ -175,7 +178,7 @@ export function EditProfileScreen() {
 
       {isDJ ? (
         <View style={styles.field}>
-          <Text style={styles.label}>Nom d'artiste</Text>
+          <Text style={styles.label}>{t('editProfile.artistName')}</Text>
           <TextInput
             testID="input-artistName"
             style={styles.input}
@@ -188,7 +191,7 @@ export function EditProfileScreen() {
 
       <View style={styles.row}>
         <View style={[styles.field, styles.flex]}>
-          <Text style={styles.label}>Prénom</Text>
+          <Text style={styles.label}>{t('editProfile.firstName')}</Text>
           <TextInput
             testID="input-firstName"
             style={styles.input}
@@ -198,7 +201,7 @@ export function EditProfileScreen() {
           />
         </View>
         <View style={[styles.field, styles.flex]}>
-          <Text style={styles.label}>Nom</Text>
+          <Text style={styles.label}>{t('editProfile.lastName')}</Text>
           <TextInput
             testID="input-lastName"
             style={styles.input}
@@ -210,7 +213,7 @@ export function EditProfileScreen() {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Bio</Text>
+        <Text style={styles.label}>{t('editProfile.bio')}</Text>
         <TextInput
           testID="input-bio"
           style={[styles.input, styles.bioInput]}
@@ -223,13 +226,13 @@ export function EditProfileScreen() {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Date de naissance</Text>
+        <Text style={styles.label}>{t('editProfile.birthDate')}</Text>
         <Pressable style={styles.dateTrigger} onPress={() => setShowDatePicker(true)}>
           <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
           <Text style={[styles.dateValue, !birthDate && styles.datePlaceholder]}>
             {birthDate
               ? `${String(birthDate.getDate()).padStart(2, '0')}/${String(birthDate.getMonth() + 1).padStart(2, '0')}/${birthDate.getFullYear()}`
-              : 'Sélectionner'}
+              : t('editProfile.selectDate')}
           </Text>
         </Pressable>
 
@@ -238,9 +241,9 @@ export function EditProfileScreen() {
             <View style={styles.dateModalOverlay}>
               <View style={styles.dateModalContent}>
                 <View style={styles.dateModalHeader}>
-                  <Text style={styles.dateModalTitle}>Date de naissance</Text>
+                  <Text style={styles.dateModalTitle}>{t('editProfile.birthDate')}</Text>
                   <Pressable onPress={() => setShowDatePicker(false)} style={styles.dateModalDone}>
-                    <Text style={styles.dateModalDoneText}>Confirmer</Text>
+                    <Text style={styles.dateModalDoneText}>{t('common.confirm')}</Text>
                   </Pressable>
                 </View>
                 <DateTimePicker
@@ -250,7 +253,7 @@ export function EditProfileScreen() {
                   maximumDate={new Date()}
                   minimumDate={new Date(1920, 0, 1)}
                   onChange={(_, selected) => { if (selected) setBirthDate(selected); }}
-                  locale="fr-FR"
+                  locale={i18n.language === 'fr' ? 'fr-FR' : 'en-US'}
                   themeVariant="dark"
                   textColor={colors.textPrimary}
                 />
@@ -277,22 +280,22 @@ export function EditProfileScreen() {
       <LocationSelector
         value={residenceLocation}
         onChange={setResidenceLocation}
-        label="Ville de résidence"
-        placeholder="Rechercher ta ville..."
+        label={t('editProfile.residenceCity')}
+        placeholder={t('editProfile.residenceCityPlaceholder')}
       />
 
       {isDJ ? (
         <LocationSelector
           value={location}
           onChange={setLocation}
-          label="Ville représentée"
-          placeholder="Rechercher la ville que tu représentes..."
+          label={t('editProfile.representedCity')}
+          placeholder={t('editProfile.representedCityPlaceholder')}
           restrictToCountries={['FR', 'CH']}
         />
       ) : null}
 
       <View style={styles.field}>
-        <Text style={styles.label}>Genres musicaux</Text>
+        <Text style={styles.label}>{t('editProfile.genres')}</Text>
         <View style={styles.genreGrid}>
           {MUSIC_GENRES.map((genre) => (
             <TouchableOpacity
@@ -320,9 +323,9 @@ export function EditProfileScreen() {
       {isDJ ? (
         <>
           <View style={styles.field}>
-            <Text style={styles.label}>Expérience</Text>
+            <Text style={styles.label}>{t('editProfile.experience')}</Text>
             <View style={styles.optionRow}>
-              {EXPERIENCE_OPTIONS.map((opt) => (
+              {experienceOptions.map((opt) => (
                 <TouchableOpacity
                   key={opt.value}
                   testID={`exp-${opt.value}`}
@@ -390,12 +393,12 @@ export function EditProfileScreen() {
         {saving ? (
           <ActivityIndicator color={colors.white} />
         ) : (
-          <Text style={styles.saveButtonText}>Enregistrer</Text>
+          <Text style={styles.saveButtonText}>{t('editProfile.save')}</Text>
         )}
       </TouchableOpacity>
 
       <Pressable style={styles.cancelButton} onPress={() => navigation.goBack()}>
-        <Text style={styles.cancelButtonText}>Quitter sans modifier</Text>
+        <Text style={styles.cancelButtonText}>{t('editProfile.cancelWithoutChanges')}</Text>
       </Pressable>
     </ScrollView>
   );

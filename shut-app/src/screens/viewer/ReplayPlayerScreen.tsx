@@ -18,6 +18,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useEvent, useEventListener } from 'expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import { userService, replaysService, likesService, favoritesService } from '../../services';
@@ -44,6 +45,7 @@ function formatTime(secs: number) {
 }
 
 export function ReplayPlayerScreen() {
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<any>();
   const route = useRoute<Route>();
   const {
@@ -180,8 +182,8 @@ export function ReplayPlayerScreen() {
   const handleMore = () => {
     if (Platform.OS === 'ios') {
       const options = isOwner
-        ? ['Modifier', 'Archiver', 'Supprimer', 'Annuler']
-        : ['Signaler', 'Annuler'];
+        ? [t('replayPlayer.edit'), t('replayPlayer.archive'), t('replayPlayer.delete'), t('common.cancel')]
+        : [t('replayPlayer.report'), t('common.cancel')];
       const cancelIdx = options.length - 1;
       const destructiveIdx = isOwner ? 2 : 0;
 
@@ -210,12 +212,12 @@ export function ReplayPlayerScreen() {
   const handleArchive = () => {
     if (!replayId) return;
     Alert.alert(
-      'Archiver la rediffusion',
-      'La rediffusion ne sera plus visible sur votre profil mais restera dans votre bibliothèque.',
+      t('replayPlayer.archiveTitle'),
+      t('replayPlayer.archiveMessage'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Archiver',
+          text: t('common.archive'),
           onPress: async () => {
             await replaysService.updateReplay(replayId, { status: 'draft', publishedAt: null });
             navigation.goBack();
@@ -228,12 +230,12 @@ export function ReplayPlayerScreen() {
   const handleDelete = () => {
     if (!replayId) return;
     Alert.alert(
-      'Supprimer la rediffusion',
-      'Cette action est irréversible.',
+      t('replayPlayer.deleteTitle'),
+      t('replayPlayer.deleteMessage'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             // For now, archive it (actual deletion would need a Cloud Function)
@@ -246,11 +248,11 @@ export function ReplayPlayerScreen() {
   };
 
   const handleReport = () => {
-    Alert.alert('Signaler', 'Cette rediffusion a été signalée. Merci pour votre retour.');
+    Alert.alert(t('replayPlayer.report'), t('replayPlayer.reportMessage'));
   };
 
   const handleShare = async () => {
-    await Share.share({ message: `Écoute "${title}" par ${djName} sur SHUT !` });
+    await Share.share({ message: t('replayPlayer.shareMessage', { title, djName }) });
   };
 
   const handleTogglePlay = () => {
@@ -309,7 +311,7 @@ export function ReplayPlayerScreen() {
         <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.closeBtn}>
           <Ionicons name="close" size={24} color={colors.white} />
         </Pressable>
-        <Text style={styles.topTitle} numberOfLines={1}>{title || 'Rediffusion'}</Text>
+        <Text style={styles.topTitle} numberOfLines={1}>{title || t('common.replay')}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -338,7 +340,7 @@ export function ReplayPlayerScreen() {
               <View style={styles.infoTag}>
                 <Ionicons name="calendar-outline" size={12} color={colors.white} />
                 <Text style={styles.infoTagText}>
-                  {new Date(replayDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {new Date(replayDate).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </Text>
               </View>
             )}
@@ -420,21 +422,21 @@ export function ReplayPlayerScreen() {
               <>
                 <Pressable style={styles.menuItem} onPress={() => { setMenuVisible(false); handleEdit(); }}>
                   <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
-                  <Text style={styles.menuText}>Modifier</Text>
+                  <Text style={styles.menuText}>{t('replayPlayer.edit')}</Text>
                 </Pressable>
                 <Pressable style={styles.menuItem} onPress={() => { setMenuVisible(false); handleArchive(); }}>
                   <Ionicons name="archive-outline" size={20} color={colors.textPrimary} />
-                  <Text style={styles.menuText}>Archiver</Text>
+                  <Text style={styles.menuText}>{t('replayPlayer.archive')}</Text>
                 </Pressable>
                 <Pressable style={styles.menuItem} onPress={() => { setMenuVisible(false); handleDelete(); }}>
                   <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                  <Text style={[styles.menuText, { color: '#ef4444' }]}>Supprimer</Text>
+                  <Text style={[styles.menuText, { color: '#ef4444' }]}>{t('replayPlayer.delete')}</Text>
                 </Pressable>
               </>
             ) : (
               <Pressable style={styles.menuItem} onPress={() => { setMenuVisible(false); handleReport(); }}>
                 <Ionicons name="flag-outline" size={20} color="#ef4444" />
-                <Text style={[styles.menuText, { color: '#ef4444' }]}>Signaler</Text>
+                <Text style={[styles.menuText, { color: '#ef4444' }]}>{t('replayPlayer.report')}</Text>
               </Pressable>
             )}
           </View>

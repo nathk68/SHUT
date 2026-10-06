@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { AuthStackParamList } from '../navigation/AuthStack';
 import { colors, fonts, fontSize, spacing } from '../config/theme';
 import { setStoredData } from '../utils/storage';
@@ -11,6 +12,7 @@ type Nav = NativeStackNavigationProp<AuthStackParamList, 'SplashLanding'>;
 
 export function SplashLandingScreen() {
   const navigation = useNavigation<Nav>();
+  const { t } = useTranslation();
 
   const handleExplore = useCallback(async () => {
     await setStoredData('@shut_has_seen_splash', true);
@@ -47,14 +49,14 @@ export function SplashLandingScreen() {
       {/* Hero text + CTA — légèrement par-dessus le bas de l'image */}
       <View style={styles.bottom}>
         <View style={styles.hero}>
-          <Text style={styles.title}>LA PLANÈTE DES DJ</Text>
-          <Text style={styles.titleAccent}>EN LIVE</Text>
+          <Text style={styles.title}>{t('splash.title')}</Text>
+          <Text style={styles.titleAccent}>{t('splash.titleAccent')}</Text>
           <Text style={styles.tagline}>
-            Des DJ. Des villes. Des cultures.{'\n'}Un seul endroit.
+            {t('splash.tagline')}
           </Text>
         </View>
         <Pressable style={styles.button} onPress={handleExplore}>
-          <Text style={styles.buttonText}>Explorer</Text>
+          <Text style={styles.buttonText}>{t('splash.explore')}</Text>
         </Pressable>
       </View>
     </View>

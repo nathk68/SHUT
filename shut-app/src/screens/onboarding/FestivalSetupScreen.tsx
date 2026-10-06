@@ -15,10 +15,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 
 export function FestivalSetupScreen() {
   const { user, refreshUser, logout } = useAuth();
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -26,7 +28,7 @@ export function FestivalSetupScreen() {
 
   const handleCreate = useCallback(async () => {
     if (!name.trim()) {
-      Alert.alert('Erreur', 'Le nom du festival est requis.');
+      Alert.alert(t('common.error'), t('onboarding.festivalSetup.nameRequired'));
       return;
     }
 
@@ -53,7 +55,7 @@ export function FestivalSetupScreen() {
       await refreshUser();
     } catch (error) {
       console.error('Festival creation error:', error);
-      Alert.alert('Erreur', 'Impossible de créer le festival. Vérifiez vos règles Firestore.');
+      Alert.alert(t('common.error'), t('onboarding.festivalSetup.createError'));
     } finally {
       setLoading(false);
     }
@@ -76,30 +78,30 @@ export function FestivalSetupScreen() {
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>Créez votre festival</Text>
+          <Text style={styles.title}>{t('onboarding.festivalSetup.title')}</Text>
           <Text style={styles.subtitle}>
-            Ces informations seront visibles par vos spectateurs.
+            {t('onboarding.festivalSetup.subtitle')}
           </Text>
 
           {/* Form */}
           <View style={styles.form}>
             <Input
-              label="Nom du festival"
-              placeholder="Ex: Nuit Sonore, Sonar, Dour..."
+              label={t('onboarding.festivalSetup.nameLabel')}
+              placeholder={t('onboarding.festivalSetup.namePlaceholder')}
               value={name}
               onChangeText={setName}
               icon="flag-outline"
             />
             <Input
-              label="Ville / Lieu"
-              placeholder="Ex: Lyon, France"
+              label={t('onboarding.festivalSetup.locationLabel')}
+              placeholder={t('onboarding.festivalSetup.locationPlaceholder')}
               value={location}
               onChangeText={setLocation}
               icon="location-outline"
             />
             <Input
-              label="Description (optionnel)"
-              placeholder="Présentez votre festival en quelques mots..."
+              label={t('onboarding.festivalSetup.descriptionLabel')}
+              placeholder={t('onboarding.festivalSetup.descriptionPlaceholder')}
               value={description}
               onChangeText={setDescription}
               icon="document-text-outline"
@@ -107,14 +109,14 @@ export function FestivalSetupScreen() {
           </View>
 
           <Button
-            title={loading ? 'Création...' : 'Créer le festival'}
+            title={loading ? t('onboarding.festivalSetup.creating') : t('onboarding.festivalSetup.createButton')}
             onPress={handleCreate}
             size="lg"
             style={styles.button}
           />
 
           <Button
-            title="Se déconnecter"
+            title={t('onboarding.festivalSetup.logout')}
             onPress={logout}
             variant="ghost"
             size="md"

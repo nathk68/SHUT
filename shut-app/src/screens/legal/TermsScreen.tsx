@@ -78,7 +78,7 @@ export function TermsScreen() {
           SHUT se réserve le droit de supprimer tout contenu ou de suspendre tout compte
           qui ne respecte pas les présentes CGU, sans préavis et sans justification
           obligatoire. Les décisions de modération peuvent faire l'objet d'un recours
-          par e-mail à support@shut.live.
+          par e-mail à support@shutdiffusion.com.
         </P>
 
         <H1>7. Disponibilité du service</H1>
@@ -127,7 +127,7 @@ export function TermsScreen() {
 
         <H1>13. Contact</H1>
         <P>
-          Pour toute question relative aux présentes CGU : legal@shut.live
+          Pour toute question relative aux présentes CGU : legal@shutdiffusion.com
         </P>
       </ScrollView>
     </View>

@@ -40,7 +40,7 @@ export function PrivacyPolicyScreen() {
 
         <H1>1. Responsable du traitement</H1>
         <P>
-          SHUT SAS, société en cours d'immatriculation, joignable à privacy@shut.live.
+          SHUT SAS, société en cours d'immatriculation, joignable à legal@shutdiffusion.com.
         </P>
 
         <H1>2. Données collectées</H1>
@@ -108,7 +108,7 @@ export function PrivacyPolicyScreen() {
         <Li>Droit de retirer votre consentement à tout moment</Li>
 
         <P>
-          Pour exercer vos droits : privacy@shut.live{'\n'}
+          Pour exercer vos droits : legal@shutdiffusion.com{'\n'}
           Réponse sous 30 jours maximum.
         </P>
 

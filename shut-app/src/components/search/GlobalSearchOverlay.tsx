@@ -19,6 +19,7 @@ import { eventsService, replaysService, userService } from '../../services';
 import type { User } from '../../types/user';
 import type { LiveEvent } from '../../types/event';
 import type { Replay } from '../../types';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 
 interface Props {
@@ -31,6 +32,7 @@ function matches(text: string | null | undefined, q: string): boolean {
 }
 
 export function GlobalSearchOverlay({ visible, onClose }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const progress = useRef(new Animated.Value(0)).current;
@@ -176,7 +178,7 @@ export function GlobalSearchOverlay({ visible, onClose }: Props) {
           <TextInput
             ref={inputRef}
             style={styles.input}
-            placeholder="DJ, genre, live, rediffusion..."
+            placeholder={t('search.placeholder')}
             placeholderTextColor={colors.textMuted}
             value={query}
             onChangeText={setQuery}
@@ -191,7 +193,7 @@ export function GlobalSearchOverlay({ visible, onClose }: Props) {
             </Pressable>
           ) : null}
           <Pressable onPress={handleClose} hitSlop={8} style={styles.cancelBtn}>
-            <Text style={styles.cancelText}>Fermer</Text>
+            <Text style={styles.cancelText}>{t('search.close')}</Text>
           </Pressable>
         </View>
       </Animated.View>
@@ -215,20 +217,20 @@ export function GlobalSearchOverlay({ visible, onClose }: Props) {
           {!loading && !hasQuery && (
             <View style={styles.hint}>
               <Ionicons name="search-outline" size={28} color={colors.textMuted} />
-              <Text style={styles.hintText}>Tape au moins 2 caractères</Text>
+              <Text style={styles.hintText}>{t('search.minChars')}</Text>
             </View>
           )}
 
           {!loading && hasQuery && !hasResults && (
             <View style={styles.hint}>
-              <Text style={styles.hintText}>Aucun résultat pour "{query}"</Text>
+              <Text style={styles.hintText}>{t('search.noResults', { query })}</Text>
             </View>
           )}
 
           {/* ── DJs ── */}
           {filteredDJs.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>DJs</Text>
+              <Text style={styles.sectionTitle}>{t('search.sectionDJs')}</Text>
               {filteredDJs.map((dj) => (
                 <Pressable
                   key={dj.id}
@@ -267,7 +269,7 @@ export function GlobalSearchOverlay({ visible, onClose }: Props) {
           {/* ── Lives ── */}
           {filteredLives.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>En direct</Text>
+              <Text style={styles.sectionTitle}>{t('search.sectionLive')}</Text>
               {filteredLives.map((live) => (
                 <Pressable
                   key={live.id}
@@ -302,7 +304,7 @@ export function GlobalSearchOverlay({ visible, onClose }: Props) {
           {/* ── Rediffusions ── */}
           {filteredReplays.length > 0 && (
             <>
-              <Text style={styles.sectionTitle}>Rediffusions</Text>
+              <Text style={styles.sectionTitle}>{t('search.sectionReplays')}</Text>
               {filteredReplays.map((replay) => (
                 <Pressable
                   key={replay.id}
@@ -311,7 +313,7 @@ export function GlobalSearchOverlay({ visible, onClose }: Props) {
                     handleNavigate(() =>
                       navigation.navigate('ReplayPlayer', {
                         playbackUrl: replay.playbackUrl,
-                        title: replay.title || 'Rediffusion',
+                        title: replay.title || t('common.replay'),
                         trimStart: replay.trimStart ?? 0,
                         trimEnd: replay.trimEnd ?? 0,
                         replayId: replay.id,
@@ -330,7 +332,7 @@ export function GlobalSearchOverlay({ visible, onClose }: Props) {
                   )}
                   <View style={styles.rowInfo}>
                     <Text style={styles.rowTitle} numberOfLines={1}>
-                      {replay.title || 'Sans titre'}
+                      {replay.title || t('common.untitled')}
                     </Text>
                     {replay.genres && replay.genres.length > 0 && (
                       <Text style={styles.rowSub} numberOfLines={1}>

@@ -18,6 +18,7 @@ import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
 } from '@expo-google-fonts/jetbrains-mono';
+import './src/i18n';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { RoleProvider } from './src/contexts/RoleContext';
 import { PreferencesProvider } from './src/contexts/PreferencesContext';

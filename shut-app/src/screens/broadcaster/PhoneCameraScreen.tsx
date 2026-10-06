@@ -13,6 +13,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { eventsService, streamingService } from '../../services';
 import { usePreferences } from '../../contexts/PreferencesContext';
@@ -73,6 +74,7 @@ export function PhoneCameraScreen() {
     rtmpUrl: string; streamKey: string; eventId?: string; mode?: 'phone' | 'external';
   };
   const isExternal = mode === 'external';
+  const { t } = useTranslation();
   const { recordLives } = usePreferences();
   const insets = useSafeAreaInsets();
   const nodeRef = useRef<any>(null);
@@ -252,8 +254,8 @@ export function PhoneCameraScreen() {
     setPhase('preview');
     if (code < 0) {
       Alert.alert(
-        'Erreur de connexion',
-        `Impossible de joindre le serveur RTMP (code ${code}).\nVérifie que tes identifiants sont valides.`,
+        t('broadcaster.phoneCamera.connectionError'),
+        t('broadcaster.phoneCamera.connectionErrorMessage', { code }),
       );
     }
   }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -262,7 +264,7 @@ export function PhoneCameraScreen() {
 
   const handleGoLive = useCallback(() => {
     if (!NodePublisher) {
-      Alert.alert('Build requis', 'Lance npx expo run:ios pour activer le streaming.');
+      Alert.alert(t('broadcaster.phoneCamera.buildRequired'), t('broadcaster.phoneCamera.buildRequiredMessage'));
       return;
     }
     setPhase('handoff'); // triggers the handoff state machine above
@@ -270,10 +272,10 @@ export function PhoneCameraScreen() {
   }, []);
 
   const handleStop = useCallback(() => {
-    Alert.alert('Arrêter le live ?', 'Le stream sera coupé.', [
-      { text: 'Annuler', style: 'cancel' },
+    Alert.alert(t('broadcaster.phoneCamera.stopLiveTitle'), t('broadcaster.phoneCamera.stopLiveMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Arrêter',
+        text: t('broadcaster.phoneCamera.stop'),
         style: 'destructive',
         onPress: () => {
           if (isExternal) {
@@ -309,18 +311,18 @@ export function PhoneCameraScreen() {
   function handleBack() {
     if (isExternal) {
       if (extIsLive) {
-        Alert.alert('Quitter ?', 'Le live continuera depuis ta camera externe.', [
-          { text: 'Rester', style: 'cancel' },
-          { text: 'Quitter', onPress: () => navigation.goBack() },
+        Alert.alert(t('broadcaster.phoneCamera.quitTitle'), t('broadcaster.phoneCamera.quitExternalMessage'), [
+          { text: t('broadcaster.phoneCamera.stay'), style: 'cancel' },
+          { text: t('common.quit'), onPress: () => navigation.goBack() },
         ]);
       } else {
         navigation.goBack();
       }
     } else if (phase !== 'preview') {
-      Alert.alert('Quitter ?', 'Le live sera interrompu.', [
-        { text: 'Rester', style: 'cancel' },
+      Alert.alert(t('broadcaster.phoneCamera.quitTitle'), t('broadcaster.phoneCamera.quitPhoneMessage'), [
+        { text: t('broadcaster.phoneCamera.stay'), style: 'cancel' },
         {
-          text: 'Quitter',
+          text: t('common.quit'),
           style: 'destructive',
           onPress: () => { callNP(nodeRef, 'stop'); navigation.goBack(); },
         },
@@ -336,12 +338,12 @@ export function PhoneCameraScreen() {
     return (
       <View style={styles.permWall}>
         <Ionicons name="camera-off-outline" size={40} color={colors.textMuted} />
-        <Text style={styles.permTitle}>Caméra ou micro bloqué</Text>
+        <Text style={styles.permTitle}>{t('broadcaster.phoneCamera.permBlockedTitle')}</Text>
         <Text style={styles.permDesc}>
-          Autorise SHUT à accéder à la caméra ET au microphone dans les Réglages iOS.
+          {t('broadcaster.phoneCamera.permBlockedDesc')}
         </Text>
         <Pressable onPress={() => Linking.openSettings()} style={styles.permBtn}>
-          <Text style={styles.permBtnText}>Ouvrir les Réglages</Text>
+          <Text style={styles.permBtnText}>{t('broadcaster.phoneCamera.openSettings')}</Text>
         </Pressable>
       </View>
     );
@@ -365,10 +367,9 @@ export function PhoneCameraScreen() {
           {!extIsLive && (
             <View style={styles.extWaiting}>
               <Ionicons name="videocam-outline" size={48} color="rgba(255,255,255,0.2)" />
-              <Text style={styles.extWaitingTitle}>En attente de la camera...</Text>
+              <Text style={styles.extWaitingTitle}>{t('broadcaster.phoneCamera.extWaitingTitle')}</Text>
               <Text style={styles.extWaitingDesc}>
-                Lance le stream depuis ta camera externe.{'\n'}
-                Le flux apparaitra automatiquement ici.
+                {t('broadcaster.phoneCamera.extWaitingDesc')}
               </Text>
             </View>
           )}
@@ -422,14 +423,14 @@ export function PhoneCameraScreen() {
             ]} />
             <Text style={styles.badgeText}>
               {isLive
-                ? 'EN DIRECT'
+                ? t('broadcaster.phoneCamera.statusLive')
                 : isExternal
-                  ? 'EN ATTENTE'
+                  ? t('broadcaster.phoneCamera.statusWaiting')
                   : isConnecting || phase === 'handoff'
-                    ? 'CONNEXION…'
+                    ? t('broadcaster.phoneCamera.statusConnecting')
                     : isReconnecting
-                      ? 'RECONNEXION…'
-                      : 'HORS LIGNE'}
+                      ? t('broadcaster.phoneCamera.statusReconnecting')
+                      : t('broadcaster.phoneCamera.statusOffline')}
             </Text>
           </View>
 
@@ -462,12 +463,12 @@ export function PhoneCameraScreen() {
           {(isLive || isReconnecting) ? (
             <Pressable onPress={handleStop} style={[styles.mainBtn, styles.mainBtnStop]}>
               <View style={styles.stopSquare} />
-              <Text style={styles.mainBtnText}>Arrêter</Text>
+              <Text style={styles.mainBtnText}>{t('broadcaster.phoneCamera.stop')}</Text>
             </Pressable>
           ) : isExternal ? (
             <View style={[styles.mainBtn, styles.mainBtnConnecting]}>
               <Ionicons name="radio-outline" size={20} color="#fff" />
-              <Text style={styles.mainBtnText}>En attente...</Text>
+              <Text style={styles.mainBtnText}>{t('broadcaster.phoneCamera.waiting')}</Text>
             </View>
           ) : (
             <Pressable
@@ -477,7 +478,7 @@ export function PhoneCameraScreen() {
             >
               <Ionicons name="radio-outline" size={20} color="#fff" />
               <Text style={styles.mainBtnText}>
-                {phase === 'preview' ? 'Lancer le live' : 'Connexion…'}
+                {phase === 'preview' ? t('broadcaster.phoneCamera.goLive') : t('broadcaster.phoneCamera.connecting')}
               </Text>
             </Pressable>
           )}

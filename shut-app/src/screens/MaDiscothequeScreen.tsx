@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,12 +30,6 @@ type SortMode = 'recent' | 'alpha' | 'duration';
 type SubTab = 'discotheque' | 'favoris';
 
 const PULL_THRESHOLD = 80;
-
-const SORT_OPTIONS: { mode: SortMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { mode: 'recent', label: 'Récent', icon: 'time-outline' },
-  { mode: 'alpha', label: 'A-Z', icon: 'text-outline' },
-  { mode: 'duration', label: 'Durée', icon: 'timer-outline' },
-];
 
 function formatDuration(secs: number) {
   const h = Math.floor(secs / 3600);
@@ -60,8 +55,15 @@ function sortReplays(arr: Replay[], mode: SortMode): Replay[] {
 export function MaDiscothequeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { favoriteIds, isLoading: favLoading } = useFavorites();
+
+  const SORT_OPTIONS: { mode: SortMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { mode: 'recent', label: t('common.sort.recent'), icon: 'time-outline' },
+    { mode: 'alpha', label: t('common.sort.alpha'), icon: 'text-outline' },
+    { mode: 'duration', label: t('common.sort.duration'), icon: 'timer-outline' },
+  ];
 
   // ── Discothèque state (DJ's own replays) ──
   const [replays, setReplays] = useState<Replay[] | null>(null);
@@ -220,8 +222,8 @@ export function MaDiscothequeScreen() {
           <View style={styles.emptyIconWrap}>
             <Ionicons name="disc-outline" size={28} color={colors.accent} />
           </View>
-          <Text style={styles.emptyTitle}>Aucune rediffusion</Text>
-          <Text style={styles.emptyText}>Lance ton premier live pour voir tes rediffusions ici</Text>
+          <Text style={styles.emptyTitle}>{t('discotheque.noReplays')}</Text>
+          <Text style={styles.emptyText}>{t('discotheque.startFirstLive')}</Text>
         </View>
       );
     }
@@ -229,9 +231,9 @@ export function MaDiscothequeScreen() {
     return (
       <>
         <Text style={styles.sectionCount}>
-          {replays.length} rediffusion{replays.length > 1 ? 's' : ''}
-          {publishedCount > 0 ? ` · ${publishedCount} publiée${publishedCount > 1 ? 's' : ''}` : ''}
-          {draftCount > 0 ? ` · ${draftCount} brouillon${draftCount > 1 ? 's' : ''}` : ''}
+          {t('discotheque.replayCount', { count: replays.length })}
+          {publishedCount > 0 ? ` · ${t('discotheque.publishedCount', { count: publishedCount })}` : ''}
+          {draftCount > 0 ? ` · ${t('discotheque.draftCount', { count: draftCount })}` : ''}
         </Text>
 
         {renderSortChips(sortMode, setSortMode)}
@@ -245,7 +247,7 @@ export function MaDiscothequeScreen() {
                 if (replay.status === 'published') {
                   navigation.navigate('ReplayPlayer', {
                     playbackUrl: replay.playbackUrl,
-                    title: replay.title || 'Rediffusion',
+                    title: replay.title || t('common.replay'),
                     trimStart: replay.trimStart ?? 0,
                     trimEnd: replay.trimEnd ?? 0,
                     replayId: replay.id,
@@ -276,7 +278,7 @@ export function MaDiscothequeScreen() {
               {/* Info */}
               <View style={styles.cardInfo}>
                 <Text style={styles.cardTitle} numberOfLines={1}>
-                  {replay.title || 'Sans titre'}
+                  {replay.title || t('common.untitled')}
                 </Text>
 
                 {replay.genres.length > 0 && (
@@ -286,7 +288,7 @@ export function MaDiscothequeScreen() {
                 )}
 
                 <Text style={styles.cardDate}>
-                  {new Date(replay.createdAt).toLocaleDateString('fr-FR', {
+                  {new Date(replay.createdAt).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
                     day: 'numeric',
                     month: 'short',
                     year: 'numeric',
@@ -306,7 +308,7 @@ export function MaDiscothequeScreen() {
                     styles.statusText,
                     { color: replay.status === 'published' ? colors.success : colors.warning },
                   ]}>
-                    {replay.status === 'published' ? 'Publiée' : 'Brouillon'}
+                    {replay.status === 'published' ? t('common.published') : t('common.draft')}
                   </Text>
                 </View>
               </View>
@@ -332,9 +334,9 @@ export function MaDiscothequeScreen() {
           <View style={styles.emptyIconWrap}>
             <Ionicons name="heart-outline" size={28} color={colors.accent} />
           </View>
-          <Text style={styles.emptyTitle}>Aucun favori</Text>
+          <Text style={styles.emptyTitle}>{t('discotheque.noFavorites')}</Text>
           <Text style={styles.emptyText}>
-            Ajoute des rediffusions en favoris{'\n'}pour les retrouver ici
+            {t('discotheque.addFavoritesHint')}
           </Text>
         </View>
       );
@@ -343,7 +345,7 @@ export function MaDiscothequeScreen() {
     return (
       <>
         <Text style={styles.sectionCount}>
-          {favReplays.length} favori{favReplays.length > 1 ? 's' : ''}
+          {t('discotheque.favoriteCount', { count: favReplays.length })}
         </Text>
 
         {renderSortChips(favSortMode, setFavSortMode)}
@@ -358,7 +360,7 @@ export function MaDiscothequeScreen() {
                 onPress={() =>
                   navigation.navigate('ReplayPlayer', {
                     playbackUrl: replay.playbackUrl,
-                    title: replay.title || 'Rediffusion',
+                    title: replay.title || t('common.replay'),
                     trimStart: replay.trimStart ?? 0,
                     trimEnd: replay.trimEnd ?? 0,
                     replayId: replay.id,
@@ -384,7 +386,7 @@ export function MaDiscothequeScreen() {
 
                 <View style={styles.cardInfo}>
                   <Text style={styles.cardTitle} numberOfLines={1}>
-                    {replay.title || 'Sans titre'}
+                    {replay.title || t('common.untitled')}
                   </Text>
                   {djLabel ? (
                     <Text style={styles.cardDj} numberOfLines={1}>{djLabel}</Text>
@@ -421,7 +423,7 @@ export function MaDiscothequeScreen() {
       scrollEventThrottle={16}
     >
       <ScreenHeader
-        title="Mes sets"
+        title={t('discotheque.title')}
         rightAction={
           <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
             <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
@@ -441,7 +443,7 @@ export function MaDiscothequeScreen() {
             color={activeTab === 'discotheque' ? colors.white : colors.textSecondary}
           />
           <Text style={[styles.tabPillText, activeTab === 'discotheque' && styles.tabPillTextActive]}>
-            Mes sets
+            {t('discotheque.mySets')}
           </Text>
           {replays.length > 0 && (
             <View style={[styles.tabBadge, activeTab === 'discotheque' && styles.tabBadgeActive]}>
@@ -462,7 +464,7 @@ export function MaDiscothequeScreen() {
             color={activeTab === 'favoris' ? colors.white : colors.textSecondary}
           />
           <Text style={[styles.tabPillText, activeTab === 'favoris' && styles.tabPillTextActive]}>
-            Favoris
+            {t('discotheque.favorites')}
           </Text>
           {favReplays.length > 0 && (
             <View style={[styles.tabBadge, activeTab === 'favoris' && styles.tabBadgeActive]}>

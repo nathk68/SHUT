@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m b/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m
-index c8b3efb..patched 100644
+index c8b3efb..76187d2 100644
 --- a/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m
 +++ b/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m
 @@ -9,6 +9,7 @@
@@ -7,16 +7,14 @@ index c8b3efb..patched 100644
  #import "RCTNodeMediaClient.h"
  #import <NodeMediaClient/NodeMediaClient.h>
 +#import <AVFoundation/AVFoundation.h>
-
+ 
  @interface RCTNodePublisherView () <NodePublisherDelegate>
-
-@@ -23,9 +24,16 @@
- - (id)init {
-   self = [super init];
-   if (self) {
+ 
+@@ -25,12 +26,20 @@ - (id)init {
        _np = [[NodePublisher alloc] initWithLicense:[RCTNodeMediaClient license]];
        [_np setNodePublisherDelegate:self];
        [_np attachView:self];
++      // Track device orientation so the preview layer stays correctly oriented.
 +      [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
 +      [[NSNotificationCenter defaultCenter] addObserver:self
 +                                               selector:@selector(deviceOrientationDidChange)
@@ -25,8 +23,7 @@ index c8b3efb..patched 100644
    }
    return self;
  }
-
-@@ -33,6 +41,8 @@
+ 
  - (void)dealloc
  {
 +    [[NSNotificationCenter defaultCenter] removeObserver:self];
@@ -34,14 +31,15 @@ index c8b3efb..patched 100644
      [_np detachView];
      [_np closeCamera];
      [_np stop];
- }
-
-@@ -131,12 +148,58 @@ -(int)startPreview {
+@@ -131,7 +140,16 @@ -(int)stop {
  -(int)startPreview {
      _isPreview = true;
      NSLog(@"suze %f %f",self.bounds.size.width,self.bounds.size.height);
 -    return [_np openCameraDevice:_cameraDevice withFront:_frontCamera];;
 +    int result = [_np openCameraDevice:_cameraDevice withFront:_frontCamera];
++    // openCameraDevice: starts the AVCaptureSession asynchronously.
++    // Kick off the orientation-fix loop after a short delay; it will retry
++    // automatically until the AVCaptureConnection becomes available.
 +    __weak typeof(self) weakSelf = self;
 +    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(300 * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
 +        [weakSelf setNeedsLayout];
@@ -49,12 +47,14 @@ index c8b3efb..patched 100644
 +    });
 +    return result;
  }
-
+ 
  -(int)stopPreview {
-     _isPreview = false;
+@@ -139,4 +157,83 @@ -(int)stopPreview {
      return [_np closeCamera];
  }
-
+ 
++// ── Orientation helpers ──────────────────────────────────────────────────────
++
 +- (AVCaptureVideoOrientation)preferredVideoOrientation {
 +    switch ([UIDevice currentDevice].orientation) {
 +        case UIDeviceOrientationLandscapeLeft:
@@ -68,6 +68,9 @@ index c8b3efb..patched 100644
 +    }
 +}
 +
++// Returns the rotation angle (degrees) for videoRotationAngle (iOS 17+).
++// AVCaptureConnection.videoRotationAngle: 0=landscape-right, 90=portrait,
++// 180=landscape-left, 270=portrait-upside-down.
 +- (CGFloat)rotationAngleForCurrentOrientation {
 +    switch ([UIDevice currentDevice].orientation) {
 +        case UIDeviceOrientationLandscapeLeft:      return 0.0;
@@ -77,18 +80,26 @@ index c8b3efb..patched 100644
 +    }
 +}
 +
++// Finds the AVCaptureVideoPreviewLayer sublayer and applies the correct
++// orientation + gravity.  If the AVCaptureConnection is not yet established
++// (session still starting up), schedules itself to retry in 200 ms.
 +- (void)applyPreviewOrientation {
 +    for (CALayer *layer in self.layer.sublayers) {
 +        if (![layer isKindOfClass:[AVCaptureVideoPreviewLayer class]]) continue;
++
 +        AVCaptureVideoPreviewLayer *previewLayer = (AVCaptureVideoPreviewLayer *)layer;
 +        previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
++
 +        if (previewLayer.connection == nil) {
++            // Session not fully started yet — retry in 200 ms.
 +            __weak typeof(self) weakSelf = self;
 +            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(200 * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
 +                if (weakSelf.isPreview) [weakSelf applyPreviewOrientation];
 +            });
 +            return;
 +        }
++
++        // iOS 17+ deprecates videoOrientation in favour of videoRotationAngle.
 +        if (@available(iOS 17.0, *)) {
 +            CGFloat angle = [self rotationAngleForCurrentOrientation];
 +            if ([previewLayer.connection isVideoRotationAngleSupported:angle]) {
@@ -109,6 +120,11 @@ index c8b3efb..patched 100644
 +    }
 +}
 +
++// ── Layout ──────────────────────────────────────────────────────────────────
++
++// Resize every sublayer to fill the view (covers AVCaptureVideoPreviewLayer
++// and any Metal/GL layer NodeMediaClient may add) whenever React Native
++// updates the frame.
 +- (void)layoutSubviews {
 +    [super layoutSubviews];
 +    for (CALayer *layer in self.layer.sublayers) {

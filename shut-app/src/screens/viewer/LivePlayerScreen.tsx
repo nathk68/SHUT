@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { LiveActionBar } from '../../components/live/LiveActionBar';
 import { eventsService, userService } from '../../services';
@@ -21,6 +22,7 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'LivePlayer'>;
 
 export function LivePlayerScreen({ navigation, route }: Props) {
   const { eventId } = route.params;
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const [viewCount, setViewCount] = useState(0);
@@ -165,7 +167,7 @@ export function LivePlayerScreen({ navigation, route }: Props) {
           style={styles.waitingOverlay}
         >
           <Ionicons name="videocam-off-outline" size={48} color="rgba(255,255,255,0.3)" />
-          <Text style={styles.waitingLabel}>En attente du flux...</Text>
+          <Text style={styles.waitingLabel}>{t('live.waitingForStream')}</Text>
         </LinearGradient>
       )}
 
@@ -173,8 +175,8 @@ export function LivePlayerScreen({ navigation, route }: Props) {
       {isReconnecting && (
         <View style={styles.reconnectOverlay}>
           <Ionicons name="wifi-outline" size={36} color="rgba(255,255,255,0.5)" />
-          <Text style={styles.reconnectTitle}>Connexion instable</Text>
-          <Text style={styles.reconnectSub}>Le diffuseur tente de se reconnecter…</Text>
+          <Text style={styles.reconnectTitle}>{t('live.unstableConnection')}</Text>
+          <Text style={styles.reconnectSub}>{t('live.broadcasterReconnecting')}</Text>
         </View>
       )}
 

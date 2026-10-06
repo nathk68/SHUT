@@ -2,17 +2,19 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { usePreferences, type Language } from '../../contexts/PreferencesContext';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
-
-const OPTIONS: { value: Language; label: string; native: string }[] = [
-  { value: 'fr', label: 'Français', native: 'Français' },
-  { value: 'en', label: 'English', native: 'English' },
-];
 
 export function LanguageScreen() {
   const navigation = useNavigation();
   const { language, setLanguage } = usePreferences();
+  const { t } = useTranslation();
+
+  const OPTIONS: { value: Language; label: string; native: string }[] = [
+    { value: 'fr', label: t('languageScreen.french'), native: 'Français' },
+    { value: 'en', label: t('languageScreen.english'), native: 'English' },
+  ];
 
   const handleSelect = async (lang: Language) => {
     await setLanguage(lang);
@@ -25,7 +27,7 @@ export function LanguageScreen() {
         <Pressable onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </Pressable>
-        <Text style={styles.title}>Langue</Text>
+        <Text style={styles.title}>{t('languageScreen.title')}</Text>
       </View>
 
       <View style={styles.card}>
@@ -53,7 +55,7 @@ export function LanguageScreen() {
       </View>
 
       <Text style={styles.note}>
-        Le changement de langue s'applique immédiatement.
+        {t('languageScreen.note')}
       </Text>
     </View>
   );

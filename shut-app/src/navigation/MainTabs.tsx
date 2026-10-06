@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
@@ -252,11 +253,12 @@ function ParametresStackScreen() {
 // ─── Main tabs ────────────────────────────────────────────────────────────────
 
 export function MainTabs() {
+  const { t } = useTranslation();
   const { isAuthenticated, isGuest, user } = useAuth();
   const { currentRole } = useRole();
   const isDJ = isAuthenticated && currentRole === 'broadcaster';
 
-  const liveClubLabel = isDJ ? 'Mes sets' : 'Mes favoris';
+  const liveClubLabel = isDJ ? t('navigation.mySets') : t('navigation.myFavorites');
   const LiveClubComponent = isDJ ? LiveClubStackScreen : FavorisStackScreen;
 
   return (
@@ -294,18 +296,18 @@ export function MainTabs() {
       <Tab.Screen
         name="ShutDiffusion"
         component={ExploreStackScreen}
-        options={{ tabBarLabel: 'Explorer' }}
+        options={{ tabBarLabel: t('navigation.explore') }}
       />
       <Tab.Screen
         name="Live"
         component={LiveStackScreen}
-        options={{ tabBarLabel: 'En direct' }}
+        options={{ tabBarLabel: t('navigation.live') }}
       />
       {isDJ && (
         <Tab.Screen
           name="GoLive"
           component={GoLiveStackScreen}
-          options={{ tabBarLabel: 'DJ Live' }}
+          options={{ tabBarLabel: t('navigation.djLive') }}
         />
       )}
       <Tab.Screen
@@ -316,7 +318,7 @@ export function MainTabs() {
       <Tab.Screen
         name="Parametres"
         component={ParametresStackScreen}
-        options={{ tabBarLabel: 'Profil' }}
+        options={{ tabBarLabel: t('navigation.profile') }}
       />
     </Tab.Navigator>
   );

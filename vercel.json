@@ -4,6 +4,7 @@
     { "src": "scroll-stop/**/*", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/auth/reset", "dest": "/scroll-stop/auth/reset.html" },
     { "src": "/(.*)", "dest": "/scroll-stop/$1" }
   ]
 }

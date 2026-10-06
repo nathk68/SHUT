@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { followService, userService } from '../services';
@@ -14,6 +15,7 @@ type Mode = 'followers' | 'following';
 type Params = { userId: string; mode: Mode };
 
 export function FollowListScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<{ FollowList: Params }, 'FollowList'>>();
   const { userId, mode } = route.params;
@@ -34,7 +36,7 @@ export function FollowListScreen() {
     load().catch(() => setLoading(false));
   }, [userId, mode]);
 
-  const title = mode === 'followers' ? 'Abonnés' : 'Abonnements';
+  const title = mode === 'followers' ? t('followList.followers') : t('followList.following');
 
   const renderItem = ({ item }: { item: User }) => {
     const label = item.artistName ?? item.firstName ?? item.displayName;
@@ -69,7 +71,7 @@ export function FollowListScreen() {
       ) : users.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.empty}>
-            {mode === 'followers' ? 'Aucun abonné' : 'Aucun abonnement'}
+            {mode === 'followers' ? t('followList.noFollowers') : t('followList.noFollowing')}
           </Text>
         </View>
       ) : (

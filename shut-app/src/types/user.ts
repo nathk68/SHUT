@@ -38,6 +38,7 @@ export interface User {
   followersCount?: number;
   followingCount?: number;
   totalLikesCount?: number;
+  language?: string;
 }
 
 export interface AuthState {

@@ -6,6 +6,7 @@ import { AvatarPicker } from './AvatarPicker';
 import { ExperienceTag } from './ExperienceTag';
 import { FollowButton } from './FollowButton';
 import { SocialLinks } from './SocialLinks';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing } from '../../config/theme';
 
 function countryFlag(code: string): string {
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followLoading = false, onEditPress, onFollowPress, onAvatarPick, onFollowersTap, onFollowingTap }: Props) {
+  const { t } = useTranslation();
   const displayLabel = user.artistName ?? user.firstName ?? user.displayName;
   const hasSocials = user.socialLinks && Object.values(user.socialLinks).some(Boolean);
 
@@ -58,12 +60,12 @@ export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followL
       <View style={styles.stats}>
         <Pressable style={styles.stat} onPress={onFollowersTap}>
           <Text style={styles.statValue}>{user.followersCount ?? 0}</Text>
-          <Text style={styles.statLabel}>Abonnés</Text>
+          <Text style={styles.statLabel}>{t('followList.followers')}</Text>
         </Pressable>
         <View style={styles.statDivider} />
         <Pressable style={styles.stat} onPress={onFollowingTap}>
           <Text style={styles.statValue}>{user.followingCount ?? 0}</Text>
-          <Text style={styles.statLabel}>Abonnements</Text>
+          <Text style={styles.statLabel}>{t('followList.following')}</Text>
         </Pressable>
         <View style={styles.statDivider} />
         <View style={styles.stat}>
@@ -76,7 +78,7 @@ export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followL
         {user.experience ? <ExperienceTag level={user.experience} /> : null}
         {isOwnProfile ? (
           <Pressable testID="edit-profile-button" style={styles.editButton} onPress={onEditPress}>
-            <Text style={styles.editButtonText}>Modifier le profil</Text>
+            <Text style={styles.editButtonText}>{t('profile.editProfile')}</Text>
           </Pressable>
         ) : (
           <FollowButton isFollowing={isFollowing} onPress={onFollowPress ?? (() => {})} loading={followLoading} />

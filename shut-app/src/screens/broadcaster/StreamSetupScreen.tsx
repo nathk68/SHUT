@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
@@ -37,6 +38,7 @@ type Route = RouteProp<PlanningStackParamList, 'StreamSetup'>;
 export function StreamSetupScreen() {
   const navigation = useNavigation<Navigation>();
   const route = useRoute<Route>();
+  const { t } = useTranslation();
   const { eventId } = route.params;
   const [showKey, setShowKey] = useState(false);
   const [event, setEvent] = useState<LiveEvent | null>(null);
@@ -88,7 +90,7 @@ export function StreamSetupScreen() {
       await fetchEvent();
     } catch (error: any) {
       const msg = error?.message ?? error?.code ?? JSON.stringify(error);
-      Alert.alert('Erreur', msg);
+      Alert.alert(t('common.error'), msg);
     } finally {
       setPreparing(false);
     }
@@ -106,12 +108,12 @@ export function StreamSetupScreen() {
 
   const handleStopEvent = useCallback(() => {
     Alert.alert(
-      'Terminer l\'événement',
-      'Cela arrêtera le flux et marquera l\'événement comme terminé.',
+      t('broadcaster.streamSetup.stopEventTitle'),
+      t('broadcaster.streamSetup.stopEventMessage'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Terminer',
+          text: t('broadcaster.streamSetup.stopEventConfirm'),
           style: 'destructive',
           onPress: async () => {
             setStopping(true);
@@ -120,7 +122,7 @@ export function StreamSetupScreen() {
               await fetchEvent();
               navigation.goBack();
             } catch (error: any) {
-              Alert.alert('Erreur', error?.message ?? 'Impossible d\'arrêter le stream.');
+              Alert.alert(t('common.error'), error?.message ?? t('broadcaster.streamSetup.cannotStop'));
             } finally {
               setStopping(false);
             }
@@ -128,7 +130,7 @@ export function StreamSetupScreen() {
         },
       ],
     );
-  }, [eventId, fetchEvent, navigation]);
+  }, [t, eventId, fetchEvent, navigation]);
 
   const handleGoLive = useCallback(() => {
     if (!event) return;

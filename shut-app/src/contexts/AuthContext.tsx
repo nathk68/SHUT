@@ -21,6 +21,7 @@ interface AuthContextType extends AuthState {
   exitGuestMode: () => void;
   refreshUser: () => Promise<void>;
   updateUser: (patch: UpdateProfilePayload) => Promise<void>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -117,6 +118,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // (client-side deletion of others' documents is blocked by Firestore rules)
   }, [state.user]);
 
+  const resetPassword = useCallback(async (email: string) => {
+    return authService.resetPassword(email);
+  }, []);
+
   const updateUser = useCallback(async (patch: UpdateProfilePayload) => {
     if (!state.user) return;
     const updated = await userService.updateProfile(state.user.id, patch);
@@ -124,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.user]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, deleteAccount, enterGuestMode, exitGuestMode, refreshUser, updateUser }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, deleteAccount, enterGuestMode, exitGuestMode, refreshUser, updateUser, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

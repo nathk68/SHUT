@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from '../i18n';
 
 export type Language = 'fr' | 'en';
 export type VideoQuality = 'auto' | '720p' | '480p' | '360p';
@@ -51,7 +52,10 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   }, []);
 
   const setLanguage = useCallback(
-    async (language: Language) => save({ ...prefs, language }),
+    async (language: Language) => {
+      i18n.changeLanguage(language);
+      return save({ ...prefs, language });
+    },
     [prefs, save],
   );
   const setVideoQuality = useCallback(

@@ -2,19 +2,21 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { usePreferences, type VideoQuality } from '../../contexts/PreferencesContext';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
-
-const OPTIONS: { value: VideoQuality; label: string; desc: string }[] = [
-  { value: 'auto', label: 'Automatique', desc: 'S\'adapte à ta connexion' },
-  { value: '720p', label: '720p — HD', desc: 'Haute définition, recommandé Wi-Fi' },
-  { value: '480p', label: '480p — SD', desc: 'Bonne qualité, économe en data' },
-  { value: '360p', label: '360p — Bas débit', desc: 'Connexions lentes ou instables' },
-];
 
 export function QualityScreen() {
   const navigation = useNavigation();
   const { videoQuality, setVideoQuality } = usePreferences();
+  const { t } = useTranslation();
+
+  const OPTIONS: { value: VideoQuality; label: string; desc: string }[] = [
+    { value: 'auto', label: t('qualityScreen.autoLabel'), desc: t('qualityScreen.autoDesc') },
+    { value: '720p', label: t('qualityScreen.hdLabel'), desc: t('qualityScreen.hdDesc') },
+    { value: '480p', label: t('qualityScreen.sdLabel'), desc: t('qualityScreen.sdDesc') },
+    { value: '360p', label: t('qualityScreen.lowLabel'), desc: t('qualityScreen.lowDesc') },
+  ];
 
   const handleSelect = async (quality: VideoQuality) => {
     await setVideoQuality(quality);
@@ -27,7 +29,7 @@ export function QualityScreen() {
         <Pressable onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </Pressable>
-        <Text style={styles.title}>Qualité vidéo</Text>
+        <Text style={styles.title}>{t('qualityScreen.title')}</Text>
       </View>
 
       <View style={styles.card}>
@@ -55,8 +57,7 @@ export function QualityScreen() {
       </View>
 
       <Text style={styles.note}>
-        La qualité s'applique aux prochains lives et rediffusions. En mode automatique,
-        le lecteur s'adapte en temps réel à ta bande passante.
+        {t('qualityScreen.note')}
       </Text>
     </View>
   );

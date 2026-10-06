@@ -1,0 +1,654 @@
+{
+  "common": {
+    "error": "Error",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "next": "Next",
+    "ok": "OK",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "publish": "Publish",
+    "quit": "Quit",
+    "archive": "Archive",
+    "report": "Report",
+    "replay": "Replay",
+    "untitled": "Untitled",
+    "bio": "Bio",
+    "genres": "Genres",
+    "username": "Username",
+    "usernameAvailable": "Username available",
+    "usernameChecking": "Checking...",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "birthDate": "Date of birth",
+    "published": "Published",
+    "draft": "Draft",
+    "all": "All",
+    "sort": {
+      "recent": "Recent",
+      "alpha": "A-Z",
+      "duration": "Duration"
+    },
+    "countries": {
+      "FR": "France",
+      "CH": "Switzerland"
+    }
+  },
+
+  "validation": {
+    "emailRequired": "Email required",
+    "emailInvalid": "Invalid email",
+    "passwordRequired": "Password required",
+    "passwordMin8": "Minimum 8 characters",
+    "passwordMin6": "Minimum 6 characters",
+    "passwordMismatch": "Passwords do not match",
+    "usernameRequired": "Username required",
+    "usernameUnavailable": "Username unavailable",
+    "usernameCheckInProgress": "Check in progress...",
+    "firstNameRequired": "First name required",
+    "lastNameRequired": "Last name required",
+    "birthDateRequired": "Date of birth required",
+    "selectAtLeastOneGenre": "Select at least one genre",
+    "fillAllFields": "Please fill in all fields",
+    "registrationFailed": "Registration failed",
+    "loginFailed": "Login failed",
+    "usernameTaken": "This username is already taken",
+    "usernameNotAvailable": "This username is not available",
+    "cannotSave": "Unable to save"
+  },
+
+  "auth": {
+    "tagline": "Live sound, no compromise",
+    "emailPlaceholder": "email@example.com",
+    "passwordPlaceholder": "Your password",
+    "login": "Log in",
+    "guestMode": "Guest mode",
+    "noAccount": "Don't have an account? ",
+    "register": "Sign up",
+    "demoAccounts": "Demo accounts",
+    "createAccount": "Create an account",
+    "joinShut": "Join the SHUT experience",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "Your name",
+    "iAm": "I am:",
+    "viewer": "Viewer",
+    "broadcasterFestival": "Broadcaster / Festival",
+    "alreadyHaveAccount": "Already have an account? ",
+    "passwordMinPlaceholder": "Minimum 6 characters",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordSending": "Sending...",
+    "forgotPasswordEnterEmail": "Enter your email above before resetting.",
+    "forgotPasswordSentTitle": "Email sent",
+    "forgotPasswordSentMessage": "A reset email has been sent. Check your inbox (and spam folder).",
+    "forgotPasswordError": "Unable to send reset email."
+  },
+
+  "onboarding": {
+    "whoAreYou": "Who are you?",
+    "bestExperience": "To prepare the best experience for you.",
+    "spectator": "Viewer",
+    "popular": "Popular",
+    "spectatorDesc": "Discover DJs from around the world and watch their live sets in real time.",
+    "iAmDJ": "I'm a DJ",
+    "djDesc": "You mix and want to broadcast your sets on SHUT. Submit your application.",
+    "organizer": "Organizer",
+    "organizerDesc": "Collective, club or festival.",
+    "comingSoon": "Coming soon",
+    "artisticDirector": "Artistic Director",
+    "artisticDirectorDesc": "You're looking for talent to book.",
+    "alreadyHaveAccount": "I already have an account",
+
+    "dj": {
+      "applicationTag": "DJ Application",
+      "stepTitles": [
+        "Your artistic identity",
+        "Your music genres",
+        "Where to find your work?",
+        "Create your account"
+      ],
+      "stepSubtitles": [
+        "Introduce yourself in a few words.",
+        "Select the genres you play.",
+        "A link to your sets, and your location.",
+        "You'll start as a viewer while waiting for approval."
+      ],
+      "artistNameRequired": "Artist name required",
+      "bioRequired": "Bio required",
+      "artistName": "Artist name",
+      "artistNamePlaceholder": "e.g.: DJ Koze, Reinier Zonneveld...",
+      "bioPresentation": "Bio / About",
+      "bioPlaceholder": "Tell us who you are, your style, your journey...",
+      "linksToSets": "Links to your sets",
+      "addAtLeastOneLink": "Add at least one link",
+      "linksPlaceholder": "SoundCloud, Mixcloud, YouTube, RA...",
+      "addLink": "Add a link",
+      "cityWhereYouLive": "City where you live",
+      "selectYourCity": "Select your city",
+      "sameAsResidence": "Same city as my residence",
+      "cityYouRepresent": "City you represent",
+      "searchRepresentedCity": "Search city...",
+      "selectRepresentedCity": "Select the city you represent",
+      "djNotice": "You'll join SHUT as a viewer. Your DJ profile will be activated after review by our team.",
+      "submitApplication": "Submit my application",
+      "confirmPasswordPlaceholder": "Repeat your password",
+      "passwordPlaceholder": "Minimum 8 characters"
+    },
+
+    "spectatorOnboarding": {
+      "stepTitles": [
+        "Choose your username",
+        "What's your name?",
+        "Your date of birth",
+        "Your favorite genres",
+        "Where are you? (optional)",
+        "Create your account"
+      ],
+      "stepSubtitles": [
+        "This will be your visible identifier on SHUT.",
+        "So we know what to call you.",
+        "To personalize your experience.",
+        "We'll recommend lives that match your taste.",
+        "To discover lives near you. You can skip this step.",
+        "To access the app."
+      ],
+      "usernamePlaceholder": "e.g.: beathead99",
+      "firstNamePlaceholder": "e.g.: Lucas",
+      "selectBirthDate": "Select your date of birth",
+      "createMyAccount": "Create my account",
+      "confirmPasswordPlaceholder": "Repeat your password",
+      "passwordPlaceholder": "Minimum 8 characters"
+    },
+
+    "da": {
+      "applicationTag": "Artistic Director Application",
+      "stepTitles": [
+        "Who are you?",
+        "Your venue",
+        "Where to find your venue?",
+        "Create your account"
+      ],
+      "stepSubtitles": [
+        "Introduce yourself and your establishment.",
+        "Some info about your venue.",
+        "A link to find your venue, and its location.",
+        "You'll start as a viewer while waiting for approval."
+      ],
+      "venueTypes": {
+        "club": "Club",
+        "festival": "Festival",
+        "both": "Both"
+      },
+      "capacityOptions": ["< 500", "500 – 2,000", "2,000+"],
+      "usernamePlaceholder": "e.g.: rexclub_paris",
+      "firstNamePlaceholder": "e.g.: Marie",
+      "lastNamePlaceholder": "e.g.: Dupont",
+      "venueName": "Club / festival name",
+      "venueNamePlaceholder": "e.g.: Rex Club, Sonar, Dour...",
+      "venueNameRequired": "Venue name required",
+      "venueType": "Venue type",
+      "selectType": "Select a type",
+      "capacity": "Capacity",
+      "selectCapacity": "Select a capacity",
+      "venueLink": "Link to your venue",
+      "venueLinkPlaceholder": "Website, Instagram, RA, Facebook...",
+      "venueLinkRequired": "Link required",
+      "description": "Description & needs",
+      "descriptionPlaceholder": "Tell us about your venue and what you're looking for...",
+      "descriptionRequired": "Description required",
+      "selectVenueCity": "Select the venue's city",
+      "professionalEmail": "Professional email",
+      "daNotice": "You'll join SHUT as a viewer. Your Artistic Director access will be activated after review by our team.",
+      "submitApplication": "Submit my application",
+      "confirmPasswordPlaceholder": "Repeat your password",
+      "passwordPlaceholder": "Minimum 8 characters"
+    },
+
+    "festivalSetup": {
+      "title": "Create your festival",
+      "subtitle": "This information will be visible to your viewers.",
+      "nameLabel": "Festival name",
+      "namePlaceholder": "E.g.: Nuit Sonore, Sonar, Dour...",
+      "locationLabel": "City / Venue",
+      "locationPlaceholder": "E.g.: Lyon, France",
+      "descriptionLabel": "Description (optional)",
+      "descriptionPlaceholder": "Describe your festival in a few words...",
+      "creating": "Creating...",
+      "createButton": "Create festival",
+      "logout": "Log out",
+      "nameRequired": "Festival name is required.",
+      "createError": "Unable to create festival. Check your Firestore rules."
+    }
+  },
+
+  "splash": {
+    "title": "THE DJs PLANET",
+    "titleAccent": "LIVE",
+    "tagline": "DJs. Cities. Cultures.\nOne place.",
+    "explore": "Explore"
+  },
+
+  "explore": {
+    "title": "DIFFUSION",
+    "subtitle": "Discover partner countries and their live scenes.",
+    "partnerCountries": "Partner countries",
+    "comingSoon": "Coming soon",
+    "searchCity": "Search a city",
+    "searchCityPlaceholder": "Type a city name...",
+    "chooseDJ": "Choose a DJ",
+    "allDJs": "All DJs",
+    "viewLives": "View lives",
+    "searchDJs": "Search DJs",
+    "djsFound": "{{count}} DJ found",
+    "djsFound_plural": "{{count}} DJs found",
+    "noDJsFound": "No DJs found for this selection."
+  },
+
+  "search": {
+    "placeholder": "DJ, genre, live, replay...",
+    "minChars": "Type at least 2 characters",
+    "noResults": "No results for \"{{query}}\"",
+    "sectionDJs": "DJs",
+    "sectionLive": "Live now",
+    "sectionReplays": "Replays",
+    "close": "Close"
+  },
+
+  "live": {
+    "title": "Live now",
+    "subtitle": "All DJs live near you",
+    "noLives": "No lives right now",
+    "waitingForStream": "Waiting for stream...",
+    "unstableConnection": "Unstable connection",
+    "broadcasterReconnecting": "The broadcaster is trying to reconnect…"
+  },
+
+  "goLive": {
+    "title": "DJ LIVE",
+    "subtitle": "Start your live and share your music with the world",
+    "startLive": "Start my live",
+    "djOnly": "This feature is reserved for DJ accounts",
+    "tagline": "Share your universe. Inspire. Connect."
+  },
+
+  "discotheque": {
+    "title": "My sets",
+    "mySets": "My sets",
+    "favorites": "Favorites",
+    "noReplays": "No replays",
+    "startFirstLive": "Start your first live to see your replays here",
+    "replayCount": "{{count}} replay",
+    "replayCount_plural": "{{count}} replays",
+    "publishedCount": "{{count}} published",
+    "publishedCount_plural": "{{count}} published",
+    "draftCount": "{{count}} draft",
+    "draftCount_plural": "{{count}} drafts",
+    "noFavorites": "No favorites",
+    "addFavoritesHint": "Add replays to your favorites\nto find them here",
+    "favoriteCount": "{{count}} favorite",
+    "favoriteCount_plural": "{{count}} favorites"
+  },
+
+  "mesFavoris": {
+    "title": "My favorites",
+    "replayCount": "{{count}} replay",
+    "replayCount_plural": "{{count}} replays",
+    "noFavorites": "No favorites",
+    "addFavoritesHint": "Add replays to your favorites\nto find them here"
+  },
+
+  "profile": {
+    "bio": "Bio",
+    "genres": "Genres",
+    "editProfile": "Edit profile",
+    "notFound": "Profile not found",
+    "memberSince": "Member since"
+  },
+
+  "editProfile": {
+    "username": "Username",
+    "usernamePlaceholder": "your_username",
+    "artistName": "Artist name",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "bio": "Bio",
+    "birthDate": "Date of birth",
+    "selectDate": "Select",
+    "residenceCity": "City of residence",
+    "residenceCityPlaceholder": "Search your city...",
+    "representedCity": "Represented city",
+    "representedCityPlaceholder": "Search the city you represent...",
+    "genres": "Music genres",
+    "experience": "Experience",
+    "experienceOptions": {
+      "debutant": "Beginner",
+      "intermediaire": "Intermediate",
+      "confirme": "Advanced",
+      "professionnel": "Professional"
+    },
+    "save": "Save",
+    "cancelWithoutChanges": "Leave without saving"
+  },
+
+  "followList": {
+    "followers": "Followers",
+    "following": "Following",
+    "noFollowers": "No followers",
+    "noFollowing": "Not following anyone"
+  },
+
+  "settings": {
+    "title": "Settings",
+    "viewProfile": "View profile",
+    "account": "Account",
+    "changePassword": "Change password",
+    "resetPasswordTitle": "Password reset",
+    "resetPasswordMessage": "A reset email will be sent to ",
+    "sendResetEmail": "Send",
+    "resetEmailSentTitle": "Email sent",
+    "resetEmailSentMessage": "A reset email has been sent. Check your inbox (and spam folder).",
+    "resetEmailError": "Unable to send reset email.",
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "disabled": "Disabled",
+    "enabled": "enabled",
+    "language": "Language",
+    "videoQuality": "Video quality",
+    "auto": "Automatic",
+    "french": "French",
+    "broadcasting": "Broadcasting",
+    "recordLives": "Record my lives",
+    "recordLivesDesc": "Each live will be recorded to create a replay",
+    "recordLivesAlertTitle": "Live recording",
+    "recordLivesAlertMessage": "This will reset your RTMP credentials. You'll need to regenerate them before your next live.",
+    "privacy": "Privacy & Legal",
+    "privacyPolicy": "Privacy policy",
+    "termsOfUse": "Terms of use",
+    "dataManagement": "Data management (GDPR)",
+    "support": "Support",
+    "helpCenter": "Help center",
+    "reportIssue": "Report an issue",
+    "about": "About",
+    "version": "Version",
+    "website": "SHUT website",
+    "dangerZone": "Danger zone",
+    "deleteAccount": "Delete my account",
+    "logoutTitle": "Log out",
+    "logoutMessage": "You will be logged out of SHUT.",
+    "deleteAccountReauthTitle": "Re-authentication required",
+    "deleteAccountReauthMessage": "For security reasons, please log out and log back in before deleting your account.",
+    "footer": "SHUT v0.1.0 — © 2026 SHUT. All rights reserved."
+  },
+
+  "languageScreen": {
+    "title": "Language",
+    "note": "Language change applies immediately.",
+    "french": "Français",
+    "english": "English"
+  },
+
+  "notificationsScreen": {
+    "title": "Notifications",
+    "livesLabel": "Live sessions",
+    "livesDesc": "A DJ you follow starts a live",
+    "followsLabel": "New followers",
+    "followsDesc": "Someone follows your profile",
+    "newsLabel": "SHUT news",
+    "newsDesc": "Updates and platform announcements",
+    "manageSystem": "Manage system permissions",
+    "note": "The preferences above control which types of notifications you receive. To enable or disable SHUT notifications globally, use your device's system settings."
+  },
+
+  "qualityScreen": {
+    "title": "Video quality",
+    "autoLabel": "Automatic",
+    "autoDesc": "Adapts to your connection",
+    "hdLabel": "720p — HD",
+    "hdDesc": "High definition, recommended on Wi-Fi",
+    "sdLabel": "480p — SD",
+    "sdDesc": "Good quality, saves data",
+    "lowLabel": "360p — Low bitrate",
+    "lowDesc": "Slow or unstable connections",
+    "note": "Quality applies to upcoming lives and replays. In automatic mode, the player adapts in real time to your bandwidth."
+  },
+
+  "broadcaster": {
+    "audioCheck": {
+      "title": "Audio input",
+      "subtitle": "Choose how to connect your mixer before streaming.",
+      "mixerCamera": "Mixer → Camera",
+      "recommended": "RECOMMENDED",
+      "mixerCameraDesc": "Connect the BOOTH or REC output of your mixer to your camera. Select your model below for the full tutorial.",
+      "usbInterface": "USB audio interface → iPhone",
+      "studio": "STUDIO",
+      "usbInterfaceDesc": "Mixer → USB audio interface (e.g.: Focusrite Scarlett Solo) → iPhone via USB-C hub. iOS detects it automatically.",
+      "usbSteps": [
+        "Connect your mixer to the audio interface input (XLR or 6.35mm jack)",
+        "Connect the interface to your iPhone via a USB-C hub (with power)",
+        "iOS detects the interface automatically — no driver needed",
+        "Run the test below to confirm the signal"
+      ],
+      "builtinMic": "Built-in iPhone mic",
+      "builtinMicDesc": "Insufficient quality for a professional DJ live. Use this option only to test the app.",
+      "builtinMicSteps": [
+        "No connection required",
+        "Position the phone 50–80 cm from the speakers to capture sound"
+      ],
+      "yourCamera": "Your camera",
+      "selectCamera": "Select your camera",
+      "appRequired": "App required: ",
+      "notCompatible": "Sorry, not compatible",
+      "configureCamera": "Configure camera →",
+      "cameraIncompatibleTitle": "Camera incompatible",
+      "cameraIncompatibleMessage": "This camera is not compatible with SHUT. Choose another camera or audio option.",
+      "permissionDeniedTitle": "Permission denied",
+      "permissionDeniedMessage": "Microphone access is required to test audio levels.",
+      "micErrorMessage": "Unable to access the microphone. Check permissions in iOS settings.",
+      "signalConfirmed": "Signal confirmed · ",
+      "activeInput": "Active input: ",
+      "defaultInput": "Built-in iPhone mic",
+      "usbInput": "USB interface · ",
+      "bluetoothInput": "Bluetooth · ",
+      "wiredInput": "Wired mic · "
+    },
+
+    "postLive": {
+      "title": "Replay",
+      "processingTitle": "Encoding in progress...",
+      "processingDesc": "Mux is preparing your replay.\nThis page will update automatically.",
+      "trimLabel": "Trim the replay",
+      "trimStart": "Start: ",
+      "trimEnd": "End: ",
+      "titleField": "Title",
+      "titlePlaceholder": "E.g.: Techno Set @ Festival XYZ",
+      "genresField": "Music genres",
+      "genresHint": "Select up to 5 genres",
+      "locationField": "Broadcast location",
+      "locationPlaceholder": "E.g.: Paris, France",
+      "dateField": "Live date",
+      "publishOnProfile": "Publish on my profile",
+      "saveToLibrary": "Save to my library",
+      "publishing": "Publishing...",
+      "saving": "Saving...",
+      "saveChanges": "Save changes",
+      "quitLoseChanges": "You will lose your changes.",
+      "quitLoseReplay": "You will lose the replay. Do you want to save it as a draft?",
+      "saveDraft": "Save as draft",
+      "titleRequired": "Title required",
+      "titleRequiredMessage": "Add a title before publishing.",
+      "publishedTitle": "Published!",
+      "publishedMessage": "Your replay is now visible on your profile.",
+      "publishError": "Unable to publish. Please try again.",
+      "savedTitle": "Saved",
+      "savedMessage": "The replay is in your library. You can publish it later.",
+      "saveError": "Unable to save. Please try again."
+    },
+
+    "quickStream": {
+      "headerTitle": "CAMERA + ",
+      "headerAccent": "STREAM",
+      "generateTitle": "Generate your SHUT credentials",
+      "generateDesc": "A unique RTMP link is created for your live. Paste it in DJI Mimo to stream directly to SHUT.",
+      "generating": "Generating...",
+      "generateButton": "Generate my credentials",
+      "generateError": "Unable to generate credentials. Please try again.",
+      "credentialsSection": "Broadcast credentials",
+      "fullUrlLabel": "Full URL (DJI Mimo)",
+      "rtmpUrlLabel": "RTMP URL (OBS / encoder)",
+      "streamKeyLabel": "Stream key",
+      "copied": "Copied!",
+      "copy": "Copy",
+      "guideFollowSteps": "Follow these steps once your credentials are generated.",
+      "audioReminder": "Audio reminder: your mixer output must be connected to the Osmo mic input BEFORE starting Mimo.",
+      "phoneCameraTitle": "This phone's camera",
+      "phoneCameraDesc": "Stream directly from this iPhone",
+      "goLive": "Start live →",
+      "regenerate": "Reset (generate new credentials)",
+      "djiSteps": [
+        { "title": "Open DJI Mimo", "desc": "Launch DJI Mimo and connect your DJI camera." },
+        { "title": "\"Live\" tab", "desc": "In Mimo, tap the Live icon at the bottom of the screen." },
+        { "title": "Custom RTMP", "desc": "Choose \"Custom RTMP\" from the list." },
+        { "title": "Paste the full URL", "desc": "Copy the full URL above (URL + key concatenated) and paste it in Mimo." },
+        { "title": "Check audio", "desc": "In Mimo settings, confirm the sound comes from the external mic input." },
+        { "title": "Start", "desc": "Tap \"Start\" in Mimo. Your SHUT live is running!" }
+      ],
+      "larixSteps": [
+        { "title": "Install Larix Broadcaster", "desc": "Download Larix Broadcaster from the App Store (free)." },
+        { "title": "Create a connection", "desc": "In Larix: Settings → Connections → + to add a connection." },
+        { "title": "Paste the RTMP URL", "desc": "URL: paste the SHUT RTMP URL. Stream name: paste your stream key separately." },
+        { "title": "Configure audio", "desc": "In Larix, select the jack input as audio source." },
+        { "title": "Select camera", "desc": "Choose front or rear camera in the Larix interface." },
+        { "title": "Start the live", "desc": "Tap the red button in Larix. Your SHUT live is running!" }
+      ],
+      "goproSteps": [
+        { "title": "GoPro Labs installed?", "desc": "Make sure you have installed the GoPro Labs firmware (gopro.com/labs) on your camera." },
+        { "title": "Copy the full URL", "desc": "Copy the full SHUT URL (URL + key concatenated) above." },
+        { "title": "Generate the QR code", "desc": "In the GoPro Quik app → Labs QR tab → create an \"RTMP\" QR code and paste your URL." },
+        { "title": "Scan with the GoPro", "desc": "On the GoPro: hold the Mode button → select \"Scan QR\" → scan the QR code." },
+        { "title": "Start", "desc": "Start the live from the GoPro. It streams directly to SHUT!" }
+      ],
+      "guides": {
+        "dji-pocket-3": { "title": "DJI Osmo Pocket 3 — DJI Mimo", "subtitle": "Configure DJI Mimo to stream to SHUT." },
+        "dji-pocket-2": { "title": "DJI Osmo Pocket 2 — DJI Mimo", "subtitle": "Configure DJI Mimo to stream to SHUT." },
+        "dji-action-4": { "title": "DJI Osmo Action 4 — DJI Mimo", "subtitle": "Configure DJI Mimo to stream to SHUT." },
+        "dji-action-3": { "title": "DJI Osmo Action 3 — DJI Mimo", "subtitle": "Configure DJI Mimo to stream to SHUT." },
+        "iphone": { "title": "iPhone — Larix Broadcaster", "subtitle": "Configure Larix Broadcaster to stream to SHUT." },
+        "gopro": { "title": "GoPro — GoPro Labs", "subtitle": "Configure your GoPro with Labs firmware to stream to SHUT." }
+      },
+      "defaultGuide": {
+        "title": "Camera setup",
+        "subtitle": "Paste the full RTMP URL in your camera's streaming app."
+      }
+    },
+
+    "phoneCamera": {
+      "connectionError": "Connection error",
+      "connectionErrorMessage": "Unable to reach the RTMP server (code {{code}}).\nCheck that your credentials are valid.",
+      "buildRequired": "Build required",
+      "buildRequiredMessage": "Run npx expo run:ios to enable streaming.",
+      "stopLiveTitle": "Stop the live?",
+      "stopLiveMessage": "The stream will be cut.",
+      "stop": "Stop",
+      "quitTitle": "Quit?",
+      "quitExternalMessage": "The live will continue from your external camera.",
+      "quitPhoneMessage": "The live will be interrupted.",
+      "stay": "Stay",
+      "permBlockedTitle": "Camera or mic blocked",
+      "permBlockedDesc": "Allow SHUT to access the camera AND microphone in iOS Settings.",
+      "openSettings": "Open Settings",
+      "extWaitingTitle": "Waiting for camera...",
+      "extWaitingDesc": "Start the stream from your external camera.\nThe feed will appear here automatically.",
+      "statusLive": "LIVE",
+      "statusWaiting": "WAITING",
+      "statusConnecting": "CONNECTING…",
+      "statusReconnecting": "RECONNECTING…",
+      "statusOffline": "OFFLINE",
+      "goLive": "Go live",
+      "connecting": "Connecting…",
+      "waiting": "Waiting..."
+    },
+
+    "createEvent": {
+      "titleRequired": "Title is required.",
+      "djNameRequired": "DJ name is required.",
+      "cannotCreate": "Unable to create the event.",
+      "editTitle": "Edit live",
+      "newTitle": "New live",
+      "successTitle": "Event created successfully",
+      "successEditMessage": "Your event has been updated.",
+      "successCreateMessage": "Your live has been scheduled successfully.",
+      "update": "Update",
+      "schedule": "Schedule live"
+    },
+
+    "streamSetup": {
+      "stopEventTitle": "End event",
+      "stopEventMessage": "This will stop the stream and mark the event as ended.",
+      "stopEventConfirm": "End",
+      "cannotStop": "Unable to stop the stream."
+    },
+
+    "planning": {
+      "cannotDelete": "Unable to delete the event."
+    },
+
+    "cameraManager": {
+      "cannotLoad": "Unable to load cameras.",
+      "regenerateKeyTitle": "Regenerate key",
+      "regenerateKeyMessage": "Regenerate the stream key for \"{{label}}\"? The old key will no longer work.",
+      "regenerate": "Regenerate",
+      "keyRegeneratedTitle": "Key regenerated",
+      "keyRegeneratedMessage": "The new key has been generated successfully.",
+      "cannotRegenerate": "Unable to regenerate the key.",
+      "deleteCameraTitle": "Delete camera",
+      "deleteCameraMessage": "Delete camera \"{{label}}\"? This action is irreversible.",
+      "cameraDeletedTitle": "Camera deleted",
+      "cameraDeletedMessage": "The camera has been deleted successfully.",
+      "cannotDeleteCamera": "Unable to delete the camera.",
+      "addCameraTitle": "Add a camera",
+      "addCameraMessage": "Enter the name of the new camera.",
+      "add": "Add",
+      "cameraNameRequired": "Camera name is required.",
+      "cameraAddedTitle": "Camera added",
+      "cameraAddedMessage": "The new camera has been added successfully.",
+      "cannotAddCamera": "Unable to add the camera.",
+      "addCameraButton": "Add a camera"
+    }
+  },
+
+  "replayPlayer": {
+    "edit": "Edit",
+    "archive": "Archive",
+    "delete": "Delete",
+    "report": "Report",
+    "archiveTitle": "Archive replay",
+    "archiveMessage": "The replay will no longer be visible on your profile but will remain in your library.",
+    "deleteTitle": "Delete replay",
+    "deleteMessage": "This action is irreversible.",
+    "reportMessage": "This replay has been reported. Thank you for your feedback.",
+    "shareMessage": "Listen to \"{{title}}\" by {{djName}} on SHUT!"
+  },
+
+  "location": {
+    "label": "City",
+    "placeholder": "Search a city...",
+    "selectCity": "Select a city",
+    "searchPlaceholder": "Type a city name...",
+    "partnerCountries": "Partner countries",
+    "wholeCountry": "Whole country",
+    "orSearchCity": "Or search a city",
+    "minChars": "Type at least 2 characters",
+    "noResults": "No city found"
+  },
+
+  "navigation": {
+    "explore": "Explore",
+    "live": "Live",
+    "djLive": "DJ Live",
+    "mySets": "My sets",
+    "myFavorites": "My favorites",
+    "profile": "Profile"
+  }
+}

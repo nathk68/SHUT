@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Avatar } from '../../components/ui/Avatar';
 import { Badge } from '../../components/ui/Badge';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRole } from '../../contexts/RoleContext';
@@ -19,6 +20,7 @@ import { useRole } from '../../contexts/RoleContext';
 
 export function ProfileScreen() {
   const { user, isAuthenticated, isGuest, logout, exitGuestMode } = useAuth();
+  const { t, i18n } = useTranslation();
   const { currentRole, switchRole } = useRole();
 
   const handleLogout = useCallback(async () => {
@@ -40,7 +42,7 @@ export function ProfileScreen() {
   if (!isAuthenticated) {
     return (
       <ScreenContainer>
-        <Header title="Profil" />
+        <Header title={t('navigation.profile')} />
         <View style={styles.guestContainer}>
           <View style={styles.guestIconContainer}>
             <LinearGradient
@@ -80,7 +82,7 @@ export function ProfileScreen() {
 
   return (
     <ScreenContainer>
-      <Header title="Profil" />
+      <Header title={t('navigation.profile')} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -123,10 +125,10 @@ export function ProfileScreen() {
 
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
-            <Text style={styles.infoLabel}>Membre depuis</Text>
+            <Text style={styles.infoLabel}>{t('profile.memberSince')}</Text>
             <Text style={styles.infoValue}>
               {user?.createdAt
-                ? new Date(user.createdAt).toLocaleDateString('fr-FR', {
+                ? new Date(user.createdAt).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
                     year: 'numeric',
                     month: 'long',
                   })

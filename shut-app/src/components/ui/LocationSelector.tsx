@@ -11,6 +11,8 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 
 // ─── Public interface (backward-compatible) ───────────────────────────────────
@@ -51,12 +53,12 @@ interface SearchResult {
   flag: string;
 }
 
-async function searchCities(query: string, limit = 20): Promise<SearchResult[]> {
+async function searchCities(query: string, limit = 20, lang = 'fr'): Promise<SearchResult[]> {
   const q = query.trim();
   if (q.length < 2) return [];
 
   try {
-    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=${limit}&lang=fr&osm_tag=place:city&osm_tag=place:town&osm_tag=place:village`;
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=${limit}&lang=${lang}&osm_tag=place:city&osm_tag=place:town&osm_tag=place:village`;
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
@@ -88,23 +90,21 @@ async function searchCities(query: string, limit = 20): Promise<SearchResult[]> 
   }
 }
 
-// ─── Partner country names ────────────────────────────────────────────────────
-
-const COUNTRY_NAMES: Record<string, string> = {
-  FR: 'France',
-  CH: 'Suisse',
-};
+// ─── Partner country names (resolved via i18n) ──────────────────────────────
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function LocationSelector({
   value,
   onChange,
-  label = 'Ville',
-  placeholder = 'Rechercher une ville...',
+  label,
+  placeholder,
   error,
   restrictToCountries,
 }: Props) {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t('location.label');
+  const resolvedPlaceholder = placeholder ?? t('location.placeholder');
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -142,7 +142,7 @@ export function LocationSelector({
     setSearching(true);
     debounceRef.current = setTimeout(async () => {
       const fetchLimit = restrictToCountries?.length ? 80 : 20;
-      let res = await searchCities(text, fetchLimit);
+      let res = await searchCities(text, fetchLimit, i18n.language);
       if (restrictToCountries?.length) {
         res = res.filter(r => restrictToCountries.includes(r.countryCode));
       }
@@ -161,13 +161,13 @@ export function LocationSelector({
   }, [onChange]);
 
   const handleSelectCountry = useCallback((code: string) => {
-    onChange({ countryCode: code, cityName: COUNTRY_NAMES[code] ?? code });
+    onChange({ countryCode: code, cityName: t(`common.countries.${code}`, { defaultValue: code }) });
     setModalVisible(false);
-  }, [onChange]);
+  }, [onChange, t]);
 
   const countryOptions = restrictToCountries?.map(code => ({
     code,
-    name: COUNTRY_NAMES[code] ?? code,
+    name: t(`common.countries.${code}`, { defaultValue: code }),
     flag: countryFlag(code),
   }));
 
@@ -194,7 +194,7 @@ export function LocationSelector({
 
   return (
     <View style={styles.container}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {resolvedLabel ? <Text style={styles.label}>{resolvedLabel}</Text> : null}
 
       <Pressable onPress={handleOpen} style={[styles.trigger, error && styles.triggerError]}>
         <Ionicons name="location-outline" size={18} color={colors.textMuted} />
@@ -211,7 +211,7 @@ export function LocationSelector({
             </Pressable>
           </>
         ) : (
-          <Text style={styles.triggerPlaceholder}>{placeholder}</Text>
+          <Text style={styles.triggerPlaceholder}>{resolvedPlaceholder}</Text>
         )}
       </Pressable>
 
@@ -225,7 +225,7 @@ export function LocationSelector({
       >
         <SafeAreaView style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Sélectionner une ville</Text>
+            <Text style={styles.modalTitle}>{t('location.selectCity')}</Text>
             <Pressable onPress={handleClose} hitSlop={8}>
               <Ionicons name="close" size={24} color={colors.textPrimary} />
             </Pressable>
@@ -236,7 +236,7 @@ export function LocationSelector({
             <TextInput
               ref={inputRef}
               style={styles.searchInput}
-              placeholder="Tape le nom d'une ville..."
+              placeholder={t('location.searchPlaceholder')}
               placeholderTextColor={colors.textMuted}
               value={searchText}
               onChangeText={handleSearchChange}
@@ -254,7 +254,7 @@ export function LocationSelector({
 
           {searchText.length === 0 && countryOptions ? (
             <View style={styles.resultsList}>
-              <Text style={styles.sectionLabel}>Pays partenaires</Text>
+              <Text style={styles.sectionLabel}>{t('location.partnerCountries')}</Text>
               {countryOptions.map(c => (
                 <Pressable
                   key={c.code}
@@ -264,18 +264,18 @@ export function LocationSelector({
                   <Text style={styles.resultFlag}>{c.flag}</Text>
                   <View style={styles.resultTextWrap}>
                     <Text style={styles.resultCity}>{c.name}</Text>
-                    <Text style={styles.resultRegion}>Tout le pays</Text>
+                    <Text style={styles.resultRegion}>{t('location.wholeCountry')}</Text>
                   </View>
                 </Pressable>
               ))}
-              <Text style={styles.sectionLabel}>Ou recherche une ville</Text>
+              <Text style={styles.sectionLabel}>{t('location.orSearchCity')}</Text>
             </View>
           ) : searchText.length > 0 && searchText.length < 2 ? (
-            <Text style={styles.hint}>Tape au moins 2 caractères</Text>
+            <Text style={styles.hint}>{t('location.minChars')}</Text>
           ) : searching ? (
             <ActivityIndicator color={colors.accent} style={styles.loader} />
           ) : results.length === 0 && searchText.length >= 2 ? (
-            <Text style={styles.hint}>Aucune ville trouvée</Text>
+            <Text style={styles.hint}>{t('location.noResults')}</Text>
           ) : (
             <FlatList
               data={results}

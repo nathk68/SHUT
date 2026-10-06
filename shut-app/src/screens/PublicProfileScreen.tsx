@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { LiveStackParamList } from '../navigation/MainTabs';
@@ -17,6 +18,7 @@ import type { User } from '../types/user';
 type Route = RouteProp<LiveStackParamList, 'PublicProfile'>;
 
 export function PublicProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<LiveStackParamList>>();
   const route = useRoute<Route>();
   const { userId } = route.params;
@@ -98,7 +100,7 @@ export function PublicProfileScreen() {
   if (!profileUser) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
-        <Text style={styles.errorText}>Profil introuvable</Text>
+        <Text style={styles.errorText}>{t('profile.notFound')}</Text>
       </View>
     );
   }
@@ -117,14 +119,14 @@ export function PublicProfileScreen() {
 
       {profileUser.bio ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bio</Text>
+          <Text style={styles.sectionTitle}>{t('profile.bio')}</Text>
           <Text style={styles.bio}>{profileUser.bio}</Text>
         </View>
       ) : null}
 
       {profileUser.genres && profileUser.genres.length > 0 ? (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Genres</Text>
+          <Text style={styles.sectionTitle}>{t('profile.genres')}</Text>
           <GenreTagList genres={profileUser.genres} />
         </View>
       ) : null}
@@ -135,7 +137,7 @@ export function PublicProfileScreen() {
           onPress={(replay) => {
             (navigation as any).navigate('ReplayPlayer', {
               playbackUrl: replay.playbackUrl,
-              title: replay.title || 'Rediffusion',
+              title: replay.title || t('common.replay'),
               trimStart: replay.trimStart ?? 0,
               trimEnd: replay.trimEnd ?? 0,
               replayId: replay.id,

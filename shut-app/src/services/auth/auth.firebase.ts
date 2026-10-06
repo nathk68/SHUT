@@ -4,6 +4,7 @@ import {
   signOut,
   updateProfile,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   User as FirebaseUser,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -11,6 +12,7 @@ import { auth, db } from '../../config/firebase.config';
 import { IAuthService } from './auth.service';
 import { User } from '../../types';
 import { UserRole } from '../../config/constants';
+import i18n from '../../i18n';
 
 export class FirebaseAuthService implements IAuthService {
 
@@ -48,6 +50,7 @@ export class FirebaseAuthService implements IAuthService {
         avatarUrl: null,
         role,
         festivalId: null,
+        language: i18n.language || 'fr',
         createdAt: new Date().toISOString(),
       };
 
@@ -80,6 +83,23 @@ export class FirebaseAuthService implements IAuthService {
     const docSnap = await getDoc(doc(db, 'users', uid));
     if (!docSnap.exists()) return null;
     return docSnap.data() as User;
+  }
+
+  async resetPassword(email: string) {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (error: any) {
+      const errorMessages: Record<string, string> = {
+        'auth/user-not-found': 'No account found with this email',
+        'auth/invalid-email': 'Invalid email',
+        'auth/too-many-requests': 'Too many attempts. Please try again later.',
+      };
+      return {
+        success: false,
+        error: errorMessages[error.code] || 'Unable to send reset email',
+      };
+    }
   }
 
   onAuthStateChange(callback: (user: User | null) => void): () => void {

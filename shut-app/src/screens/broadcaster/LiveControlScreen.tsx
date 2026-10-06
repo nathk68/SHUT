@@ -9,6 +9,7 @@ import {
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
@@ -37,6 +38,7 @@ interface ChatMessage {
 export function LiveControlScreen() {
   const navigation = useNavigation<Navigation>();
   const route = useRoute<Route>();
+  const { i18n } = useTranslation();
   const { eventId } = route.params;
 
   const [event, setEvent] = useState<LiveEvent | null>(null);
@@ -298,7 +300,7 @@ export function LiveControlScreen() {
               <Ionicons name="people" size={16} color={colors.accentLight} />
             </View>
             <Text style={styles.statValue}>
-              {viewerCount.toLocaleString('fr-FR')}
+              {viewerCount.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')}
             </Text>
             <Text style={styles.statLabel}>Spectateurs</Text>
           </View>

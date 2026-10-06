@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { addDoc, collection, doc, setDoc } from 'firebase/firestore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { db } from '../../config/firebase.config';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { Input } from '../../components/ui/Input';
@@ -31,22 +32,23 @@ type Props = {
 
 const TOTAL_STEPS = 4;
 
-const STEP_TITLES = [
-  'Ton identité artistique',
-  'Tes styles musicaux',
-  'Où trouver ton travail ?',
-  'Crée ton compte',
-];
-
-const STEP_SUBTITLES = [
-  'Présente-toi en quelques mots.',
-  'Sélectionne les genres que tu joues.',
-  'Un lien vers tes sets, et ta localisation.',
-  'Tu commenceras en tant que spectateur en attendant la validation.',
-];
-
 export function DJOnboardingScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const { register } = useAuth();
+
+  const STEP_TITLES = [
+    t('onboarding.dj.stepTitles.0'),
+    t('onboarding.dj.stepTitles.1'),
+    t('onboarding.dj.stepTitles.2'),
+    t('onboarding.dj.stepTitles.3'),
+  ];
+
+  const STEP_SUBTITLES = [
+    t('onboarding.dj.stepSubtitles.0'),
+    t('onboarding.dj.stepSubtitles.1'),
+    t('onboarding.dj.stepSubtitles.2'),
+    t('onboarding.dj.stepSubtitles.3'),
+  ];
   const [step, setStep] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -82,27 +84,27 @@ export function DJOnboardingScreen({ navigation }: Props) {
     const e: Record<string, string> = {};
     switch (step) {
       case 0:
-        if (!username.trim()) e.username = 'Pseudo requis';
+        if (!username.trim()) e.username = t('validation.usernameRequired');
         else if (usernameError) e.username = usernameError;
-        else if (usernameStatus === 'checking') e.username = 'Vérification en cours...';
-        else if (usernameStatus !== 'available') e.username = 'Pseudo non disponible';
-        if (!artistName.trim()) e.artistName = 'Nom d\'artiste requis';
-        if (!bio.trim()) e.bio = 'Présentation requise';
+        else if (usernameStatus === 'checking') e.username = t('validation.usernameCheckInProgress');
+        else if (usernameStatus !== 'available') e.username = t('validation.usernameUnavailable');
+        if (!artistName.trim()) e.artistName = t('onboarding.dj.artistNameRequired');
+        if (!bio.trim()) e.bio = t('onboarding.dj.bioRequired');
         break;
       case 1:
-        if (selectedGenres.length === 0) e.genres = 'Sélectionne au moins un style';
+        if (selectedGenres.length === 0) e.genres = t('validation.selectAtLeastOneGenre');
         break;
       case 2:
-        if (!worksLinks.some(l => l.trim())) e.worksLinks = 'Ajoute au moins un lien';
-        if (!location.cityName) e.location = 'Sélectionne ta ville';
-        if (!sameAsResidence && !representedLocation.cityName) e.representedLocation = 'Sélectionne la ville que tu représentes';
+        if (!worksLinks.some(l => l.trim())) e.worksLinks = t('onboarding.dj.addAtLeastOneLink');
+        if (!location.cityName) e.location = t('onboarding.dj.selectYourCity');
+        if (!sameAsResidence && !representedLocation.cityName) e.representedLocation = t('onboarding.dj.selectRepresentedCity');
         break;
       case 3:
-        if (!email.trim()) e.email = 'Email requis';
-        else if (!email.includes('@')) e.email = 'Email invalide';
-        if (!password) e.password = 'Mot de passe requis';
-        else if (password.length < 8) e.password = 'Minimum 8 caractères';
-        if (password && confirmPassword && password !== confirmPassword) e.confirmPassword = 'Les mots de passe ne correspondent pas';
+        if (!email.trim()) e.email = t('validation.emailRequired');
+        else if (!email.includes('@')) e.email = t('validation.emailInvalid');
+        if (!password) e.password = t('validation.passwordRequired');
+        else if (password.length < 8) e.password = t('validation.passwordMin8');
+        if (password && confirmPassword && password !== confirmPassword) e.confirmPassword = t('validation.passwordMismatch');
         break;
     }
     setErrors(e);
@@ -119,7 +121,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
     const result = await register(email.trim().toLowerCase(), password, artistName.trim(), 'viewer');
     if (!result.success) {
       setLoading(false);
-      Alert.alert('Erreur', result.error ?? 'Inscription impossible');
+      Alert.alert(t('common.error'), result.error ?? t('validation.registrationFailed'));
       return;
     }
     if (result.userId) {
@@ -152,7 +154,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
         ]);
       } catch (err: any) {
         setLoading(false);
-        Alert.alert('Erreur', err?.message ?? 'Ce pseudo est déjà pris');
+        Alert.alert(t('common.error'), err?.message ?? t('validation.usernameTaken'));
         return;
       }
     }
@@ -189,7 +191,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
           <Animated.View style={{ opacity: fadeAnim }}>
             <View style={styles.roleTag}>
               <Ionicons name="disc-outline" size={14} color={colors.accent} />
-              <Text style={styles.roleTagText}>Candidature DJ</Text>
+              <Text style={styles.roleTagText}>{t('onboarding.dj.applicationTag')}</Text>
             </View>
             <Text style={styles.stepTitle}>{STEP_TITLES[step]}</Text>
             <Text style={styles.stepSubtitle}>{STEP_SUBTITLES[step]}</Text>
@@ -197,7 +199,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
             {step === 0 && (
               <View>
                 <Input
-                  label="Pseudo"
+                  label={t('common.username')}
                   placeholder="ex: djkoze_official"
                   icon="at-outline"
                   value={username}
@@ -209,15 +211,15 @@ export function DJOnboardingScreen({ navigation }: Props) {
                 {usernameStatus === 'available' && !errors.username && (
                   <View style={styles.usernameAvailable}>
                     <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                    <Text style={styles.usernameAvailableText}>Pseudo disponible</Text>
+                    <Text style={styles.usernameAvailableText}>{t('common.usernameAvailable')}</Text>
                   </View>
                 )}
                 {usernameStatus === 'checking' && !errors.username && (
-                  <Text style={styles.usernameChecking}>Vérification...</Text>
+                  <Text style={styles.usernameChecking}>{t('common.usernameChecking')}</Text>
                 )}
                 <Input
-                  label="Nom d'artiste"
-                  placeholder="ex: DJ Koze, Reinier Zonneveld..."
+                  label={t('onboarding.dj.artistName')}
+                  placeholder={t('onboarding.dj.artistNamePlaceholder')}
                   icon="mic-outline"
                   value={artistName}
                   onChangeText={setArtistName}
@@ -225,8 +227,8 @@ export function DJOnboardingScreen({ navigation }: Props) {
                   error={errors.artistName}
                 />
                 <Input
-                  label="Bio / Présentation"
-                  placeholder="Dis-nous qui tu es, ton style, ton parcours..."
+                  label={t('onboarding.dj.bioPresentation')}
+                  placeholder={t('onboarding.dj.bioPlaceholder')}
                   icon="document-text-outline"
                   value={bio}
                   onChangeText={setBio}
@@ -259,13 +261,13 @@ export function DJOnboardingScreen({ navigation }: Props) {
 
             {step === 2 && (
               <View>
-                <Text style={styles.linksLabel}>Liens vers tes sets</Text>
+                <Text style={styles.linksLabel}>{t('onboarding.dj.linksToSets')}</Text>
                 {errors.worksLinks ? <Text style={styles.errorText}>{errors.worksLinks}</Text> : null}
                 {worksLinks.map((link, index) => (
                   <View key={index} style={styles.linkRow}>
                     <View style={styles.linkInputWrap}>
                       <Input
-                        placeholder="SoundCloud, Mixcloud, YouTube, RA..."
+                        placeholder={t('onboarding.dj.linksPlaceholder')}
                         icon="link-outline"
                         value={link}
                         onChangeText={v => setWorksLinks(prev => prev.map((l, i) => i === index ? v : l))}
@@ -290,12 +292,12 @@ export function DJOnboardingScreen({ navigation }: Props) {
                     onPress={() => setWorksLinks(prev => [...prev, ''])}
                   >
                     <Ionicons name="add-circle-outline" size={16} color={colors.accent} />
-                    <Text style={styles.addLinkText}>Ajouter un lien</Text>
+                    <Text style={styles.addLinkText}>{t('onboarding.dj.addLink')}</Text>
                   </Pressable>
                 )}
                 <View style={styles.locationSeparator} />
                 {errors.location ? <Text style={styles.errorText}>{errors.location}</Text> : null}
-                <LocationSelector value={location} onChange={setLocation} label="Ville où tu habites" />
+                <LocationSelector value={location} onChange={setLocation} label={t('onboarding.dj.cityWhereYouLive')} />
 
                 <Pressable
                   style={styles.checkboxRow}
@@ -304,7 +306,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
                   <View style={[styles.checkbox, sameAsResidence && styles.checkboxActive]}>
                     {sameAsResidence && <Ionicons name="checkmark" size={14} color={colors.white} />}
                   </View>
-                  <Text style={styles.checkboxLabel}>Même ville que ma résidence</Text>
+                  <Text style={styles.checkboxLabel}>{t('onboarding.dj.sameAsResidence')}</Text>
                 </Pressable>
 
                 {!sameAsResidence && (
@@ -313,8 +315,8 @@ export function DJOnboardingScreen({ navigation }: Props) {
                     <LocationSelector
                       value={representedLocation}
                       onChange={setRepresentedLocation}
-                      label="Ville que tu représentes"
-                      placeholder="Rechercher la ville..."
+                      label={t('onboarding.dj.cityYouRepresent')}
+                      placeholder={t('onboarding.dj.searchRepresentedCity')}
                       restrictToCountries={['FR', 'CH']}
                     />
                   </>
@@ -327,12 +329,12 @@ export function DJOnboardingScreen({ navigation }: Props) {
                 <View style={styles.notice}>
                   <Ionicons name="information-circle-outline" size={18} color={colors.accent} />
                   <Text style={styles.noticeText}>
-                    Tu rejoindras SHUT en tant que spectateur. Ton profil DJ sera activé après validation par notre équipe.
+                    {t('onboarding.dj.djNotice')}
                   </Text>
                 </View>
                 <Input
-                  label="Email"
-                  placeholder="email@exemple.com"
+                  label={t('common.email')}
+                  placeholder={t('auth.emailPlaceholder')}
                   icon="mail-outline"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -342,8 +344,8 @@ export function DJOnboardingScreen({ navigation }: Props) {
                   error={errors.email}
                 />
                 <Input
-                  label="Mot de passe"
-                  placeholder="Minimum 8 caractères"
+                  label={t('common.password')}
+                  placeholder={t('onboarding.dj.passwordPlaceholder')}
                   icon="lock-closed-outline"
                   secureTextEntry
                   value={password}
@@ -351,8 +353,8 @@ export function DJOnboardingScreen({ navigation }: Props) {
                   error={errors.password}
                 />
                 <Input
-                  label="Confirmer le mot de passe"
-                  placeholder="Répète ton mot de passe"
+                  label={t('common.confirmPassword')}
+                  placeholder={t('onboarding.dj.confirmPasswordPlaceholder')}
                   icon="lock-closed-outline"
                   secureTextEntry
                   value={confirmPassword}
@@ -366,7 +368,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
 
         <View style={styles.footer}>
           <Button
-            title={step < TOTAL_STEPS - 1 ? 'Suivant' : 'Envoyer ma candidature'}
+            title={step < TOTAL_STEPS - 1 ? t('common.next') : t('onboarding.dj.submitApplication')}
             onPress={handleNext}
             size="lg"
             loading={loading}

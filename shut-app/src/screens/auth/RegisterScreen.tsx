@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export function RegisterScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const { register } = useAuth();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -22,14 +24,14 @@ export function RegisterScreen({ navigation }: Props) {
 
   const handleRegister = async () => {
     if (!displayName.trim() || !email.trim() || !password) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      Alert.alert(t('common.error'), t('validation.fillAllFields'));
       return;
     }
     setLoading(true);
     const result = await register(email.trim().toLowerCase(), password, displayName.trim(), role);
     setLoading(false);
     if (!result.success) {
-      Alert.alert('Erreur', result.error || 'Inscription impossible');
+      Alert.alert(t('common.error'), result.error || t('validation.registrationFailed'));
     }
   };
 
@@ -43,43 +45,43 @@ export function RegisterScreen({ navigation }: Props) {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.title}>Créer un compte</Text>
-          <Text style={styles.subtitle}>Rejoignez l'expérience SHUT</Text>
+          <Text style={styles.title}>{t('auth.createAccount')}</Text>
+          <Text style={styles.subtitle}>{t('auth.joinShut')}</Text>
 
           <View style={styles.form}>
             <Input
-              label="Nom d'affichage"
+              label={t('auth.displayName')}
               icon="person-outline"
-              placeholder="Votre nom"
+              placeholder={t('auth.displayNamePlaceholder')}
               value={displayName}
               onChangeText={setDisplayName}
             />
             <Input
-              label="Email"
+              label={t('common.email')}
               icon="mail-outline"
-              placeholder="email@exemple.com"
+              placeholder={t('auth.emailPlaceholder')}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
               onChangeText={setEmail}
             />
             <Input
-              label="Mot de passe"
+              label={t('common.password')}
               icon="lock-closed-outline"
-              placeholder="Minimum 6 caractères"
+              placeholder={t('auth.passwordMinPlaceholder')}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
             />
 
-            <Text style={styles.roleLabel}>Je suis :</Text>
+            <Text style={styles.roleLabel}>{t('auth.iAm')}</Text>
             <View style={styles.roleRow}>
               <Pressable
                 style={[styles.roleOption, role === 'viewer' && styles.roleActive]}
                 onPress={() => setRole('viewer')}
               >
                 <Text style={[styles.roleText, role === 'viewer' && styles.roleTextActive]}>
-                  Spectateur
+                  {t('auth.viewer')}
                 </Text>
               </Pressable>
               <Pressable
@@ -87,13 +89,13 @@ export function RegisterScreen({ navigation }: Props) {
                 onPress={() => setRole('broadcaster')}
               >
                 <Text style={[styles.roleText, role === 'broadcaster' && styles.roleTextActive]}>
-                  Diffuseur / Festival
+                  {t('auth.broadcasterFestival')}
                 </Text>
               </Pressable>
             </View>
 
             <Button
-              title="S'inscrire"
+              title={t('auth.register')}
               onPress={handleRegister}
               loading={loading}
               size="lg"
@@ -102,8 +104,8 @@ export function RegisterScreen({ navigation }: Props) {
           </View>
 
           <Pressable onPress={() => navigation.goBack()} style={styles.backRow}>
-            <Text style={styles.backText}>Déjà un compte ? </Text>
-            <Text style={styles.backLink}>Se connecter</Text>
+            <Text style={styles.backText}>{t('auth.alreadyHaveAccount')}</Text>
+            <Text style={styles.backLink}>{t('auth.login')}</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   Alert,
   Animated,
@@ -17,6 +17,7 @@ import {
 } from 'expo-audio';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 
@@ -28,52 +29,14 @@ interface AudioOption {
   id: AudioSourceId;
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  badge: string;
-  badgeColor: string;
+  badge?: string;
+  badgeColor?: string;
   description: string;
   steps?: string[];
   warning?: string;
 }
 
-const AUDIO_OPTIONS: AudioOption[] = [
-  {
-    id: 'mixer-camera',
-    icon: 'videocam-outline',
-    label: 'Table de mix → Caméra',
-    badge: 'RECOMMANDÉ',
-    badgeColor: colors.accent,
-    description:
-      "Connecte la sortie BOOTH ou REC de ta table à ta caméra. Choisis ton modèle ci-dessous pour le tutoriel complet.",
-  },
-  {
-    id: 'usb-interface',
-    icon: 'hardware-chip-outline',
-    label: 'Interface audio USB → iPhone',
-    badge: 'STUDIO',
-    badgeColor: '#22c55e',
-    description:
-      "Table de mix → Interface audio USB (ex: Focusrite Scarlett Solo) → iPhone via hub USB-C. iOS la détecte automatiquement.",
-    steps: [
-      "Branche ta table de mix sur l'entrée de l'interface audio (XLR ou jack 6.35mm)",
-      "Connecte l'interface à ton iPhone via un hub USB-C (avec alimentation)",
-      "iOS détecte l'interface automatiquement — aucun driver requis",
-      "Lance le test ci-dessous pour confirmer le signal",
-    ],
-  },
-  {
-    id: 'builtin',
-    icon: 'mic-outline',
-    label: 'Micro intégré iPhone',
-    description:
-      "Qualité insuffisante pour un live DJ professionnel. Utilise cette option uniquement pour tester l'app.",
-    steps: [
-      "Aucune connexion requise",
-      "Positionne le téléphone à 50–80 cm des enceintes pour capter le son",
-    ],
-  },
-];
-
-// ─── Camera configs ────────────────────────────────────────────────────────────
+// ─── Camera structural data (no translatable strings) ─────────────────────────
 
 interface CameraConfig {
   id: string;
@@ -87,115 +50,23 @@ interface CameraConfig {
   warning?: string;
 }
 
-const CAMERAS: CameraConfig[] = [
-  {
-    id: 'dji-pocket-3',
-    name: 'Osmo Pocket 3',
-    brand: 'DJI',
-    icon: 'videocam-outline',
-    compatible: true,
-    appName: 'DJI Mimo',
-    steps: [
-      "Branche un câble TRS 3.5mm sur la sortie BOOTH ou REC de ta table de mix",
-      "Connecte l'autre extrémité à l'entrée mic de l'Osmo Pocket 3",
-      "Règle le volume de sortie à 30–40% pour éviter la saturation",
-      "Ouvre DJI Mimo → onglet Live → \"RTMP personnalisé\"",
-      "Colle l'URL complète SHUT dans le champ RTMP, puis démarre",
-    ],
-    warning: "La sortie ligne est bien plus forte qu'un micro. Commence à 30% et monte doucement.",
-  },
-  {
-    id: 'dji-pocket-2',
-    name: 'Osmo Pocket 2',
-    brand: 'DJI',
-    icon: 'videocam-outline',
-    compatible: true,
-    appName: 'DJI Mimo',
-    steps: [
-      "Branche un câble TRS 3.5mm sur la sortie BOOTH ou REC de ta table de mix",
-      "Connecte l'autre extrémité à l'entrée mic de l'Osmo Pocket 2",
-      "Règle le volume de sortie à 30–40% pour éviter la saturation",
-      "Ouvre DJI Mimo → onglet Live → \"RTMP personnalisé\"",
-      "Colle l'URL complète SHUT dans le champ RTMP, puis démarre",
-    ],
-    warning: "Commence à 30% et monte doucement pour éviter la saturation.",
-  },
-  {
-    id: 'dji-action-4',
-    name: 'Osmo Action 4',
-    brand: 'DJI',
-    icon: 'videocam-outline',
-    compatible: true,
-    appName: 'DJI Mimo',
-    steps: [
-      "Connecte la sortie BOOTH/REC de ta table sur l'entrée micro de l'Action 4",
-      "Ouvre DJI Mimo → onglet Live → \"RTMP personnalisé\"",
-      "Colle l'URL complète SHUT dans le champ RTMP",
-      "Vérifie le niveau audio dans les réglages Mimo, puis démarre",
-    ],
-  },
-  {
-    id: 'dji-action-3',
-    name: 'Osmo Action 3',
-    brand: 'DJI',
-    icon: 'videocam-outline',
-    compatible: true,
-    appName: 'DJI Mimo',
-    steps: [
-      "Connecte la sortie BOOTH/REC de ta table sur l'entrée micro de l'Action 3",
-      "Ouvre DJI Mimo → onglet Live → \"RTMP personnalisé\"",
-      "Colle l'URL complète SHUT dans le champ RTMP",
-      "Vérifie le niveau audio dans les réglages Mimo, puis démarre",
-    ],
-  },
-  {
-    id: 'iphone',
-    name: 'iPhone (caméra)',
-    brand: 'Apple',
-    icon: 'phone-portrait-outline',
-    compatible: true,
-    appName: 'Larix Broadcaster',
-    steps: [
-      "Installe Larix Broadcaster sur un 2ème iPhone (App Store, gratuit)",
-      "Branche la sortie BOOTH/REC de ta table sur l'entrée jack de l'iPhone (adaptateur requis)",
-      "Dans Larix : Réglages → Connexions → + → colle l'URL RTMP complète SHUT",
-      "Sélectionne la caméra et la source audio (entrée jack), puis démarre",
-    ],
-    warning: "L'entrée jack et la charge USB-C/Lightning ne sont pas simultanées. Pense à charger le téléphone avant.",
-  },
-  {
-    id: 'gopro',
-    name: 'Hero 9 / 10 / 11 / 12 / 13',
-    brand: 'GoPro',
-    icon: 'camera-outline',
-    compatible: true,
-    appName: 'GoPro Labs',
-    steps: [
-      "Télécharge le firmware GoPro Labs sur gopro.com/labs (gratuit, officiel)",
-      "Installe-le sur ta GoPro via la carte SD selon les instructions du site",
-      "Génère ton URL RTMP SHUT dans l'écran suivant",
-      "Ouvre l'app GoPro Quik → Labs QR → génère un QR code avec ton URL RTMP",
-      "Sur la GoPro : maintiens le bouton Mode → scanne le QR code avec l'appareil",
-      "Démarre le live depuis la GoPro — elle stream vers SHUT",
-    ],
-    warning: "GoPro Labs est un firmware expérimental officiel. Il ne couvre pas les modèles Hero 8 et antérieurs.",
-  },
-  {
-    id: 'sony',
-    name: 'Sony ZV-1 / ZV-E10',
-    brand: 'Sony',
-    icon: 'camera-outline',
-    compatible: false,
-    incompatibleReason: "Les appareils Sony ne proposent pas de streaming RTMP vers des serveurs tiers. Non compatible avec SHUT.",
-  },
-  {
-    id: 'dslr',
-    name: 'Reflex / Hybride (Canon, Nikon…)',
-    brand: 'Autre',
-    icon: 'camera-outline',
-    compatible: false,
-    incompatibleReason: "Les appareils photo ne supportent généralement pas le streaming RTMP direct. Tu peux utiliser un PC avec OBS entre les deux.",
-  },
+const CAMERAS_STRUCTURAL: Array<{
+  id: string;
+  name: string;
+  brand: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  compatible: boolean;
+  appName?: string;
+  stepCount?: number;
+}> = [
+  { id: 'dji-pocket-3', name: 'Osmo Pocket 3', brand: 'DJI', icon: 'videocam-outline', compatible: true, appName: 'DJI Mimo', stepCount: 5 },
+  { id: 'dji-pocket-2', name: 'Osmo Pocket 2', brand: 'DJI', icon: 'videocam-outline', compatible: true, appName: 'DJI Mimo', stepCount: 5 },
+  { id: 'dji-action-4', name: 'Osmo Action 4', brand: 'DJI', icon: 'videocam-outline', compatible: true, appName: 'DJI Mimo', stepCount: 4 },
+  { id: 'dji-action-3', name: 'Osmo Action 3', brand: 'DJI', icon: 'videocam-outline', compatible: true, appName: 'DJI Mimo', stepCount: 4 },
+  { id: 'iphone', name: 'iPhone', brand: 'Apple', icon: 'phone-portrait-outline', compatible: true, appName: 'Larix Broadcaster', stepCount: 4 },
+  { id: 'gopro', name: 'Hero 9 / 10 / 11 / 12 / 13', brand: 'GoPro', icon: 'camera-outline', compatible: true, appName: 'GoPro Labs', stepCount: 6 },
+  { id: 'sony', name: 'Sony ZV-1 / ZV-E10', brand: 'Sony', icon: 'camera-outline', compatible: false },
+  { id: 'dslr', name: 'Reflex / Hybride (Canon, Nikon...)', brand: 'Autre', icon: 'camera-outline', compatible: false },
 ];
 
 // ─── Recording options with explicit metering interval ────────────────────────
@@ -208,27 +79,80 @@ const RECORDING_OPTIONS: any = {
   ios: { ...RecordingPresets.HIGH_QUALITY.ios, meteringIntervalMillis: 80 },
 };
 
-function formatInputLabel(input: { name: string; type?: string } | undefined): string {
-  if (!input) return 'Micro intégré iPhone';
-  const t = (input.type ?? '').toLowerCase();
-  if (t.includes('usb')) return `Interface USB · ${input.name}`;
-  if (t.includes('bluetooth')) return `Bluetooth · ${input.name}`;
-  if (t.includes('wired') || t.includes('headset')) return `Micro filaire · ${input.name}`;
-  if (t.includes('builtin') || t.includes('built')) return 'Micro intégré iPhone';
-  return input.name;
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function AudioCheckScreen() {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
   const [selectedSource, setSelectedSource] = useState<AudioSourceId>('mixer-camera');
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [cameraPickerOpen, setCameraPickerOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [signalDetected, setSignalDetected] = useState(false);
-  const [activeInputLabel, setActiveInputLabel] = useState('Micro intégré iPhone');
+  const [activeInputLabel, setActiveInputLabel] = useState(t('broadcaster.audioCheck.defaultInput'));
   const meterAnim = useRef(new Animated.Value(0)).current;
+
+  // Resolve translatable input label
+  const formatInputLabel = useCallback((input: { name: string; type?: string } | undefined): string => {
+    if (!input) return t('broadcaster.audioCheck.defaultInput');
+    const tp = (input.type ?? '').toLowerCase();
+    if (tp.includes('usb')) return `${t('broadcaster.audioCheck.usbInput')}${input.name}`;
+    if (tp.includes('bluetooth')) return `${t('broadcaster.audioCheck.bluetoothInput')}${input.name}`;
+    if (tp.includes('wired') || tp.includes('headset')) return `${t('broadcaster.audioCheck.wiredInput')}${input.name}`;
+    if (tp.includes('builtin') || tp.includes('built')) return t('broadcaster.audioCheck.defaultInput');
+    return input.name;
+  }, [t]);
+
+  // Build audio options with translated strings inside the component
+  const audioOptions: AudioOption[] = useMemo(() => [
+    {
+      id: 'mixer-camera' as const,
+      icon: 'videocam-outline' as const,
+      label: t('broadcaster.audioCheck.mixerCamera'),
+      badge: t('broadcaster.audioCheck.recommended'),
+      badgeColor: colors.accent,
+      description: t('broadcaster.audioCheck.mixerCameraDesc'),
+    },
+    {
+      id: 'usb-interface' as const,
+      icon: 'hardware-chip-outline' as const,
+      label: t('broadcaster.audioCheck.usbInterface'),
+      badge: t('broadcaster.audioCheck.studio'),
+      badgeColor: '#22c55e',
+      description: t('broadcaster.audioCheck.usbInterfaceDesc'),
+      steps: (t('broadcaster.audioCheck.usbSteps', { returnObjects: true }) as string[]),
+    },
+    {
+      id: 'builtin' as const,
+      icon: 'mic-outline' as const,
+      label: t('broadcaster.audioCheck.builtinMic'),
+      description: t('broadcaster.audioCheck.builtinMicDesc'),
+      steps: (t('broadcaster.audioCheck.builtinMicSteps', { returnObjects: true }) as string[]),
+    },
+  ], [t]);
+
+  // Build camera configs with translated strings inside the component
+  const cameras: CameraConfig[] = useMemo(() => CAMERAS_STRUCTURAL.map((cam) => {
+    const base: CameraConfig = {
+      id: cam.id,
+      name: cam.name,
+      brand: cam.brand,
+      icon: cam.icon,
+      compatible: cam.compatible,
+      appName: cam.appName,
+    };
+    if (cam.compatible && cam.stepCount) {
+      const stepsKey = `broadcaster.audioCheck.cameras.${cam.id}.steps`;
+      const steps = t(stepsKey, { returnObjects: true });
+      base.steps = Array.isArray(steps) ? steps : [];
+      const warningKey = `broadcaster.audioCheck.cameras.${cam.id}.warning`;
+      const warning = t(warningKey, { defaultValue: '' });
+      if (warning) base.warning = warning;
+    } else if (!cam.compatible) {
+      base.incompatibleReason = t(`broadcaster.audioCheck.cameras.${cam.id}.incompatibleReason`);
+    }
+    return base;
+  }), [t]);
 
   // ─── VU meter ───────────────────────────────────────────────────────────────
 
@@ -256,7 +180,7 @@ export function AudioCheckScreen() {
     try {
       const { granted } = await requestRecordingPermissionsAsync();
       if (!granted) {
-        Alert.alert('Permission refusée', "L'accès au micro est nécessaire pour tester le niveau audio.");
+        Alert.alert(t('broadcaster.audioCheck.permissionDeniedTitle'), t('broadcaster.audioCheck.permissionDeniedMessage'));
         return;
       }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
@@ -272,7 +196,7 @@ export function AudioCheckScreen() {
       setIsTesting(true);
       setSignalDetected(false);
     } catch {
-      Alert.alert('Erreur', "Impossible d'accéder au micro. Vérifie les permissions dans les réglages iOS.");
+      Alert.alert(t('common.error'), t('broadcaster.audioCheck.micErrorMessage'));
     }
   }
 
@@ -295,18 +219,18 @@ export function AudioCheckScreen() {
 
   // ─── Derived values ──────────────────────────────────────────────────────────
 
-  const selectedCamera = selectedCameraId ? CAMERAS.find((c) => c.id === selectedCameraId) : null;
+  const selectedCamera = selectedCameraId ? cameras.find((c) => c.id === selectedCameraId) : null;
   const canContinue = selectedSource !== 'mixer-camera' || selectedCamera?.compatible === true;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <ScreenHeader
-        title="Entrée audio"
-        subtitle="Choisis comment connecter ta table de mix avant de streamer."
+        title={t('broadcaster.audioCheck.title')}
+        subtitle={t('broadcaster.audioCheck.subtitle')}
       />
 
       {/* Audio source cards */}
-      {AUDIO_OPTIONS.map((option) => {
+      {audioOptions.map((option) => {
         const isSelected = option.id === selectedSource;
         return (
           <Pressable
@@ -340,7 +264,7 @@ export function AudioCheckScreen() {
             {/* Camera picker — only for mixer-camera when selected */}
             {isSelected && option.id === 'mixer-camera' && (
               <View style={styles.stepsContainer}>
-                <Text style={styles.cameraPickerLabel}>Ta caméra</Text>
+                <Text style={styles.cameraPickerLabel}>{t('broadcaster.audioCheck.yourCamera')}</Text>
 
                 {/* Dropdown trigger */}
                 <Pressable
@@ -361,7 +285,7 @@ export function AudioCheckScreen() {
                     >
                       {selectedCamera
                         ? `${selectedCamera.brand} ${selectedCamera.name}`
-                        : 'Sélectionne ta caméra'}
+                        : t('broadcaster.audioCheck.selectCamera')}
                     </Text>
                   </View>
                   <Ionicons
@@ -374,7 +298,7 @@ export function AudioCheckScreen() {
                 {/* Inline camera list */}
                 {cameraPickerOpen && (
                   <View style={styles.cameraList}>
-                    {CAMERAS.map((cam) => (
+                    {cameras.map((cam) => (
                       <Pressable
                         key={cam.id}
                         onPress={() => handleSelectCamera(cam.id)}
@@ -426,7 +350,7 @@ export function AudioCheckScreen() {
                         <View style={styles.cameraTutorialHeader}>
                           <Ionicons name="phone-portrait-outline" size={13} color={colors.accentLight} />
                           <Text style={styles.cameraTutorialHeaderText}>
-                            App requise : {selectedCamera.appName}
+                            {t('broadcaster.audioCheck.appRequired')}{selectedCamera.appName}
                           </Text>
                         </View>
                       )}
@@ -449,7 +373,7 @@ export function AudioCheckScreen() {
                     <View style={styles.incompatibleBox}>
                       <Ionicons name="close-circle-outline" size={20} color="#ef4444" />
                       <View style={styles.incompatibleContent}>
-                        <Text style={styles.incompatibleTitle}>Désolé, pas compatible</Text>
+                        <Text style={styles.incompatibleTitle}>{t('broadcaster.audioCheck.notCompatible')}</Text>
                         <Text style={styles.incompatibleText}>{selectedCamera.incompatibleReason}</Text>
                       </View>
                     </View>
@@ -495,8 +419,8 @@ export function AudioCheckScreen() {
           ]}
         >
           {isTesting && signalDetected
-            ? `Signal confirmé · ${activeInputLabel}`
-            : `Entrée active : ${activeInputLabel}`}
+            ? `${t('broadcaster.audioCheck.signalConfirmed')}${activeInputLabel}`
+            : `${t('broadcaster.audioCheck.activeInput')}${activeInputLabel}`}
         </Text>
       </View>
 
@@ -568,8 +492,8 @@ export function AudioCheckScreen() {
         onPress={() => {
           if (!canContinue) {
             Alert.alert(
-              'Caméra incompatible',
-              "Cette caméra n'est pas compatible avec SHUT. Choisis une autre caméra ou une autre option audio.",
+              t('broadcaster.audioCheck.cameraIncompatibleTitle'),
+              t('broadcaster.audioCheck.cameraIncompatibleMessage'),
             );
             return;
           }
@@ -577,7 +501,7 @@ export function AudioCheckScreen() {
         }}
         style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
       >
-        <Text style={styles.continueButtonText}>Configurer la caméra →</Text>
+        <Text style={styles.continueButtonText}>{t('broadcaster.audioCheck.configureCamera')}</Text>
       </Pressable>
     </ScrollView>
   );

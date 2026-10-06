@@ -15,6 +15,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { doc, setDoc } from 'firebase/firestore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { db } from '../../config/firebase.config';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { Input } from '../../components/ui/Input';
@@ -26,6 +27,7 @@ import { MUSIC_GENRES } from '../../config/constants';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { useUsernameCheck } from '../../hooks/useUsernameCheck';
 import { reserveUsername } from '../../services/username/username.service';
+import i18n from '../../i18n';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'SpectatorOnboarding'>;
@@ -33,26 +35,27 @@ type Props = {
 
 const TOTAL_STEPS = 6;
 
-const STEP_TITLES = [
-  'Choisis ton pseudo',
-  'Comment tu t\'appelles ?',
-  'Ta date de naissance',
-  'Tes styles préférés',
-  'Où tu es ? (optionnel)',
-  'Crée ton compte',
-];
-
-const STEP_SUBTITLES = [
-  'Ce sera ton identifiant visible sur SHUT.',
-  'Pour qu\'on sache comment t\'appeler.',
-  'Pour personnaliser ton expérience.',
-  'On te recommandera des lives qui te correspondent.',
-  'Pour découvrir les lives près de chez toi. Tu peux passer cette étape.',
-  'Pour accéder à l\'application.',
-];
-
 export function SpectatorOnboardingScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const { register } = useAuth();
+
+  const STEP_TITLES = [
+    t('onboarding.spectatorOnboarding.stepTitles.0'),
+    t('onboarding.spectatorOnboarding.stepTitles.1'),
+    t('onboarding.spectatorOnboarding.stepTitles.2'),
+    t('onboarding.spectatorOnboarding.stepTitles.3'),
+    t('onboarding.spectatorOnboarding.stepTitles.4'),
+    t('onboarding.spectatorOnboarding.stepTitles.5'),
+  ];
+
+  const STEP_SUBTITLES = [
+    t('onboarding.spectatorOnboarding.stepSubtitles.0'),
+    t('onboarding.spectatorOnboarding.stepSubtitles.1'),
+    t('onboarding.spectatorOnboarding.stepSubtitles.2'),
+    t('onboarding.spectatorOnboarding.stepSubtitles.3'),
+    t('onboarding.spectatorOnboarding.stepSubtitles.4'),
+    t('onboarding.spectatorOnboarding.stepSubtitles.5'),
+  ];
   const [step, setStep] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -86,28 +89,28 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
     const e: Record<string, string> = {};
     switch (step) {
       case 0:
-        if (!username.trim()) e.username = 'Pseudo requis';
+        if (!username.trim()) e.username = t('validation.usernameRequired');
         else if (usernameError) e.username = usernameError;
-        else if (usernameStatus === 'checking') e.username = 'Vérification en cours...';
-        else if (usernameStatus !== 'available') e.username = 'Pseudo non disponible';
+        else if (usernameStatus === 'checking') e.username = t('validation.usernameCheckInProgress');
+        else if (usernameStatus !== 'available') e.username = t('validation.usernameUnavailable');
         break;
       case 1:
-        if (!firstName.trim()) e.firstName = 'Prénom requis';
+        if (!firstName.trim()) e.firstName = t('validation.firstNameRequired');
         break;
       case 2:
-        if (!birthDate) e.birthDate = 'Date de naissance requise';
+        if (!birthDate) e.birthDate = t('validation.birthDateRequired');
         break;
       case 3:
-        if (selectedGenres.length === 0) e.genres = 'Sélectionne au moins un style';
+        if (selectedGenres.length === 0) e.genres = t('validation.selectAtLeastOneGenre');
         break;
-      // step 4 (localisation) est optionnel — pas de validation
+      // step 4 (localisation) is optional — no validation
 
       case 5:
-        if (!email.trim()) e.email = 'Email requis';
-        else if (!email.includes('@')) e.email = 'Email invalide';
-        if (!password) e.password = 'Mot de passe requis';
-        else if (password.length < 8) e.password = 'Minimum 8 caractères';
-        if (password && confirmPassword && password !== confirmPassword) e.confirmPassword = 'Les mots de passe ne correspondent pas';
+        if (!email.trim()) e.email = t('validation.emailRequired');
+        else if (!email.includes('@')) e.email = t('validation.emailInvalid');
+        if (!password) e.password = t('validation.passwordRequired');
+        else if (password.length < 8) e.password = t('validation.passwordMin8');
+        if (password && confirmPassword && password !== confirmPassword) e.confirmPassword = t('validation.passwordMismatch');
         break;
     }
     setErrors(e);
@@ -124,7 +127,7 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
     const result = await register(email.trim().toLowerCase(), password, username.trim(), 'viewer');
     if (!result.success) {
       setLoading(false);
-      Alert.alert('Erreur', result.error ?? 'Inscription impossible');
+      Alert.alert(t('common.error'), result.error ?? t('validation.registrationFailed'));
       return;
     }
     if (result.userId) {
@@ -144,7 +147,7 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
         }, { merge: true });
       } catch (err: any) {
         setLoading(false);
-        Alert.alert('Erreur', err?.message ?? 'Ce pseudo est déjà pris');
+        Alert.alert(t('common.error'), err?.message ?? t('validation.usernameTaken'));
         return;
       }
     }
@@ -186,8 +189,8 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
             {step === 0 && (
               <View>
                 <Input
-                  label="Pseudo"
-                  placeholder="ex: beathead99"
+                  label={t('common.username')}
+                  placeholder={t('onboarding.spectatorOnboarding.usernamePlaceholder')}
                   icon="at-outline"
                   value={username}
                   onChangeText={setUsername}
@@ -198,19 +201,19 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
                 {usernameStatus === 'available' && !errors.username && (
                   <View style={styles.usernameAvailable}>
                     <Ionicons name="checkmark-circle" size={14} color={colors.success ?? '#4CAF50'} />
-                    <Text style={styles.usernameAvailableText}>Pseudo disponible</Text>
+                    <Text style={styles.usernameAvailableText}>{t('common.usernameAvailable')}</Text>
                   </View>
                 )}
                 {usernameStatus === 'checking' && !errors.username && (
-                  <Text style={styles.usernameChecking}>Vérification...</Text>
+                  <Text style={styles.usernameChecking}>{t('common.usernameChecking')}</Text>
                 )}
               </View>
             )}
 
             {step === 1 && (
               <Input
-                label="Prénom"
-                placeholder="ex: Lucas"
+                label={t('common.firstName')}
+                placeholder={t('onboarding.spectatorOnboarding.firstNamePlaceholder')}
                 icon="person-outline"
                 value={firstName}
                 onChangeText={setFirstName}
@@ -220,13 +223,13 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
 
             {step === 2 && (
               <View>
-                <Text style={styles.dateLabel}>Date de naissance</Text>
+                <Text style={styles.dateLabel}>{t('common.birthDate')}</Text>
                 <Pressable style={styles.dateTrigger} onPress={() => setShowDatePicker(true)}>
                   <Ionicons name="calendar-outline" size={18} color={colors.textMuted} style={styles.dateIcon} />
                   <Text style={[styles.dateValue, !birthDate && styles.datePlaceholder]}>
                     {birthDate
                       ? `${String(birthDate.getDate()).padStart(2, '0')}/${String(birthDate.getMonth() + 1).padStart(2, '0')}/${birthDate.getFullYear()}`
-                      : 'Sélectionner ta date de naissance'}
+                      : t('onboarding.spectatorOnboarding.selectBirthDate')}
                   </Text>
                   <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
                 </Pressable>
@@ -238,9 +241,9 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
                     <View style={styles.modalOverlay}>
                       <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
-                          <Text style={styles.modalTitle}>Date de naissance</Text>
+                          <Text style={styles.modalTitle}>{t('common.birthDate')}</Text>
                           <Pressable onPress={() => setShowDatePicker(false)} style={styles.modalDone}>
-                            <Text style={styles.modalDoneText}>Confirmer</Text>
+                            <Text style={styles.modalDoneText}>{t('common.confirm')}</Text>
                           </Pressable>
                         </View>
                         <DateTimePicker
@@ -250,7 +253,7 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
                           maximumDate={new Date()}
                           minimumDate={new Date(1920, 0, 1)}
                           onChange={(_, selected) => { if (selected) setBirthDate(selected); }}
-                          locale="fr-FR"
+                          locale={i18n.language === 'fr' ? 'fr-FR' : 'en-US'}
                           themeVariant="dark"
                           textColor={colors.textPrimary}
                           style={styles.iosPicker}
@@ -306,8 +309,8 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
             {step === 5 && (
               <View>
                 <Input
-                  label="Email"
-                  placeholder="email@exemple.com"
+                  label={t('common.email')}
+                  placeholder={t('auth.emailPlaceholder')}
                   icon="mail-outline"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -317,8 +320,8 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
                   error={errors.email}
                 />
                 <Input
-                  label="Mot de passe"
-                  placeholder="Minimum 8 caractères"
+                  label={t('common.password')}
+                  placeholder={t('onboarding.spectatorOnboarding.passwordPlaceholder')}
                   icon="lock-closed-outline"
                   secureTextEntry
                   value={password}
@@ -326,8 +329,8 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
                   error={errors.password}
                 />
                 <Input
-                  label="Confirmer le mot de passe"
-                  placeholder="Répète ton mot de passe"
+                  label={t('common.confirmPassword')}
+                  placeholder={t('onboarding.spectatorOnboarding.confirmPasswordPlaceholder')}
                   icon="lock-closed-outline"
                   secureTextEntry
                   value={confirmPassword}
@@ -341,7 +344,7 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
 
         <View style={styles.footer}>
           <Button
-            title={step < TOTAL_STEPS - 1 ? 'Suivant' : 'Créer mon compte'}
+            title={step < TOTAL_STEPS - 1 ? t('common.next') : t('onboarding.spectatorOnboarding.createMyAccount')}
             onPress={handleNext}
             size="lg"
             loading={loading}

@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { replaysService } from '../../services';
 import type { Replay } from '../../types';
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 
 interface Props {
@@ -17,6 +18,7 @@ function formatDuration(secs: number) {
 }
 
 export function ReplayList({ userId, onPress }: Props) {
+  const { t, i18n } = useTranslation();
   const [replays, setReplays] = useState<Replay[] | null>(null);
 
   useEffect(() => {
@@ -61,13 +63,13 @@ export function ReplayList({ userId, onPress }: Props) {
 
           <View style={styles.info}>
             <Text style={styles.title} numberOfLines={1}>
-              {replay.title || 'Sans titre'}
+              {replay.title || t('common.untitled')}
             </Text>
             {replay.genres.length > 0 && (
               <Text style={styles.genres} numberOfLines={1}>{replay.genres.join(' · ')}</Text>
             )}
             <Text style={styles.date}>
-              {new Date(replay.publishedAt ?? replay.createdAt).toLocaleDateString('fr-FR', {
+              {new Date(replay.publishedAt ?? replay.createdAt).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',

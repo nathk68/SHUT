@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
@@ -34,6 +35,7 @@ interface StatItem {
 export function DashboardScreen() {
   const navigation = useNavigation<Navigation>();
   const { user } = useAuth();
+  const { i18n } = useTranslation();
 
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,7 +145,7 @@ export function DashboardScreen() {
             <View style={styles.viewerRow}>
               <Ionicons name="eye-outline" size={12} color={colors.textMuted} />
               <Text style={styles.viewerCount}>
-                {item.viewerCount.toLocaleString('fr-FR')}
+                {item.viewerCount.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')}
               </Text>
             </View>
           )}

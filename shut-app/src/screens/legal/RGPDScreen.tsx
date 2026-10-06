@@ -60,7 +60,7 @@ export function RGPDScreen() {
           title="Droit d'accès"
           desc="Vous pouvez demander une copie de toutes les données personnelles que nous détenons sur vous."
           action="Envoyer une demande d'accès"
-          onAction={() => Linking.openURL('mailto:privacy@shut.live?subject=Demande%20d%27acc%C3%A8s%20%E2%80%94%20RGPD%20Art.%2015')}
+          onAction={() => Linking.openURL('mailto:legal@shutdiffusion.com?subject=Demande%20d%27acc%C3%A8s%20%E2%80%94%20RGPD%20Art.%2015')}
         />
 
         <RightCard
@@ -84,7 +84,7 @@ export function RGPDScreen() {
           title="Droit à la limitation"
           desc="Vous pouvez demander que nous cessions de traiter vos données tout en les conservant, dans certaines circonstances prévues par le RGPD."
           action="Envoyer une demande"
-          onAction={() => Linking.openURL('mailto:privacy@shut.live?subject=Limitation%20du%20traitement%20%E2%80%94%20RGPD%20Art.%2018')}
+          onAction={() => Linking.openURL('mailto:legal@shutdiffusion.com?subject=Limitation%20du%20traitement%20%E2%80%94%20RGPD%20Art.%2018')}
         />
 
         <RightCard
@@ -92,7 +92,7 @@ export function RGPDScreen() {
           title="Droit à la portabilité"
           desc="Vous pouvez recevoir vos données dans un format structuré et lisible par machine (JSON), afin de les transférer vers un autre service."
           action="Demander l'export de mes données"
-          onAction={() => Linking.openURL('mailto:privacy@shut.live?subject=Portabilit%C3%A9%20des%20donn%C3%A9es%20%E2%80%94%20RGPD%20Art.%2020')}
+          onAction={() => Linking.openURL('mailto:legal@shutdiffusion.com?subject=Portabilit%C3%A9%20des%20donn%C3%A9es%20%E2%80%94%20RGPD%20Art.%2020')}
         />
 
         <RightCard
@@ -100,7 +100,7 @@ export function RGPDScreen() {
           title="Droit d'opposition"
           desc="Vous pouvez vous opposer au traitement de vos données à des fins de marketing ou basé sur notre intérêt légitime."
           action="Exercer mon droit d'opposition"
-          onAction={() => Linking.openURL('mailto:privacy@shut.live?subject=Opposition%20au%20traitement%20%E2%80%94%20RGPD%20Art.%2021')}
+          onAction={() => Linking.openURL('mailto:legal@shutdiffusion.com?subject=Opposition%20au%20traitement%20%E2%80%94%20RGPD%20Art.%2021')}
         />
 
         <H1>Durées de conservation</H1>
@@ -116,7 +116,7 @@ export function RGPDScreen() {
         <H1>Délégué à la Protection des Données</H1>
         <P>
           Pour toute question relative à la protection de vos données :{'\n'}
-          privacy@shut.live{'\n'}
+          legal@shutdiffusion.com{'\n'}
           Délai de réponse : 30 jours maximum.
         </P>
 

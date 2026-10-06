@@ -2,6 +2,7 @@ import React from 'react';
 import { Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { usePreferences, type NotificationPrefs } from '../../contexts/PreferencesContext';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 
@@ -12,30 +13,31 @@ type PrefEntry = {
   icon: keyof typeof Ionicons.glyphMap;
 };
 
-const PREFS: PrefEntry[] = [
-  {
-    key: 'lives',
-    label: 'Lives en cours',
-    desc: 'Un DJ que tu suis commence un live',
-    icon: 'radio-outline',
-  },
-  {
-    key: 'follows',
-    label: 'Nouveaux abonnés',
-    desc: 'Quelqu\'un s\'abonne à ton profil',
-    icon: 'person-add-outline',
-  },
-  {
-    key: 'news',
-    label: 'Actualités SHUT',
-    desc: 'Nouveautés et annonces de la plateforme',
-    icon: 'megaphone-outline',
-  },
-];
-
 export function NotificationsScreen() {
   const navigation = useNavigation();
   const { notifications, setNotificationPref } = usePreferences();
+  const { t } = useTranslation();
+
+  const PREFS: PrefEntry[] = [
+    {
+      key: 'lives',
+      label: t('notificationsScreen.livesLabel'),
+      desc: t('notificationsScreen.livesDesc'),
+      icon: 'radio-outline',
+    },
+    {
+      key: 'follows',
+      label: t('notificationsScreen.followsLabel'),
+      desc: t('notificationsScreen.followsDesc'),
+      icon: 'person-add-outline',
+    },
+    {
+      key: 'news',
+      label: t('notificationsScreen.newsLabel'),
+      desc: t('notificationsScreen.newsDesc'),
+      icon: 'megaphone-outline',
+    },
+  ];
 
   return (
     <View style={styles.container}>
@@ -43,7 +45,7 @@ export function NotificationsScreen() {
         <Pressable onPress={() => navigation.goBack()} style={styles.back}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </Pressable>
-        <Text style={styles.title}>Notifications</Text>
+        <Text style={styles.title}>{t('notificationsScreen.title')}</Text>
       </View>
 
       <View style={styles.card}>
@@ -75,15 +77,13 @@ export function NotificationsScreen() {
       >
         <Ionicons name="settings-outline" size={16} color={colors.accentLight} />
         <Text style={styles.systemButtonText}>
-          Gérer les autorisations système
+          {t('notificationsScreen.manageSystem')}
         </Text>
         <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
       </Pressable>
 
       <Text style={styles.note}>
-        Les préférences ci-dessus contrôlent quels types de notifications tu reçois.
-        Pour activer ou désactiver les notifications SHUT globalement, utilise les
-        paramètres système de ton appareil.
+        {t('notificationsScreen.note')}
       </Text>
     </View>
   );

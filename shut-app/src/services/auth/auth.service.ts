@@ -6,4 +6,5 @@ export interface IAuthService {
   register(email: string, password: string, displayName: string, role: UserRole): Promise<{ success: boolean; user?: User; error?: string }>;
   logout(): Promise<void>;
   getCurrentUser(): Promise<User | null>;
+  resetPassword(email: string): Promise<{ success: boolean; error?: string }>;
 }

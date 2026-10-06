@@ -1,23 +1,18 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import type { ExperienceLevel } from '../../types/profile';
 import { colors, fonts, fontSize, spacing } from '../../config/theme';
-
-const LABELS: Record<ExperienceLevel, string> = {
-  debutant: 'Débutant',
-  intermediaire: 'Intermédiaire',
-  confirme: 'Confirmé',
-  professionnel: 'Professionnel',
-};
 
 interface Props {
   level: ExperienceLevel;
 }
 
 export function ExperienceTag({ level }: Props) {
+  const { t } = useTranslation();
   return (
     <View style={styles.badge}>
-      <Text style={styles.label}>{LABELS[level]}</Text>
+      <Text style={styles.label}>{t(`editProfile.experienceOptions.${level}`)}</Text>
     </View>
   );
 }

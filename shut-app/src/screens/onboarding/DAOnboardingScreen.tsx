@@ -18,6 +18,7 @@ import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { LocationSelector, LocationValue } from '../../components/ui/LocationSelector';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
@@ -30,28 +31,34 @@ type Props = {
 
 const TOTAL_STEPS = 4;
 
-const VENUE_TYPES = ['Club', 'Festival', 'Les deux'] as const;
-type VenueType = typeof VENUE_TYPES[number];
-
-const CAPACITY_OPTIONS = ['< 500', '500 – 2 000', '2 000+'] as const;
-type CapacityOption = typeof CAPACITY_OPTIONS[number];
-
-const STEP_TITLES = [
-  'Qui es-tu ?',
-  'Ton lieu',
-  'Où trouver ton lieu ?',
-  'Crée ton compte',
-];
-
-const STEP_SUBTITLES = [
-  'Présente-toi ainsi que ton établissement.',
-  'Quelques infos sur ta structure.',
-  'Un lien pour retrouver ton lieu, et sa localisation.',
-  'Tu commenceras en tant que spectateur en attendant la validation.',
-];
+type VenueType = string;
+type CapacityOption = string;
 
 export function DAOnboardingScreen({ navigation }: Props) {
+  const { t } = useTranslation();
   const { register } = useAuth();
+
+  const VENUE_TYPES = [
+    t('onboarding.da.venueTypes.club'),
+    t('onboarding.da.venueTypes.festival'),
+    t('onboarding.da.venueTypes.both'),
+  ];
+
+  const CAPACITY_OPTIONS = ['< 500', '500 – 2 000', '2 000+'];
+
+  const STEP_TITLES = [
+    t('onboarding.da.stepTitles.0'),
+    t('onboarding.da.stepTitles.1'),
+    t('onboarding.da.stepTitles.2'),
+    t('onboarding.da.stepTitles.3'),
+  ];
+
+  const STEP_SUBTITLES = [
+    t('onboarding.da.stepSubtitles.0'),
+    t('onboarding.da.stepSubtitles.1'),
+    t('onboarding.da.stepSubtitles.2'),
+    t('onboarding.da.stepSubtitles.3'),
+  ];
   const [step, setStep] = useState(0);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
@@ -82,29 +89,29 @@ export function DAOnboardingScreen({ navigation }: Props) {
     const e: Record<string, string> = {};
     switch (step) {
       case 0:
-        if (!username.trim()) e.username = 'Pseudo requis';
+        if (!username.trim()) e.username = t('validation.usernameRequired');
         else if (usernameError) e.username = usernameError;
-        else if (usernameStatus === 'checking') e.username = 'Vérification en cours...';
-        else if (usernameStatus !== 'available') e.username = 'Pseudo non disponible';
-        if (!firstName.trim()) e.firstName = 'Prénom requis';
-        if (!lastName.trim()) e.lastName = 'Nom requis';
-        if (!venueName.trim()) e.venueName = 'Nom du lieu requis';
+        else if (usernameStatus === 'checking') e.username = t('validation.usernameCheckInProgress');
+        else if (usernameStatus !== 'available') e.username = t('validation.usernameUnavailable');
+        if (!firstName.trim()) e.firstName = t('validation.firstNameRequired');
+        if (!lastName.trim()) e.lastName = t('validation.lastNameRequired');
+        if (!venueName.trim()) e.venueName = t('onboarding.da.venueNameRequired');
         break;
       case 1:
-        if (!venueType) e.venueType = 'Sélectionne un type';
-        if (!capacity) e.capacity = 'Sélectionne une jauge';
+        if (!venueType) e.venueType = t('onboarding.da.selectType');
+        if (!capacity) e.capacity = t('onboarding.da.selectCapacity');
         break;
       case 2:
-        if (!venueLink.trim()) e.venueLink = 'Lien requis';
-        if (!description.trim()) e.description = 'Description requise';
-        if (!location.cityName) e.location = 'Sélectionne la ville du lieu';
+        if (!venueLink.trim()) e.venueLink = t('onboarding.da.venueLinkRequired');
+        if (!description.trim()) e.description = t('onboarding.da.descriptionRequired');
+        if (!location.cityName) e.location = t('onboarding.da.selectVenueCity');
         break;
       case 3:
-        if (!email.trim()) e.email = 'Email requis';
-        else if (!email.includes('@')) e.email = 'Email invalide';
-        if (!password) e.password = 'Mot de passe requis';
-        else if (password.length < 8) e.password = 'Minimum 8 caractères';
-        if (password && confirmPassword && password !== confirmPassword) e.confirmPassword = 'Les mots de passe ne correspondent pas';
+        if (!email.trim()) e.email = t('validation.emailRequired');
+        else if (!email.includes('@')) e.email = t('validation.emailInvalid');
+        if (!password) e.password = t('validation.passwordRequired');
+        else if (password.length < 8) e.password = t('validation.passwordMin8');
+        if (password && confirmPassword && password !== confirmPassword) e.confirmPassword = t('validation.passwordMismatch');
         break;
     }
     setErrors(e);
@@ -122,7 +129,7 @@ export function DAOnboardingScreen({ navigation }: Props) {
     const result = await register(email.trim().toLowerCase(), password, displayName, 'viewer');
     if (!result.success) {
       setLoading(false);
-      Alert.alert('Erreur', result.error ?? 'Inscription impossible');
+      Alert.alert(t('common.error'), result.error ?? t('validation.registrationFailed'));
       return;
     }
     if (result.userId) {
@@ -156,7 +163,7 @@ export function DAOnboardingScreen({ navigation }: Props) {
         ]);
       } catch (err: any) {
         setLoading(false);
-        Alert.alert('Erreur', err?.message ?? 'Ce pseudo est déjà pris');
+        Alert.alert(t('common.error'), err?.message ?? t('validation.usernameTaken'));
         return;
       }
     }
@@ -193,7 +200,7 @@ export function DAOnboardingScreen({ navigation }: Props) {
           <Animated.View style={{ opacity: fadeAnim }}>
             <View style={styles.roleTag}>
               <Ionicons name="business-outline" size={14} color={colors.accent} />
-              <Text style={styles.roleTagText}>Candidature Directeur Artistique</Text>
+              <Text style={styles.roleTagText}>{t('onboarding.da.applicationTag')}</Text>
             </View>
             <Text style={styles.stepTitle}>{STEP_TITLES[step]}</Text>
             <Text style={styles.stepSubtitle}>{STEP_SUBTITLES[step]}</Text>
@@ -201,8 +208,8 @@ export function DAOnboardingScreen({ navigation }: Props) {
             {step === 0 && (
               <View>
                 <Input
-                  label="Pseudo"
-                  placeholder="ex: rexclub_paris"
+                  label={t('common.username')}
+                  placeholder={t('onboarding.da.usernamePlaceholder')}
                   icon="at-outline"
                   value={username}
                   onChangeText={setUsername}
@@ -213,17 +220,17 @@ export function DAOnboardingScreen({ navigation }: Props) {
                 {usernameStatus === 'available' && !errors.username && (
                   <View style={styles.usernameAvailable}>
                     <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                    <Text style={styles.usernameAvailableText}>Pseudo disponible</Text>
+                    <Text style={styles.usernameAvailableText}>{t('common.usernameAvailable')}</Text>
                   </View>
                 )}
                 {usernameStatus === 'checking' && !errors.username && (
-                  <Text style={styles.usernameChecking}>Vérification...</Text>
+                  <Text style={styles.usernameChecking}>{t('common.usernameChecking')}</Text>
                 )}
                 <View style={styles.row}>
                   <View style={styles.rowItem}>
                     <Input
-                      label="Prénom"
-                      placeholder="ex: Marie"
+                      label={t('common.firstName')}
+                      placeholder={t('onboarding.da.firstNamePlaceholder')}
                       icon="person-outline"
                       value={firstName}
                       onChangeText={setFirstName}
@@ -232,8 +239,8 @@ export function DAOnboardingScreen({ navigation }: Props) {
                   </View>
                   <View style={styles.rowItem}>
                     <Input
-                      label="Nom"
-                      placeholder="ex: Dupont"
+                      label={t('common.lastName')}
+                      placeholder={t('onboarding.da.lastNamePlaceholder')}
                       value={lastName}
                       onChangeText={setLastName}
                       error={errors.lastName}
@@ -241,8 +248,8 @@ export function DAOnboardingScreen({ navigation }: Props) {
                   </View>
                 </View>
                 <Input
-                  label="Nom du club / festival"
-                  placeholder="ex: Rex Club, Sonar, Dour..."
+                  label={t('onboarding.da.venueName')}
+                  placeholder={t('onboarding.da.venueNamePlaceholder')}
                   icon="musical-notes-outline"
                   value={venueName}
                   onChangeText={setVenueName}
@@ -253,7 +260,7 @@ export function DAOnboardingScreen({ navigation }: Props) {
 
             {step === 1 && (
               <View>
-                <Text style={styles.selectorLabel}>Type de structure</Text>
+                <Text style={styles.selectorLabel}>{t('onboarding.da.venueType')}</Text>
                 {errors.venueType ? <Text style={styles.errorText}>{errors.venueType}</Text> : null}
                 <View style={styles.optionsRow}>
                   {VENUE_TYPES.map(type => (
@@ -269,7 +276,7 @@ export function DAOnboardingScreen({ navigation }: Props) {
                   ))}
                 </View>
 
-                <Text style={[styles.selectorLabel, { marginTop: spacing.lg }]}>Jauge</Text>
+                <Text style={[styles.selectorLabel, { marginTop: spacing.lg }]}>{t('onboarding.da.capacity')}</Text>
                 {errors.capacity ? <Text style={styles.errorText}>{errors.capacity}</Text> : null}
                 <View style={styles.optionsRow}>
                   {CAPACITY_OPTIONS.map(cap => (
@@ -290,8 +297,8 @@ export function DAOnboardingScreen({ navigation }: Props) {
             {step === 2 && (
               <View>
                 <Input
-                  label="Lien vers ton lieu"
-                  placeholder="Site web, Instagram, RA, Facebook..."
+                  label={t('onboarding.da.venueLink')}
+                  placeholder={t('onboarding.da.venueLinkPlaceholder')}
                   icon="link-outline"
                   value={venueLink}
                   onChangeText={setVenueLink}
@@ -301,8 +308,8 @@ export function DAOnboardingScreen({ navigation }: Props) {
                   error={errors.venueLink}
                 />
                 <Input
-                  label="Description & besoins"
-                  placeholder="Parle-nous de ton lieu et de ce que tu recherches..."
+                  label={t('onboarding.da.description')}
+                  placeholder={t('onboarding.da.descriptionPlaceholder')}
                   icon="document-text-outline"
                   value={description}
                   onChangeText={setDescription}
@@ -321,12 +328,12 @@ export function DAOnboardingScreen({ navigation }: Props) {
                 <View style={styles.notice}>
                   <Ionicons name="information-circle-outline" size={18} color={colors.accent} />
                   <Text style={styles.noticeText}>
-                    Tu rejoindras SHUT en tant que spectateur. Ton accès Directeur Artistique sera activé après validation par notre équipe.
+                    {t('onboarding.da.daNotice')}
                   </Text>
                 </View>
                 <Input
-                  label="Email professionnel"
-                  placeholder="email@exemple.com"
+                  label={t('onboarding.da.professionalEmail')}
+                  placeholder={t('auth.emailPlaceholder')}
                   icon="mail-outline"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -336,8 +343,8 @@ export function DAOnboardingScreen({ navigation }: Props) {
                   error={errors.email}
                 />
                 <Input
-                  label="Mot de passe"
-                  placeholder="Minimum 8 caractères"
+                  label={t('common.password')}
+                  placeholder={t('onboarding.da.passwordPlaceholder')}
                   icon="lock-closed-outline"
                   secureTextEntry
                   value={password}
@@ -345,8 +352,8 @@ export function DAOnboardingScreen({ navigation }: Props) {
                   error={errors.password}
                 />
                 <Input
-                  label="Confirmer le mot de passe"
-                  placeholder="Répète ton mot de passe"
+                  label={t('common.confirmPassword')}
+                  placeholder={t('onboarding.da.confirmPasswordPlaceholder')}
                   icon="lock-closed-outline"
                   secureTextEntry
                   value={confirmPassword}
@@ -360,7 +367,7 @@ export function DAOnboardingScreen({ navigation }: Props) {
 
         <View style={styles.footer}>
           <Button
-            title={step < TOTAL_STEPS - 1 ? 'Suivant' : 'Envoyer ma candidature'}
+            title={step < TOTAL_STEPS - 1 ? t('common.next') : t('onboarding.da.submitApplication')}
             onPress={handleNext}
             size="lg"
             loading={loading}

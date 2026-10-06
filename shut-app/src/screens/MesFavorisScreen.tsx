@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FavorisStackParamList } from '../navigation/MainTabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { GlobalSearchOverlay } from '../components/search/GlobalSearchOverlay';
 import { useFavorites } from '../contexts/FavoritesContext';
@@ -16,12 +17,6 @@ import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme'
 type Nav = NativeStackNavigationProp<FavorisStackParamList>;
 type SortMode = 'recent' | 'alpha' | 'duration';
 
-const SORT_OPTIONS: { mode: SortMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { mode: 'recent', label: 'Récent', icon: 'time-outline' },
-  { mode: 'alpha', label: 'A-Z', icon: 'text-outline' },
-  { mode: 'duration', label: 'Durée', icon: 'timer-outline' },
-];
-
 function formatDuration(secs: number) {
   const m = Math.floor(secs / 60);
   const s = Math.floor(secs % 60);
@@ -29,8 +24,15 @@ function formatDuration(secs: number) {
 }
 
 export function MesFavorisScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
+
+  const SORT_OPTIONS: { mode: SortMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { mode: 'recent', label: t('common.sort.recent'), icon: 'time-outline' },
+    { mode: 'alpha', label: t('common.sort.alpha'), icon: 'text-outline' },
+    { mode: 'duration', label: t('common.sort.duration'), icon: 'timer-outline' },
+  ];
   const { favoriteIds, isLoading } = useFavorites();
   const [replays, setReplays] = useState<Replay[]>([]);
   const [djMap, setDjMap] = useState<Record<string, User>>({});
@@ -89,8 +91,8 @@ export function MesFavorisScreen() {
     <>
     <ScrollView style={styles.container} contentContainerStyle={isEmpty ? styles.containerEmpty : { paddingBottom: insets.bottom + spacing.xl }}>
       <ScreenHeader
-        title="Mes favoris"
-        subtitle={!isEmpty ? `${replays.length} rediffusion${replays.length > 1 ? 's' : ''}` : undefined}
+        title={t('mesFavoris.title')}
+        subtitle={!isEmpty ? t('mesFavoris.replayCount', { count: replays.length }) : undefined}
         rightAction={
           <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
             <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
@@ -103,9 +105,9 @@ export function MesFavorisScreen() {
           <View style={styles.emptyIconWrap}>
             <Ionicons name="heart-outline" size={32} color={colors.accent} />
           </View>
-          <Text style={styles.emptyTitle}>Aucun favori</Text>
+          <Text style={styles.emptyTitle}>{t('mesFavoris.noFavorites')}</Text>
           <Text style={styles.emptyText}>
-            Ajoute des rediffusions en favoris{'\n'}pour les retrouver ici
+            {t('mesFavoris.addFavoritesHint')}
           </Text>
         </View>
       ) : (
@@ -140,7 +142,7 @@ export function MesFavorisScreen() {
                   onPress={() =>
                     navigation.navigate('ReplayPlayer', {
                       playbackUrl: replay.playbackUrl,
-                      title: replay.title || 'Rediffusion',
+                      title: replay.title || t('common.replay'),
                       trimStart: replay.trimStart ?? 0,
                       trimEnd: replay.trimEnd ?? 0,
                       replayId: replay.id,
@@ -169,7 +171,7 @@ export function MesFavorisScreen() {
                   {/* Info */}
                   <View style={styles.cardInfo}>
                     <Text style={styles.cardTitle} numberOfLines={1}>
-                      {replay.title || 'Sans titre'}
+                      {replay.title || t('common.untitled')}
                     </Text>
                     {djLabel ? (
                       <Text style={styles.cardDj} numberOfLines={1}>{djLabel}</Text>

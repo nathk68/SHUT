@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParametresStackParamList } from '../navigation/MainTabs';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,6 +15,7 @@ import { colors, fonts, fontSize, spacing } from '../config/theme';
 type Nav = NativeStackNavigationProp<ParametresStackParamList, 'Profile'>;
 
 export function ProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
   const { user, updateUser } = useAuth();
   const [totalLikes, setTotalLikes] = useState(0);
@@ -62,14 +64,14 @@ export function ProfileScreen() {
 
         {user.bio ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Bio</Text>
+            <Text style={styles.sectionTitle}>{t('profile.bio')}</Text>
             <Text style={styles.bio}>{user.bio}</Text>
           </View>
         ) : null}
 
         {user.genres && user.genres.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Genres</Text>
+            <Text style={styles.sectionTitle}>{t('profile.genres')}</Text>
             <GenreTagList genres={user.genres} />
           </View>
         ) : null}
@@ -80,7 +82,7 @@ export function ProfileScreen() {
             onPress={(replay) => {
               (navigation as any).navigate('ReplayPlayer', {
                 playbackUrl: replay.playbackUrl,
-                title: replay.title || 'Rediffusion',
+                title: replay.title || t('common.replay'),
                 trimStart: replay.trimStart ?? 0,
                 trimEnd: replay.trimEnd ?? 0,
                 replayId: replay.id,

@@ -2,12 +2,14 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
 
 export function GoLiveScreen() {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { currentRole } = useRole();
 
@@ -29,9 +31,9 @@ export function GoLiveScreen() {
         </View>
       </View>
 
-      <Text style={styles.title}>DJ LIVE</Text>
+      <Text style={styles.title}>{t('goLive.title')}</Text>
       <Text style={styles.subtitle}>
-        Lance ton live et partage ta musique avec le monde
+        {t('goLive.subtitle')}
       </Text>
 
       {isDJ ? (
@@ -40,19 +42,19 @@ export function GoLiveScreen() {
           onPress={() => navigation.navigate('AudioCheck')}
         >
           <Ionicons name="radio-outline" size={18} color={colors.white} />
-          <Text style={styles.buttonText}>Lancer mon live</Text>
+          <Text style={styles.buttonText}>{t('goLive.startLive')}</Text>
         </Pressable>
       ) : (
         <View style={styles.restrictedContainer}>
           <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={{ marginBottom: spacing.sm }} />
           <Text style={styles.restrictedText}>
-            Cette fonctionnalité est réservée aux comptes DJ
+            {t('goLive.djOnly')}
           </Text>
         </View>
       )}
 
       <Text style={styles.tagline}>
-        Partage ton univers. Inspire. Connecte.
+        {t('goLive.tagline')}
       </Text>
     </View>
   );

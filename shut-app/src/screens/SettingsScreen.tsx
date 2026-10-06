@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { removeStoredData } from '../utils/storage';
@@ -61,20 +62,21 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export function SettingsScreen() {
   const navigation = useNavigation<any>();
-  const { user, logout, deleteAccount } = useAuth();
+  const { user, logout, deleteAccount, resetPassword } = useAuth();
   const { language, videoQuality, notifications, recordLives, setRecordLives } = usePreferences();
+  const { t } = useTranslation();
 
   const displayName = user?.artistName ?? user?.firstName ?? user?.displayName ?? '';
 
   const handleToggleRecord = useCallback(
     (newValue: boolean) => {
       Alert.alert(
-        'Enregistrement des lives',
-        'Cela réinitialisera vos identifiants RTMP. Vous devrez les régénérer avant votre prochain live.',
+        t('settings.recordLivesAlertTitle'),
+        t('settings.recordLivesAlertMessage'),
         [
-          { text: 'Annuler', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Confirmer',
+            text: t('common.confirm'),
             onPress: async () => {
               setRecordLives(newValue);
               await removeStoredData('@shut_quick_stream');
@@ -83,29 +85,29 @@ export function SettingsScreen() {
         ],
       );
     },
-    [setRecordLives],
+    [setRecordLives, t],
   );
 
   const notifCount = Object.values(notifications).filter(Boolean).length;
-  const notifLabel = notifCount === 0 ? 'Désactivées' : `${notifCount}/3 activées`;
-  const qualityLabel = videoQuality === 'auto' ? 'Automatique' : videoQuality;
-  const langLabel = language === 'fr' ? 'Français' : 'English';
+  const notifLabel = notifCount === 0 ? t('settings.disabled') : `${notifCount}/3 ${t('settings.enabled')}`;
+  const qualityLabel = videoQuality === 'auto' ? t('settings.auto') : videoQuality;
+  const langLabel = language === 'fr' ? t('settings.french') : 'English';
 
   const handleLogout = useCallback(() => {
-    Alert.alert('Se déconnecter', 'Tu vas être déconnecté de SHUT.', [
-      { text: 'Annuler', style: 'cancel' },
-      { text: 'Se déconnecter', style: 'destructive', onPress: logout },
+    Alert.alert(t('settings.logoutTitle'), t('settings.logoutMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('settings.logoutTitle'), style: 'destructive', onPress: logout },
     ]);
-  }, [logout]);
+  }, [logout, t]);
 
   const handleDeleteAccount = useCallback(() => {
     Alert.alert(
-      'Supprimer mon compte',
-      'Cette action est irréversible. Toutes tes données (profil, historique, sets) seront supprimées définitivement.',
+      t('settings.deleteAccount'),
+      t('settings.deleteAccountMessage'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -113,8 +115,8 @@ export function SettingsScreen() {
             } catch (e: any) {
               if (e?.code === 'auth/requires-recent-login') {
                 Alert.alert(
-                  'Reconnexion requise',
-                  'Pour des raisons de sécurité, déconnecte-toi puis reconnecte-toi avant de supprimer ton compte.',
+                  t('settings.deleteAccountReauthTitle'),
+                  t('settings.deleteAccountReauthMessage'),
                 );
               }
             }
@@ -122,11 +124,11 @@ export function SettingsScreen() {
         },
       ],
     );
-  }, [deleteAccount]);
+  }, [deleteAccount, t]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <ScreenHeader title="Paramètres" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={t('settings.title')} onBack={() => navigation.goBack()} />
 
       {/* Profile card */}
       <Pressable
@@ -145,21 +147,38 @@ export function SettingsScreen() {
           ) : null}
         </View>
         <View style={styles.profileBadge}>
-          <Text style={styles.profileBadgeText}>Voir le profil</Text>
+          <Text style={styles.profileBadgeText}>{t('settings.viewProfile')}</Text>
         </View>
       </Pressable>
 
       {/* Compte */}
-      <Section title="Compte">
-        <Row icon="mail-outline" label="Email" value={user?.email ?? '-'} />
+      <Section title={t('settings.account')}>
+        <Row icon="mail-outline" label={t('common.email')} value={user?.email ?? '-'} />
         <Row
           icon="key-outline"
-          label="Changer le mot de passe"
+          label={t('settings.changePassword')}
           onPress={() =>
             Alert.alert(
-              'Réinitialisation',
-              'Un email de réinitialisation va être envoyé à ' + (user?.email ?? ''),
-              [{ text: 'OK' }],
+              t('settings.resetPasswordTitle'),
+              t('settings.resetPasswordMessage') + (user?.email ?? ''),
+              [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                  text: t('settings.sendResetEmail'),
+                  onPress: async () => {
+                    if (!user?.email) return;
+                    const result = await resetPassword(user.email);
+                    if (result.success) {
+                      Alert.alert(
+                        t('settings.resetEmailSentTitle'),
+                        t('settings.resetEmailSentMessage'),
+                      );
+                    } else {
+                      Alert.alert(t('common.error'), result.error || t('settings.resetEmailError'));
+                    }
+                  },
+                },
+              ],
             )
           }
           isLast
@@ -167,22 +186,22 @@ export function SettingsScreen() {
       </Section>
 
       {/* Préférences */}
-      <Section title="Préférences">
+      <Section title={t('settings.preferences')}>
         <Row
           icon="notifications-outline"
-          label="Notifications"
+          label={t('settings.notifications')}
           value={notifLabel}
           onPress={() => navigation.navigate('Notifications')}
         />
         <Row
           icon="globe-outline"
-          label="Langue"
+          label={t('settings.language')}
           value={langLabel}
           onPress={() => navigation.navigate('Language')}
         />
         <Row
           icon="videocam-outline"
-          label="Qualité vidéo"
+          label={t('settings.videoQuality')}
           value={qualityLabel}
           onPress={() => navigation.navigate('Quality')}
           isLast
@@ -191,15 +210,15 @@ export function SettingsScreen() {
 
       {/* Diffusion (DJs only) */}
       {user?.role === 'broadcaster' && (
-        <Section title="Diffusion">
+        <Section title={t('settings.broadcasting')}>
           <View style={[styles.row, styles.rowLast]}>
             <View style={styles.rowIcon}>
               <Ionicons name="recording-outline" size={16} color={colors.accentLight} />
             </View>
             <View style={styles.recordLabelWrap}>
-              <Text style={styles.rowLabel}>Enregistrer mes lives</Text>
+              <Text style={styles.rowLabel}>{t('settings.recordLives')}</Text>
               <Text style={styles.recordDesc}>
-                Chaque live sera enregistre pour creer une rediffusion
+                {t('settings.recordLivesDesc')}
               </Text>
             </View>
             <Switch
@@ -213,56 +232,56 @@ export function SettingsScreen() {
       )}
 
       {/* Confidentialité & Légal */}
-      <Section title="Confidentialité & Légal">
+      <Section title={t('settings.privacy')}>
         <Row
           icon="shield-checkmark-outline"
-          label="Politique de confidentialité"
+          label={t('settings.privacyPolicy')}
           onPress={() => navigation.navigate('PrivacyPolicy')}
         />
         <Row
           icon="document-text-outline"
-          label="Conditions d'utilisation"
+          label={t('settings.termsOfUse')}
           onPress={() => navigation.navigate('Terms')}
         />
         <Row
           icon="lock-closed-outline"
-          label="Gestion des données (RGPD)"
+          label={t('settings.dataManagement')}
           onPress={() => navigation.navigate('RGPD')}
           isLast
         />
       </Section>
 
       {/* Support */}
-      <Section title="Support">
+      <Section title={t('settings.support')}>
         <Row
           icon="help-circle-outline"
-          label="Centre d'aide"
-          onPress={() => Linking.openURL('https://shut.live/help')}
+          label={t('settings.helpCenter')}
+          onPress={() => Linking.openURL('https://shutdiffusion.com/help')}
         />
         <Row
           icon="bug-outline"
-          label="Signaler un problème"
-          onPress={() => Linking.openURL('mailto:support@shut.live')}
+          label={t('settings.reportIssue')}
+          onPress={() => Linking.openURL('mailto:support@shutdiffusion.com')}
           isLast
         />
       </Section>
 
       {/* À propos */}
-      <Section title="À propos">
-        <Row icon="information-circle-outline" label="Version" value="0.1.0 (beta)" />
+      <Section title={t('settings.about')}>
+        <Row icon="information-circle-outline" label={t('settings.version')} value="0.1.0 (beta)" />
         <Row
           icon="globe-outline"
-          label="Site web SHUT"
-          onPress={() => Linking.openURL('https://shut.live')}
+          label={t('settings.website')}
+          onPress={() => Linking.openURL('https://shutdiffusion.com')}
           isLast
         />
       </Section>
 
       {/* Zone de danger */}
-      <Section title="Zone de danger">
+      <Section title={t('settings.dangerZone')}>
         <Row
           icon="trash-outline"
-          label="Supprimer mon compte"
+          label={t('settings.deleteAccount')}
           onPress={handleDeleteAccount}
           danger
           isLast
@@ -271,10 +290,10 @@ export function SettingsScreen() {
 
       {/* Déconnexion */}
       <Pressable style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Se déconnecter</Text>
+        <Text style={styles.logoutText}>{t('settings.logoutTitle')}</Text>
       </Pressable>
 
-      <Text style={styles.legalNote}>SHUT v0.1.0 — © 2026 SHUT. Tous droits réservés.</Text>
+      <Text style={styles.legalNote}>{t('settings.footer')}</Text>
     </ScrollView>
   );
 }

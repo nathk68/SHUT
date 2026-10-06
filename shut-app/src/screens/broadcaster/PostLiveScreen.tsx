@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useTranslation } from 'react-i18next';
 import { replaysService } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
 import { Replay } from '../../types';
@@ -27,12 +28,13 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null;
 function searchCitiesDebounced(
   query: string,
   callback: (results: string[]) => void,
+  lang = 'fr',
 ) {
   if (searchTimer) clearTimeout(searchTimer);
   if (query.length < 2) { callback([]); return; }
   searchTimer = setTimeout(async () => {
     try {
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=6&featuretype=city&accept-language=fr`;
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=6&featuretype=city&accept-language=${lang}`;
       const res = await fetch(url, { headers: { 'User-Agent': 'SHUT-App/1.0' } });
       const data = await res.json();
       const results: string[] = [];
@@ -65,6 +67,7 @@ export function PostLiveScreen() {
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
   const { eventId } = route.params as { eventId: string };
 
   const [replay, setReplay] = useState<Replay | null>(null);
@@ -234,17 +237,17 @@ export function PostLiveScreen() {
     if (replay.status === 'published') {
       // Editing a published replay
       Alert.alert(
-        'Quitter',
-        'Vous allez perdre vos modifications.',
+        t('common.quit'),
+        t('broadcaster.postLive.quitLoseChanges'),
         [
-          { text: 'Annuler', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Quitter',
+            text: t('common.quit'),
             style: 'destructive',
             onPress: () => navigation.goBack(),
           },
           {
-            text: 'Publier',
+            text: t('common.publish'),
             onPress: async () => {
               try {
                 await replaysService.updateReplay(replay.id, {
@@ -261,17 +264,17 @@ export function PostLiveScreen() {
     } else {
       // New or draft replay
       Alert.alert(
-        'Quitter',
-        'Vous allez perdre la rediffusion. Voulez-vous l\'enregistrer dans vos brouillons ?',
+        t('common.quit'),
+        t('broadcaster.postLive.quitLoseReplay'),
         [
-          { text: 'Annuler', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Supprimer',
+            text: t('common.delete'),
             style: 'destructive',
             onPress: () => navigation.popToTop(),
           },
           {
-            text: 'Enregistrer en brouillon',
+            text: t('broadcaster.postLive.saveDraft'),
             onPress: async () => {
               try {
                 await replaysService.updateReplay(replay.id, {
@@ -290,7 +293,7 @@ export function PostLiveScreen() {
   const handlePublish = useCallback(async () => {
     if (!replay) return;
     if (!title.trim()) {
-      Alert.alert('Titre requis', 'Ajoute un titre avant de publier.');
+      Alert.alert(t('broadcaster.postLive.titleRequired'), t('broadcaster.postLive.titleRequiredMessage'));
       return;
     }
     const isEdit = replay.status === 'published';
@@ -304,13 +307,13 @@ export function PostLiveScreen() {
       if (isEdit) {
         navigation.goBack();
       } else {
-        Alert.alert('Publié !', 'Ta rediffusion est maintenant visible sur ton profil.', [
+        Alert.alert(t('broadcaster.postLive.publishedTitle'), t('broadcaster.postLive.publishedMessage'), [
           { text: 'OK', onPress: () => navigation.popToTop() },
         ]);
       }
     } catch (e) {
       console.warn('[PostLive] publish error:', e);
-      Alert.alert('Erreur', 'Impossible de publier. Réessaie.');
+      Alert.alert(t('common.error'), t('broadcaster.postLive.publishError'));
     } finally {
       setPublishing(false);
     }
@@ -324,11 +327,11 @@ export function PostLiveScreen() {
         ...replayUpdates(),
         status: 'draft',
       });
-      Alert.alert('Enregistre', 'La rediffusion est dans ta bibliotheque. Tu pourras la publier plus tard.', [
+      Alert.alert(t('broadcaster.postLive.savedTitle'), t('broadcaster.postLive.savedMessage'), [
         { text: 'OK', onPress: () => navigation.popToTop() },
       ]);
     } catch {
-      Alert.alert('Erreur', 'Impossible d\'enregistrer. Reessaie.');
+      Alert.alert(t('common.error'), t('broadcaster.postLive.saveError'));
     } finally {
       setSaving(false);
     }
@@ -421,7 +424,7 @@ export function PostLiveScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-        <Text style={styles.title}>Rediffusion</Text>
+        <Text style={styles.title}>{t('broadcaster.postLive.title')}</Text>
         <Pressable onPress={handleClose} hitSlop={12}>
           <Ionicons name="close" size={24} color={colors.textPrimary} />
         </Pressable>
@@ -432,10 +435,9 @@ export function PostLiveScreen() {
         {isProcessing ? (
           <View style={styles.processingOverlay}>
             <Ionicons name="hourglass-outline" size={40} color={colors.accentLight} />
-            <Text style={styles.processingTitle}>Encodage en cours...</Text>
+            <Text style={styles.processingTitle}>{t('broadcaster.postLive.processingTitle')}</Text>
             <Text style={styles.processingDesc}>
-              Mux prepare ta rediffusion.{'\n'}
-              Cette page se mettra a jour automatiquement.
+              {t('broadcaster.postLive.processingDesc')}
             </Text>
           </View>
         ) : (
@@ -487,7 +489,7 @@ export function PostLiveScreen() {
           <View style={styles.trimSection}>
             <Text style={styles.trimLabel}>
               <Ionicons name="cut-outline" size={12} color={colors.textMuted} />
-              {'  Couper la rediffusion'}
+              {'  '}{t('broadcaster.postLive.trimLabel')}
             </Text>
             <View
               style={styles.trimBar}
@@ -539,27 +541,27 @@ export function PostLiveScreen() {
 
             {/* Trim time labels */}
             <View style={styles.trimTimesRow}>
-              <Text style={styles.trimTime}>Debut : {formatDuration(trimStart)}</Text>
-              <Text style={styles.trimTime}>Fin : {formatDuration(trimEnd)}</Text>
+              <Text style={styles.trimTime}>{t('broadcaster.postLive.trimStart')}{formatDuration(trimStart)}</Text>
+              <Text style={styles.trimTime}>{t('broadcaster.postLive.trimEnd')}{formatDuration(trimEnd)}</Text>
             </View>
           </View>
         </View>
       )}
 
       {/* Title input */}
-      <Text style={styles.fieldLabel}>Titre</Text>
+      <Text style={styles.fieldLabel}>{t('broadcaster.postLive.titleField')}</Text>
       <TextInput
         style={styles.textInput}
         value={title}
         onChangeText={setTitle}
-        placeholder="Ex: Set Techno @ Festival XYZ"
+        placeholder={t('broadcaster.postLive.titlePlaceholder')}
         placeholderTextColor={colors.textMuted}
         maxLength={100}
       />
 
       {/* Genre tags */}
-      <Text style={styles.fieldLabel}>Genres musicaux</Text>
-      <Text style={styles.fieldHint}>Selectionne jusqu'a 5 genres</Text>
+      <Text style={styles.fieldLabel}>{t('broadcaster.postLive.genresField')}</Text>
+      <Text style={styles.fieldHint}>{t('broadcaster.postLive.genresHint')}</Text>
       <View style={styles.genreGrid}>
         {ALL_GENRES.map((genre) => {
           const selected = selectedGenres.includes(genre);
@@ -578,16 +580,16 @@ export function PostLiveScreen() {
       </View>
 
       {/* Location */}
-      <Text style={styles.fieldLabel}>Lieu de la diffusion</Text>
+      <Text style={styles.fieldLabel}>{t('broadcaster.postLive.locationField')}</Text>
       <View style={{ zIndex: 10 }}>
         <TextInput
           style={styles.textInput}
           value={location}
           onChangeText={(text) => {
             setLocation(text);
-            searchCitiesDebounced(text, setCitySuggestions);
+            searchCitiesDebounced(text, setCitySuggestions, i18n.language);
           }}
-          placeholder="Ex: Paris, France"
+          placeholder={t('broadcaster.postLive.locationPlaceholder')}
           placeholderTextColor={colors.textMuted}
           maxLength={100}
         />
@@ -611,11 +613,11 @@ export function PostLiveScreen() {
       </View>
 
       {/* Date */}
-      <Text style={styles.fieldLabel}>Date du live</Text>
+      <Text style={styles.fieldLabel}>{t('broadcaster.postLive.dateField')}</Text>
       <Pressable style={styles.dateBtn} onPress={() => setShowDatePicker(true)}>
         <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
         <Text style={styles.dateText}>
-          {liveDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+          {liveDate.toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
         </Text>
       </Pressable>
       {showDatePicker && (
@@ -642,7 +644,7 @@ export function PostLiveScreen() {
           >
             <Ionicons name="checkmark-circle-outline" size={20} color={colors.white} />
             <Text style={styles.publishBtnText}>
-              {publishing ? 'Enregistrement...' : 'Enregistrer les modifications'}
+              {publishing ? t('broadcaster.postLive.saving') : t('broadcaster.postLive.saveChanges')}
             </Text>
           </Pressable>
         ) : (
@@ -654,7 +656,7 @@ export function PostLiveScreen() {
             >
               <Ionicons name="globe-outline" size={20} color={colors.white} />
               <Text style={styles.publishBtnText}>
-                {publishing ? 'Publication...' : 'Publier sur mon profil'}
+                {publishing ? t('broadcaster.postLive.publishing') : t('broadcaster.postLive.publishOnProfile')}
               </Text>
             </Pressable>
 
@@ -665,7 +667,7 @@ export function PostLiveScreen() {
             >
               <Ionicons name="bookmark-outline" size={18} color={colors.accentLight} />
               <Text style={styles.draftBtnText}>
-                {saving ? 'Enregistrement...' : 'Enregistrer dans ma bibliotheque'}
+                {saving ? t('broadcaster.postLive.saving') : t('broadcaster.postLive.saveToLibrary')}
               </Text>
             </Pressable>
           </>

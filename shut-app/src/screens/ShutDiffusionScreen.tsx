@@ -3,6 +3,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensio
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { SearchableDropdown } from '../components/ui/SearchableDropdown';
 import { LocationSelector, LocationValue } from '../components/ui/LocationSelector';
 import { WorldMapSVG } from '../components/ui/WorldMapSVG';
@@ -138,6 +139,7 @@ const cardStyles = StyleSheet.create({
 
 export function ShutDiffusionScreen() {
   const navigation = useNavigation<Nav>();
+  const { t } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
 
   const scrollViewRef = useRef<ScrollView>(null);
@@ -165,7 +167,7 @@ export function ShutDiffusionScreen() {
     if (cityLocation.cityId) djs = getDJsForCity(allDJs, cityLocation.cityId);
     else if (selectedCountry) djs = getDJsForCountry(allDJs, selectedCountry);
     return [
-      { id: 'all', label: 'Tous les DJs' },
+      { id: 'all', label: t('explore.allDJs') },
       ...djs.map((dj) => ({ id: dj.id, label: dj.artistName || dj.displayName })),
     ];
   })();
@@ -228,7 +230,7 @@ export function ShutDiffusionScreen() {
         </Pressable>
       </View>
       <Text style={styles.subtitle}>
-        Découvrez les pays partenaires et leurs scènes live.
+        {t('explore.subtitle')}
       </Text>
 
       {/* World map — full width, no border, same background as page */}
@@ -244,11 +246,11 @@ export function ShutDiffusionScreen() {
         <View style={styles.legend}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
-            <Text style={styles.legendText}>Pays partenaires</Text>
+            <Text style={styles.legendText}>{t('explore.partnerCountries')}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: '#1c1b2e', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }]} />
-            <Text style={styles.legendText}>À venir</Text>
+            <Text style={styles.legendText}>{t('explore.comingSoon')}</Text>
           </View>
         </View>
       </View>
@@ -258,14 +260,14 @@ export function ShutDiffusionScreen() {
         <LocationSelector
           value={cityLocation}
           onChange={handleCityChange}
-          label="Rechercher une ville"
-          placeholder="Tape le nom d'une ville..."
+          label={t('explore.searchCity')}
+          placeholder={t('explore.searchCityPlaceholder')}
           restrictToCountries={['FR', 'CH']}
         />
 
         <SearchableDropdown
           options={djOptions}
-          label="Choisir un DJ"
+          label={t('explore.chooseDJ')}
           value={selectedDJ ?? undefined}
           onSelect={setSelectedDJ}
           disabled={false}
@@ -280,7 +282,7 @@ export function ShutDiffusionScreen() {
           style={({ pressed }) => [styles.button, styles.buttonOutline, { opacity: pressed ? 0.7 : 1 }]}
         >
           <Ionicons name="videocam-outline" size={16} color={colors.accent} />
-          <Text style={[styles.buttonText, styles.buttonTextOutline]}>Voir les lives</Text>
+          <Text style={[styles.buttonText, styles.buttonTextOutline]}>{t('explore.viewLives')}</Text>
         </Pressable>
 
         <Pressable
@@ -288,7 +290,7 @@ export function ShutDiffusionScreen() {
           style={({ pressed }) => [styles.button, styles.buttonFilled, { opacity: pressed ? 0.7 : 1 }]}
         >
           <Ionicons name="people-outline" size={16} color={colors.white} />
-          <Text style={styles.buttonText}>Rechercher des DJs</Text>
+          <Text style={styles.buttonText}>{t('explore.searchDJs')}</Text>
         </Pressable>
       </View>
 
@@ -305,10 +307,10 @@ export function ShutDiffusionScreen() {
           ) : (
             <>
               <Text style={styles.djResultsTitle}>
-                {filteredDJs.length} DJ{filteredDJs.length !== 1 ? 's' : ''} trouvé{filteredDJs.length !== 1 ? 's' : ''}
+                {t('explore.djsFound', { count: filteredDJs.length })}
               </Text>
               {filteredDJs.length === 0 ? (
-                <Text style={styles.djResultsEmpty}>Aucun DJ trouvé pour cette sélection.</Text>
+                <Text style={styles.djResultsEmpty}>{t('explore.noDJsFound')}</Text>
               ) : (
                 <View style={styles.djList}>
                   {filteredDJs.map((dj) => (

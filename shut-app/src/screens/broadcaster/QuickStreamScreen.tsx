@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { copyToClipboard } from '../../utils/clipboard';
 import { getStoredData, setStoredData, removeStoredData } from '../../utils/storage';
 import { streamingService } from '../../services';
@@ -24,51 +25,32 @@ type GuideStep = {
   desc: string;
 };
 
-const DJI_STEPS: GuideStep[] = [
-  { icon: 'phone-portrait-outline', title: 'Ouvrir DJI Mimo', desc: 'Lance DJI Mimo et connecte ta caméra DJI.' },
-  { icon: 'radio-outline', title: 'Onglet "Live"', desc: 'Dans Mimo, appuie sur l\'icône Live en bas de l\'écran.' },
-  { icon: 'code-slash-outline', title: 'RTMP personnalisé', desc: 'Choisis "Custom RTMP" ou "RTMP personnalisé" dans la liste.' },
-  { icon: 'copy-outline', title: 'Coller l\'URL complète', desc: 'Copie l\'URL complète ci-dessus (URL + clé concaténées) et colle-la dans Mimo.' },
-  { icon: 'volume-high-outline', title: 'Vérifier l\'audio', desc: 'Dans les réglages Mimo, confirme que le son vient bien de l\'entrée micro externe.' },
-  { icon: 'play-circle-outline', title: 'Démarrer', desc: 'Appuie sur "Démarrer" dans Mimo. Ton live SHUT est en cours !' },
-];
-
-const LARIX_STEPS: GuideStep[] = [
-  { icon: 'download-outline', title: 'Installer Larix Broadcaster', desc: 'Télécharge Larix Broadcaster sur l\'App Store (gratuit).' },
-  { icon: 'settings-outline', title: 'Créer une connexion', desc: 'Dans Larix : Paramètres → Connexions → + pour ajouter une connexion.' },
-  { icon: 'copy-outline', title: 'Coller l\'URL RTMP', desc: 'URL : colle l\'URL RTMP SHUT. Stream name : colle ta clé de stream séparément.' },
-  { icon: 'volume-high-outline', title: 'Configurer l\'audio', desc: 'Dans Larix, sélectionne l\'entrée jack comme source audio.' },
-  { icon: 'videocam-outline', title: 'Sélectionner la caméra', desc: 'Choisis la caméra avant ou arrière dans l\'interface Larix.' },
-  { icon: 'play-circle-outline', title: 'Démarrer le live', desc: 'Appuie sur le bouton rouge dans Larix. Ton live SHUT est en cours !' },
-];
-
-const GOPRO_STEPS: GuideStep[] = [
-  { icon: 'cloud-download-outline', title: 'GoPro Labs installé ?', desc: 'Assure-toi d\'avoir installé le firmware GoPro Labs (gopro.com/labs) sur ta caméra.' },
-  { icon: 'copy-outline', title: 'Copier l\'URL complète', desc: 'Copie l\'URL complète SHUT (URL + clé concaténées) ci-dessus.' },
-  { icon: 'qr-code-outline', title: 'Générer le QR code', desc: 'Dans l\'app GoPro Quik → onglet Labs QR → crée un QR code de type "RTMP" et colle ton URL.' },
-  { icon: 'camera-outline', title: 'Scanner avec la GoPro', desc: 'Sur la GoPro : maintiens le bouton Mode → sélectionne "Scan QR" → scanne le QR code.' },
-  { icon: 'play-circle-outline', title: 'Démarrer', desc: 'Lance le live depuis la GoPro. Elle stream directement vers SHUT !' },
-];
-
 interface CameraGuide {
   title: string;
   subtitle: string;
   steps: GuideStep[];
 }
 
-const CAMERA_GUIDES: Record<string, CameraGuide> = {
-  'dji-pocket-3': { title: 'DJI Osmo Pocket 3 — DJI Mimo', subtitle: 'Configure DJI Mimo pour streamer vers SHUT.', steps: DJI_STEPS },
-  'dji-pocket-2': { title: 'DJI Osmo Pocket 2 — DJI Mimo', subtitle: 'Configure DJI Mimo pour streamer vers SHUT.', steps: DJI_STEPS },
-  'dji-action-4': { title: 'DJI Osmo Action 4 — DJI Mimo', subtitle: 'Configure DJI Mimo pour streamer vers SHUT.', steps: DJI_STEPS },
-  'dji-action-3': { title: 'DJI Osmo Action 3 — DJI Mimo', subtitle: 'Configure DJI Mimo pour streamer vers SHUT.', steps: DJI_STEPS },
-  'iphone':       { title: 'iPhone — Larix Broadcaster',   subtitle: 'Configure Larix Broadcaster pour streamer vers SHUT.', steps: LARIX_STEPS },
-  'gopro':        { title: 'GoPro — GoPro Labs',           subtitle: 'Configure ta GoPro avec le firmware Labs pour streamer vers SHUT.', steps: GOPRO_STEPS },
-};
+const DJI_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
+  'phone-portrait-outline', 'radio-outline', 'code-slash-outline',
+  'copy-outline', 'volume-high-outline', 'play-circle-outline',
+];
+const LARIX_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
+  'download-outline', 'settings-outline', 'copy-outline',
+  'volume-high-outline', 'videocam-outline', 'play-circle-outline',
+];
+const GOPRO_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
+  'cloud-download-outline', 'copy-outline', 'qr-code-outline',
+  'camera-outline', 'play-circle-outline',
+];
 
-const DEFAULT_GUIDE: CameraGuide = {
-  title: 'Configuration caméra',
-  subtitle: 'Colle l\'URL RTMP complète dans l\'app de streaming de ta caméra.',
-  steps: DJI_STEPS,
+const STEP_KEYS: Record<string, { key: string; icons: (keyof typeof Ionicons.glyphMap)[] }> = {
+  'dji-pocket-3': { key: 'djiSteps', icons: DJI_ICONS },
+  'dji-pocket-2': { key: 'djiSteps', icons: DJI_ICONS },
+  'dji-action-4': { key: 'djiSteps', icons: DJI_ICONS },
+  'dji-action-3': { key: 'djiSteps', icons: DJI_ICONS },
+  'iphone':       { key: 'larixSteps', icons: LARIX_ICONS },
+  'gopro':        { key: 'goproSteps', icons: GOPRO_ICONS },
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -77,9 +59,24 @@ export function QuickStreamScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { recordLives } = usePreferences();
   const cameraId: string | undefined = route.params?.cameraId;
-  const guide = (cameraId && CAMERA_GUIDES[cameraId]) || DEFAULT_GUIDE;
+
+  const stepConfig = cameraId ? STEP_KEYS[cameraId] : undefined;
+  const stepsKey = stepConfig?.key ?? 'djiSteps';
+  const stepsIcons = stepConfig?.icons ?? DJI_ICONS;
+  const rawSteps = t(`broadcaster.quickStream.${stepsKey}`, { returnObjects: true }) as { title: string; desc: string }[];
+  const guideSteps: GuideStep[] = rawSteps.map((s, i) => ({ ...s, icon: stepsIcons[i] ?? 'ellipse-outline' }));
+
+  const guideInfo = cameraId
+    ? { title: t(`broadcaster.quickStream.guides.${cameraId}.title`, { defaultValue: '' }), subtitle: t(`broadcaster.quickStream.guides.${cameraId}.subtitle`, { defaultValue: '' }) }
+    : null;
+  const guide: CameraGuide = {
+    title: guideInfo?.title || t('broadcaster.quickStream.defaultGuide.title'),
+    subtitle: guideInfo?.subtitle || t('broadcaster.quickStream.defaultGuide.subtitle'),
+    steps: guideSteps,
+  };
   const [loading, setLoading] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
   const [rtmpUrl, setRtmpUrl] = useState<string | null>(null);
@@ -117,7 +114,7 @@ export function QuickStreamScreen() {
         streamKey: creds.streamKey,
       });
     } catch (error: any) {
-      Alert.alert('Erreur', error?.message ?? 'Impossible de générer les identifiants. Réessaie.');
+      Alert.alert(t('common.error'), error?.message ?? t('broadcaster.quickStream.generateError'));
     } finally {
       setLoading(false);
     }
@@ -150,8 +147,8 @@ export function QuickStreamScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <Text style={styles.title}>
-        {'CAMÉRA + '}
-        <Text style={styles.titleAccent}>STREAM</Text>
+        {t('broadcaster.quickStream.headerTitle')}
+        <Text style={styles.titleAccent}>{t('broadcaster.quickStream.headerAccent')}</Text>
       </Text>
       <Text style={styles.subtitle}>{guide.subtitle}</Text>
 
@@ -161,9 +158,9 @@ export function QuickStreamScreen() {
           <View style={styles.generateIcon}>
             <Ionicons name="key-outline" size={32} color={colors.accentLight} />
           </View>
-          <Text style={styles.generateTitle}>Génère tes identifiants SHUT</Text>
+          <Text style={styles.generateTitle}>{t('broadcaster.quickStream.generateTitle')}</Text>
           <Text style={styles.generateDesc}>
-            Un lien RTMP unique est créé pour ton live. Colle-le dans DJI Mimo pour streamer directement vers SHUT.
+            {t('broadcaster.quickStream.generateDesc')}
           </Text>
           <Pressable
             onPress={handleGenerate}
@@ -172,25 +169,25 @@ export function QuickStreamScreen() {
           >
             <Ionicons name="flash-outline" size={18} color={colors.white} />
             <Text style={styles.generateButtonText}>
-              {loading ? 'Génération en cours...' : 'Générer mes identifiants'}
+              {loading ? t('broadcaster.quickStream.generating') : t('broadcaster.quickStream.generateButton')}
             </Text>
           </Pressable>
         </View>
       ) : (
         <>
           {/* Credentials */}
-          <Text style={styles.sectionLabel}>Identifiants de diffusion</Text>
+          <Text style={styles.sectionLabel}>{t('broadcaster.quickStream.credentialsSection')}</Text>
 
           {/* Full URL (for DJI Mimo) */}
           <View style={styles.credentialCard}>
             <View style={styles.credentialHeader}>
               <View style={styles.credentialLabelRow}>
                 <Ionicons name="videocam-outline" size={14} color={colors.accentLight} />
-                <Text style={styles.credentialLabel}>URL complète (DJI Mimo)</Text>
+                <Text style={styles.credentialLabel}>{t('broadcaster.quickStream.fullUrlLabel')}</Text>
               </View>
               <Pressable onPress={handleCopyFull} style={styles.copyBtn}>
                 <Ionicons name={copiedField === 'full' ? 'checkmark' : 'copy-outline'} size={14} color={colors.accentLight} />
-                <Text style={styles.copyBtnText}>{copiedField === 'full' ? 'Copié !' : 'Copier'}</Text>
+                <Text style={styles.copyBtnText}>{copiedField === 'full' ? t('broadcaster.quickStream.copied') : t('broadcaster.quickStream.copy')}</Text>
               </Pressable>
             </View>
             <Text style={styles.credentialValue} selectable>
@@ -203,11 +200,11 @@ export function QuickStreamScreen() {
             <View style={styles.credentialHeader}>
               <View style={styles.credentialLabelRow}>
                 <Ionicons name="link-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.credentialLabel}>URL RTMP (OBS / encodeur)</Text>
+                <Text style={styles.credentialLabel}>{t('broadcaster.quickStream.rtmpUrlLabel')}</Text>
               </View>
               <Pressable onPress={handleCopyUrl} style={styles.copyBtn}>
                 <Ionicons name={copiedField === 'url' ? 'checkmark' : 'copy-outline'} size={14} color={colors.accentLight} />
-                <Text style={styles.copyBtnText}>{copiedField === 'url' ? 'Copié !' : 'Copier'}</Text>
+                <Text style={styles.copyBtnText}>{copiedField === 'url' ? t('broadcaster.quickStream.copied') : t('broadcaster.quickStream.copy')}</Text>
               </Pressable>
             </View>
             <Text style={styles.credentialValue} selectable>
@@ -220,7 +217,7 @@ export function QuickStreamScreen() {
             <View style={styles.credentialHeader}>
               <View style={styles.credentialLabelRow}>
                 <Ionicons name="key-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.credentialLabel}>Clé de stream</Text>
+                <Text style={styles.credentialLabel}>{t('broadcaster.quickStream.streamKeyLabel')}</Text>
               </View>
               <View style={styles.credentialActions}>
                 <Pressable onPress={() => setShowKey((v) => !v)} style={styles.iconBtn}>
@@ -232,7 +229,7 @@ export function QuickStreamScreen() {
                 </Pressable>
                 <Pressable onPress={handleCopyKey} style={styles.copyBtn}>
                   <Ionicons name={copiedField === 'key' ? 'checkmark' : 'copy-outline'} size={14} color={colors.accentLight} />
-                  <Text style={styles.copyBtnText}>{copiedField === 'key' ? 'Copié !' : 'Copier'}</Text>
+                  <Text style={styles.copyBtnText}>{copiedField === 'key' ? t('broadcaster.quickStream.copied') : t('broadcaster.quickStream.copy')}</Text>
                 </Pressable>
               </View>
             </View>
@@ -250,7 +247,7 @@ export function QuickStreamScreen() {
           <Text style={styles.guideTitle}>{guide.title}</Text>
         </View>
         <Text style={styles.guideSubtitle}>
-          Suis ces étapes une fois tes identifiants générés.
+          {t('broadcaster.quickStream.guideFollowSteps')}
         </Text>
 
         {guide.steps.map((step, i) => (
@@ -276,7 +273,7 @@ export function QuickStreamScreen() {
       <View style={styles.audioReminderCard}>
         <Ionicons name="musical-notes-outline" size={16} color={colors.warning} />
         <Text style={styles.audioReminderText}>
-          Rappel audio : la sortie de ta table de mix doit être branchée sur l'entrée mic de l'Osmo AVANT de démarrer Mimo.
+          {t('broadcaster.quickStream.audioReminder')}
         </Text>
       </View>
 
@@ -291,8 +288,8 @@ export function QuickStreamScreen() {
               <Ionicons name="phone-portrait-outline" size={20} color={colors.accent} />
             </View>
             <View>
-              <Text style={styles.phoneCameraTitle}>Caméra de ce téléphone</Text>
-              <Text style={styles.phoneCameraDesc}>Streame directement depuis cet iPhone</Text>
+              <Text style={styles.phoneCameraTitle}>{t('broadcaster.quickStream.phoneCameraTitle')}</Text>
+              <Text style={styles.phoneCameraDesc}>{t('broadcaster.quickStream.phoneCameraDesc')}</Text>
             </View>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -306,7 +303,7 @@ export function QuickStreamScreen() {
           style={styles.goLiveButton}
         >
           <Ionicons name="radio-outline" size={20} color={colors.white} />
-          <Text style={styles.goLiveButtonText}>Démarrer le live →</Text>
+          <Text style={styles.goLiveButtonText}>{t('broadcaster.quickStream.goLive')}</Text>
         </Pressable>
       )}
 
@@ -322,7 +319,7 @@ export function QuickStreamScreen() {
           style={styles.regenerateButton}
         >
           <Ionicons name="refresh-outline" size={15} color={colors.textMuted} />
-          <Text style={styles.regenerateText}>Réinitialiser (générer de nouveaux identifiants)</Text>
+          <Text style={styles.regenerateText}>{t('broadcaster.quickStream.regenerate')}</Text>
         </Pressable>
       )}
     </ScrollView>

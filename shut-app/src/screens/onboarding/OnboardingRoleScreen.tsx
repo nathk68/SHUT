@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
@@ -11,15 +12,17 @@ type Props = {
 };
 
 export function OnboardingRoleScreen({ navigation }: Props) {
+  const { t } = useTranslation();
+
   return (
     <ScreenContainer>
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Qui es-tu ?</Text>
+        <Text style={styles.title}>{t('onboarding.whoAreYou')}</Text>
         <Text style={styles.subtitle}>
-          Pour te préparer la meilleure expérience possible.
+          {t('onboarding.bestExperience')}
         </Text>
 
         {/* Spectateur — option principale, très mise en avant */}
@@ -32,13 +35,13 @@ export function OnboardingRoleScreen({ navigation }: Props) {
           </View>
           <View style={styles.cardBody}>
             <View style={styles.titleRow}>
-              <Text style={[styles.cardTitle, styles.cardTitlePrimary]}>Spectateur</Text>
+              <Text style={[styles.cardTitle, styles.cardTitlePrimary]}>{t('onboarding.spectator')}</Text>
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>Populaire</Text>
+                <Text style={styles.badgeText}>{t('onboarding.popular')}</Text>
               </View>
             </View>
             <Text style={styles.cardDesc}>
-              Découvre des DJs du monde entier et suis leurs lives en temps réel.
+              {t('onboarding.spectatorDesc')}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={22} color={colors.accent} />
@@ -53,9 +56,9 @@ export function OnboardingRoleScreen({ navigation }: Props) {
             <Ionicons name="disc-outline" size={24} color={colors.textSecondary} />
           </View>
           <View style={styles.cardBody}>
-            <Text style={styles.cardTitle}>Je suis DJ</Text>
+            <Text style={styles.cardTitle}>{t('onboarding.iAmDJ')}</Text>
             <Text style={styles.cardDesc}>
-              Tu mixes et veux diffuser tes sets sur SHUT. Soumet ta candidature.
+              {t('onboarding.djDesc')}
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -67,12 +70,12 @@ export function OnboardingRoleScreen({ navigation }: Props) {
             <Ionicons name="business-outline" size={24} color={colors.textMuted} />
           </View>
           <View style={styles.cardBody}>
-            <Text style={styles.cardTitleDisabled}>Organisateur</Text>
+            <Text style={styles.cardTitleDisabled}>{t('onboarding.organizer')}</Text>
             <Text style={styles.cardDescDisabled}>
-              Collectif, club ou festival.
+              {t('onboarding.organizerDesc')}
             </Text>
             <View style={styles.badgeDisabled}>
-              <Text style={styles.badgeDisabledText}>Bientôt disponible</Text>
+              <Text style={styles.badgeDisabledText}>{t('onboarding.comingSoon')}</Text>
             </View>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -84,12 +87,12 @@ export function OnboardingRoleScreen({ navigation }: Props) {
             <Ionicons name="people-outline" size={24} color={colors.textMuted} />
           </View>
           <View style={styles.cardBody}>
-            <Text style={styles.cardTitleDisabled}>Directeur Artistique</Text>
+            <Text style={styles.cardTitleDisabled}>{t('onboarding.artisticDirector')}</Text>
             <Text style={styles.cardDescDisabled}>
-              Tu recherches des talents où programmer.
+              {t('onboarding.artisticDirectorDesc')}
             </Text>
             <View style={styles.badgeDisabled}>
-              <Text style={styles.badgeDisabledText}>Bientôt disponible</Text>
+              <Text style={styles.badgeDisabledText}>{t('onboarding.comingSoon')}</Text>
             </View>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -97,7 +100,7 @@ export function OnboardingRoleScreen({ navigation }: Props) {
 
         {/* Déjà un compte */}
         <Pressable onPress={() => navigation.navigate('Login')} style={styles.loginLink}>
-          <Text style={styles.loginLinkText}>J'ai déjà un compte</Text>
+          <Text style={styles.loginLinkText}>{t('onboarding.alreadyHaveAccount')}</Text>
         </Pressable>
       </ScrollView>
     </ScreenContainer>
