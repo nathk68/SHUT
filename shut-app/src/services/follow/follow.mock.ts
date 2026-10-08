@@ -2,6 +2,7 @@ import type { IFollowService } from './follow.service';
 
 export class MockFollowService implements IFollowService {
   private follows: Set<string> = new Set();
+  private notifEnabled: Set<string> = new Set();
 
   private key(followerId: string, followeeId: string): string {
     return `${followerId}:${followeeId}`;
@@ -35,5 +36,15 @@ export class MockFollowService implements IFollowService {
       if (feeId === userId) result.push(ferId);
     }
     return result;
+  }
+
+  async getNotificationsEnabled(followerId: string, followeeId: string): Promise<boolean> {
+    return this.notifEnabled.has(this.key(followerId, followeeId));
+  }
+
+  async setNotificationsEnabled(followerId: string, followeeId: string, enabled: boolean): Promise<void> {
+    const k = this.key(followerId, followeeId);
+    if (enabled) this.notifEnabled.add(k);
+    else this.notifEnabled.delete(k);
   }
 }

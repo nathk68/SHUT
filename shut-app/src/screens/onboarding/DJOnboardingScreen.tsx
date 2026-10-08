@@ -22,7 +22,10 @@ import { LocationSelector, LocationValue } from '../../components/ui/LocationSel
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { MUSIC_GENRES } from '../../config/constants';
+import type { ExperienceLevel } from '../../types/profile';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
+
+const EXPERIENCE_VALUES: ExperienceLevel[] = ['debutant', 'intermediaire', 'confirme', 'professionnel'];
 import { useUsernameCheck } from '../../hooks/useUsernameCheck';
 import { reserveUsername } from '../../services/username/username.service';
 
@@ -34,7 +37,7 @@ const TOTAL_STEPS = 4;
 
 export function DJOnboardingScreen({ navigation }: Props) {
   const { t } = useTranslation();
-  const { register } = useAuth();
+  const { register, refreshUser } = useAuth();
 
   const STEP_TITLES = [
     t('onboarding.dj.stepTitles.0'),
@@ -56,6 +59,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
   const [artistName, setArtistName] = useState('');
   const [bio, setBio] = useState('');
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [experience, setExperience] = useState<ExperienceLevel | undefined>();
   const [worksLinks, setWorksLinks] = useState<string[]>(['']);
   const [location, setLocation] = useState<LocationValue>({});
   const [sameAsResidence, setSameAsResidence] = useState(true);
@@ -132,6 +136,9 @@ export function DJOnboardingScreen({ navigation }: Props) {
           setDoc(doc(db, 'users', result.userId), {
             username: username.trim(),
             artistName: artistName.trim(),
+            bio: bio.trim(),
+            genres: selectedGenres,
+            experience: experience ?? null,
             cityName: location.cityName ?? '',
             countryCode: location.countryCode ?? '',
             cityId: location.cityId ?? '',
@@ -144,6 +151,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
             artistName: artistName.trim(),
             bio: bio.trim(),
             genres: selectedGenres,
+            experience: experience ?? null,
             worksLinks: worksLinks.filter(l => l.trim()),
             cityName: location.cityName ?? '',
             countryCode: location.countryCode ?? '',
@@ -152,6 +160,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
             submittedAt: new Date().toISOString(),
           }),
         ]);
+        await refreshUser();
       } catch (err: any) {
         setLoading(false);
         Alert.alert(t('common.error'), err?.message ?? t('validation.usernameTaken'));
@@ -256,6 +265,21 @@ export function DJOnboardingScreen({ navigation }: Props) {
                     </Pressable>
                   ))}
                 </View>
+
+                <Text style={[styles.linksLabel, { marginTop: spacing.xl }]}>{t('editProfile.experience')}</Text>
+                <View style={styles.genresGrid}>
+                  {EXPERIENCE_VALUES.map(val => (
+                    <Pressable
+                      key={val}
+                      style={[styles.genreBadge, experience === val && styles.genreBadgeActive]}
+                      onPress={() => setExperience(val)}
+                    >
+                      <Text style={[styles.genreText, experience === val && styles.genreTextActive]}>
+                        {t(`editProfile.experienceOptions.${val}`)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             )}
 
@@ -299,6 +323,7 @@ export function DJOnboardingScreen({ navigation }: Props) {
                 {errors.location ? <Text style={styles.errorText}>{errors.location}</Text> : null}
                 <LocationSelector value={location} onChange={setLocation} label={t('onboarding.dj.cityWhereYouLive')} />
 
+                <Text style={styles.linksLabel}>{t('onboarding.dj.cityYouRepresent')}</Text>
                 <Pressable
                   style={styles.checkboxRow}
                   onPress={() => setSameAsResidence(prev => !prev)}
@@ -315,7 +340,6 @@ export function DJOnboardingScreen({ navigation }: Props) {
                     <LocationSelector
                       value={representedLocation}
                       onChange={setRepresentedLocation}
-                      label={t('onboarding.dj.cityYouRepresent')}
                       placeholder={t('onboarding.dj.searchRepresentedCity')}
                       restrictToCountries={['FR', 'CH']}
                     />

@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { GlobalSearchOverlay } from '../components/search/GlobalSearchOverlay';
+import { NotificationBell } from '../components/ui/NotificationBell';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { replaysService, userService } from '../services';
@@ -425,9 +426,12 @@ export function MaDiscothequeScreen() {
       <ScreenHeader
         title={t('discotheque.title')}
         rightAction={
-          <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
-            <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
+              <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
+            </Pressable>
+            <NotificationBell />
+          </View>
         }
       />
 

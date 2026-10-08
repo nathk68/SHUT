@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 import { GlobalSearchOverlay } from '../components/search/GlobalSearchOverlay';
+import { NotificationBell } from '../components/ui/NotificationBell';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { replaysService, userService } from '../services';
 import type { Replay } from '../types';
@@ -94,9 +95,12 @@ export function MesFavorisScreen() {
         title={t('mesFavoris.title')}
         subtitle={!isEmpty ? t('mesFavoris.replayCount', { count: replays.length }) : undefined}
         rightAction={
-          <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
-            <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
-          </Pressable>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
+              <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
+            </Pressable>
+            <NotificationBell />
+          </View>
         }
       />
 

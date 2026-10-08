@@ -31,6 +31,15 @@ import { TermsScreen } from '../screens/legal/TermsScreen';
 import { RGPDScreen } from '../screens/legal/RGPDScreen';
 import { ReplayPlayerScreen } from '../screens/viewer/ReplayPlayerScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
+import { AdminDashboardScreen } from '../screens/admin/AdminDashboardScreen';
+import { AdminApplicationsScreen } from '../screens/admin/AdminApplicationsScreen';
+import { AdminApplicationDetailScreen } from '../screens/admin/AdminApplicationDetailScreen';
+import { AdminReportsScreen } from '../screens/admin/AdminReportsScreen';
+import { AdminUsersScreen } from '../screens/admin/AdminUsersScreen';
+import { AdminCostsScreen } from '../screens/admin/AdminCostsScreen';
+import { NotificationFeedScreen } from '../screens/NotificationFeedScreen';
+import { ApplicationResultScreen } from '../screens/ApplicationResultScreen';
+import { ReapplyDJScreen } from '../screens/ReapplyDJScreen';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
 
@@ -39,7 +48,17 @@ export type MainTabParamList = {
   Live: { countryCode?: string } | undefined;
   GoLive: undefined;
   LiveClub: undefined;
+  Admin: undefined;
   Parametres: undefined;
+};
+
+export type AdminStackParamList = {
+  AdminDashboard: undefined;
+  AdminApplications: undefined;
+  AdminApplicationDetail: { applicationId: string; type: 'dj' | 'da' };
+  AdminReports: undefined;
+  AdminUsers: undefined;
+  AdminCosts: undefined;
 };
 
 export type ExploreStackParamList = {
@@ -49,6 +68,8 @@ export type ExploreStackParamList = {
   ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
   PostLive: { eventId: string };
   FollowList: { userId: string; mode: 'followers' | 'following' };
+  NotificationFeed: undefined;
+  ApplicationResult: { decision: 'approved' | 'rejected' };
 };
 
 export type LiveStackParamList = {
@@ -57,6 +78,8 @@ export type LiveStackParamList = {
   PublicProfile: { userId: string };
   FollowList: { userId: string; mode: 'followers' | 'following' };
   ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
+  NotificationFeed: undefined;
+  ApplicationResult: { decision: 'approved' | 'rejected' };
 };
 
 export type GoLiveStackParamList = {
@@ -74,6 +97,8 @@ export type LiveClubStackParamList = {
   ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
   PublicProfile: { userId: string };
   LivePlayer: { eventId: string };
+  NotificationFeed: undefined;
+  ApplicationResult: { decision: 'approved' | 'rejected' };
 };
 
 export type FavorisStackParamList = {
@@ -81,6 +106,8 @@ export type FavorisStackParamList = {
   ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
   PublicProfile: { userId: string };
   LivePlayer: { eventId: string };
+  NotificationFeed: undefined;
+  ApplicationResult: { decision: 'approved' | 'rejected' };
 };
 
 export type ParametresStackParamList = {
@@ -97,12 +124,14 @@ export type ParametresStackParamList = {
   PrivacyPolicy: undefined;
   Terms: undefined;
   RGPD: undefined;
+  ReapplyDJ: undefined;
 };
 
 // ─── Stack navigators ─────────────────────────────────────────────────────────
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const ExploreStack = createNativeStackNavigator<ExploreStackParamList>();
+const AdminStack = createNativeStackNavigator<AdminStackParamList>();
 const LiveStack = createNativeStackNavigator<LiveStackParamList>();
 const GoLiveStack = createNativeStackNavigator<GoLiveStackParamList>();
 const LiveClubStack = createNativeStackNavigator<LiveClubStackParamList>();
@@ -130,6 +159,8 @@ function ExploreStackScreen() {
         options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
       />
       <ExploreStack.Screen name="FollowList" component={FollowListScreen} />
+      <ExploreStack.Screen name="NotificationFeed" component={NotificationFeedScreen} />
+      <ExploreStack.Screen name="ApplicationResult" component={ApplicationResultScreen} />
     </ExploreStack.Navigator>
   );
 }
@@ -145,6 +176,8 @@ function LiveStackScreen() {
       />
       <LiveStack.Screen name="PublicProfile" component={PublicProfileScreen} />
       <LiveStack.Screen name="FollowList" component={FollowListScreen} />
+      <LiveStack.Screen name="NotificationFeed" component={NotificationFeedScreen} />
+      <LiveStack.Screen name="ApplicationResult" component={ApplicationResultScreen} />
       <LiveStack.Screen
         name="ReplayPlayer"
         component={ReplayPlayerScreen}
@@ -199,6 +232,8 @@ function LiveClubStackScreen() {
         component={LivePlayerScreen}
         options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
       />
+      <LiveClubStack.Screen name="NotificationFeed" component={NotificationFeedScreen} />
+      <LiveClubStack.Screen name="ApplicationResult" component={ApplicationResultScreen} />
     </LiveClubStack.Navigator>
   );
 }
@@ -218,6 +253,8 @@ function FavorisStackScreen() {
         component={LivePlayerScreen}
         options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
       />
+      <FavorisStack.Screen name="NotificationFeed" component={NotificationFeedScreen} />
+      <FavorisStack.Screen name="ApplicationResult" component={ApplicationResultScreen} />
     </FavorisStack.Navigator>
   );
 }
@@ -246,7 +283,21 @@ function ParametresStackScreen() {
       <ParametresStack.Screen name="Terms" component={TermsScreen} />
       <ParametresStack.Screen name="RGPD" component={RGPDScreen} />
       <ParametresStack.Screen name="FollowList" component={FollowListScreen} />
+      <ParametresStack.Screen name="ReapplyDJ" component={ReapplyDJScreen} />
     </ParametresStack.Navigator>
+  );
+}
+
+function AdminStackScreen() {
+  return (
+    <AdminStack.Navigator screenOptions={{ headerShown: false }}>
+      <AdminStack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+      <AdminStack.Screen name="AdminApplications" component={AdminApplicationsScreen} />
+      <AdminStack.Screen name="AdminApplicationDetail" component={AdminApplicationDetailScreen} />
+      <AdminStack.Screen name="AdminReports" component={AdminReportsScreen} />
+      <AdminStack.Screen name="AdminUsers" component={AdminUsersScreen} />
+      <AdminStack.Screen name="AdminCosts" component={AdminCostsScreen} />
+    </AdminStack.Navigator>
   );
 }
 
@@ -257,6 +308,7 @@ export function MainTabs() {
   const { isAuthenticated, isGuest, user } = useAuth();
   const { currentRole } = useRole();
   const isDJ = isAuthenticated && currentRole === 'broadcaster';
+  const isAdmin = isAuthenticated && user?.role === 'admin';
 
   const liveClubLabel = isDJ ? t('navigation.mySets') : t('navigation.myFavorites');
   const LiveClubComponent = isDJ ? LiveClubStackScreen : FavorisStackScreen;
@@ -288,6 +340,8 @@ export function MainTabs() {
           else if (route.name === 'GoLive') iconName = 'radio-outline';
           else if (route.name === 'LiveClub') {
             iconName = isDJ ? 'musical-notes-outline' : 'heart-outline';
+          } else if (route.name === 'Admin') {
+            iconName = 'shield-outline';
           }
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -315,6 +369,19 @@ export function MainTabs() {
         component={LiveClubComponent}
         options={{ tabBarLabel: liveClubLabel }}
       />
+      {isAdmin && (
+        <Tab.Screen
+          name="Admin"
+          component={AdminStackScreen}
+          options={{ tabBarLabel: t('navigation.admin') }}
+          listeners={({ navigation }) => ({
+            tabPress: (e) => {
+              e.preventDefault();
+              navigation.navigate('Admin', { screen: 'AdminDashboard' });
+            },
+          })}
+        />
+      )}
       <Tab.Screen
         name="Parametres"
         component={ParametresStackScreen}

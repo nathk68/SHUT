@@ -68,6 +68,8 @@ export function SettingsScreen() {
 
   const displayName = user?.artistName ?? user?.firstName ?? user?.displayName ?? '';
 
+  const showReapply = user?.applicationRole === 'dj' && user?.role === 'viewer';
+
   const handleToggleRecord = useCallback(
     (newValue: boolean) => {
       Alert.alert(
@@ -184,6 +186,25 @@ export function SettingsScreen() {
           isLast
         />
       </Section>
+
+      {/* Reapply DJ */}
+      {showReapply && (
+        <Section title={t('settings.reapply.sectionTitle')}>
+          <Pressable
+            style={[styles.row, styles.rowLast]}
+            onPress={() => navigation.navigate('ReapplyDJ')}
+          >
+            <View style={[styles.rowIcon, { backgroundColor: 'rgba(245,158,11,0.12)' }]}>
+              <Ionicons name="refresh-outline" size={16} color="#f59e0b" />
+            </View>
+            <View style={styles.recordLabelWrap}>
+              <Text style={styles.rowLabel}>{t('settings.reapply.button')}</Text>
+              <Text style={styles.recordDesc}>{t('settings.reapply.desc')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+          </Pressable>
+        </Section>
+      )}
 
       {/* Préférences */}
       <Section title={t('settings.preferences')}>

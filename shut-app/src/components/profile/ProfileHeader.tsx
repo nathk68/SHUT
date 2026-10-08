@@ -27,9 +27,10 @@ interface Props {
   onAvatarPick?: (uri: string) => void;
   onFollowersTap?: () => void;
   onFollowingTap?: () => void;
+  notifToggle?: React.ReactNode;
 }
 
-export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followLoading = false, onEditPress, onFollowPress, onAvatarPick, onFollowersTap, onFollowingTap }: Props) {
+export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followLoading = false, onEditPress, onFollowPress, onAvatarPick, onFollowersTap, onFollowingTap, notifToggle }: Props) {
   const { t } = useTranslation();
   const displayLabel = user.artistName ?? user.firstName ?? user.displayName;
   const hasSocials = user.socialLinks && Object.values(user.socialLinks).some(Boolean);
@@ -81,7 +82,10 @@ export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followL
             <Text style={styles.editButtonText}>{t('profile.editProfile')}</Text>
           </Pressable>
         ) : (
-          <FollowButton isFollowing={isFollowing} onPress={onFollowPress ?? (() => {})} loading={followLoading} />
+          <>
+            <FollowButton isFollowing={isFollowing} onPress={onFollowPress ?? (() => {})} loading={followLoading} />
+            {notifToggle}
+          </>
         )}
       </View>
 

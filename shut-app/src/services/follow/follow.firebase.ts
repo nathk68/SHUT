@@ -67,4 +67,20 @@ export class FirebaseFollowService implements IFollowService {
     const snap = await getDocs(query(this.col, where('followeeId', '==', userId)));
     return snap.docs.map((d) => d.data().followerId as string);
   }
+
+  async getNotificationsEnabled(followerId: string, followeeId: string): Promise<boolean> {
+    const snap = await getDocs(
+      query(this.col, where('followerId', '==', followerId), where('followeeId', '==', followeeId))
+    );
+    if (snap.empty) return false;
+    return snap.docs[0].data().notificationsEnabled === true;
+  }
+
+  async setNotificationsEnabled(followerId: string, followeeId: string, enabled: boolean): Promise<void> {
+    const snap = await getDocs(
+      query(this.col, where('followerId', '==', followerId), where('followeeId', '==', followeeId))
+    );
+    if (snap.empty) return;
+    await updateDoc(snap.docs[0].ref, { notificationsEnabled: enabled });
+  }
 }

@@ -13,6 +13,7 @@ import { User } from '../types/user';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
 import type { ExploreStackParamList } from '../navigation/MainTabs';
 import { GlobalSearchOverlay } from '../components/search/GlobalSearchOverlay';
+import { NotificationBell } from '../components/ui/NotificationBell';
 
 type Nav = NativeStackNavigationProp<ExploreStackParamList>;
 
@@ -225,9 +226,12 @@ export function ShutDiffusionScreen() {
           {'SHUT '}
           <Text style={styles.titleAccent}>DIFFUSION</Text>
         </Text>
-        <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
-          <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
+            <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
+          </Pressable>
+          <NotificationBell />
+        </View>
       </View>
       <Text style={styles.subtitle}>
         {t('explore.subtitle')}

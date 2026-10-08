@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { doc, setDoc } from 'firebase/firestore';
 import i18n from '../i18n';
+import { db } from '../config/firebase.config';
 
 export type Language = 'fr' | 'en';
 export type VideoQuality = 'auto' | '720p' | '480p' | '360p';
@@ -19,6 +21,8 @@ interface Preferences {
 }
 
 interface PreferencesContextType extends Preferences {
+  /** Set the current user ID so language changes are synced to Firestore */
+  setUserId: (uid: string | null) => void;
   setLanguage: (lang: Language) => Promise<void>;
   setVideoQuality: (quality: VideoQuality) => Promise<void>;
   setNotificationPref: (key: keyof NotificationPrefs, value: boolean) => Promise<void>;
@@ -37,14 +41,26 @@ const PreferencesContext = createContext<PreferencesContextType | null>(null);
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {
   const [prefs, setPrefs] = useState<Preferences>(DEFAULT_PREFS);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
       if (raw) {
         try { setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) }); } catch {}
+      } else {
+        // No saved prefs — sync language with what i18n detected (device language)
+        const detected = (i18n.language ?? 'fr') as Language;
+        setPrefs(prev => ({ ...prev, language: detected }));
       }
     });
   }, []);
+
+  // When a user logs in, sync their current language to Firestore for emails
+  useEffect(() => {
+    if (userId) {
+      setDoc(doc(db, 'users', userId), { language: prefs.language }, { merge: true }).catch(() => {});
+    }
+  }, [userId]); // only on userId change, not on every prefs change
 
   const save = useCallback(async (updated: Preferences) => {
     setPrefs(updated);
@@ -54,9 +70,13 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const setLanguage = useCallback(
     async (language: Language) => {
       i18n.changeLanguage(language);
+      // Sync to Firestore so emails use the right language
+      if (userId) {
+        setDoc(doc(db, 'users', userId), { language }, { merge: true }).catch(() => {});
+      }
       return save({ ...prefs, language });
     },
-    [prefs, save],
+    [prefs, save, userId],
   );
   const setVideoQuality = useCallback(
     async (videoQuality: VideoQuality) => save({ ...prefs, videoQuality }),
@@ -74,7 +94,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
 
   return (
     <PreferencesContext.Provider
-      value={{ ...prefs, setLanguage, setVideoQuality, setNotificationPref, setRecordLives }}
+      value={{ ...prefs, setUserId, setLanguage, setVideoQuality, setNotificationPref, setRecordLives }}
     >
       {children}
     </PreferencesContext.Provider>

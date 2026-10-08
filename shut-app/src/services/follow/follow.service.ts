@@ -4,4 +4,6 @@ export interface IFollowService {
   isFollowing(followerId: string, followeeId: string): Promise<boolean>;
   getFollowing(userId: string): Promise<string[]>;
   getFollowers(userId: string): Promise<string[]>;
+  getNotificationsEnabled(followerId: string, followeeId: string): Promise<boolean>;
+  setNotificationsEnabled(followerId: string, followeeId: string, enabled: boolean): Promise<void>;
 }

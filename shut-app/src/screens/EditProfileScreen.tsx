@@ -134,7 +134,7 @@ export function EditProfileScreen() {
 
   if (!user) return null;
 
-  const isDJ = user.role === 'broadcaster';
+  const isDJ = user.role === 'broadcaster' || user.applicationRole === 'dj';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

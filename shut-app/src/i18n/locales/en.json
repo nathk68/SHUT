@@ -15,6 +15,10 @@
     "archive": "Archive",
     "report": "Report",
     "replay": "Replay",
+    "back": "Back",
+    "loading": "Loading...",
+    "success": "Success",
+    "retry": "Retry",
     "untitled": "Untitled",
     "bio": "Bio",
     "genres": "Genres",
@@ -83,7 +87,8 @@
     "forgotPasswordEnterEmail": "Enter your email above before resetting.",
     "forgotPasswordSentTitle": "Email sent",
     "forgotPasswordSentMessage": "A reset email has been sent. Check your inbox (and spam folder).",
-    "forgotPasswordError": "Unable to send reset email."
+    "forgotPasswordError": "Unable to send reset email.",
+    "forgotPasswordRateLimited": "Too many attempts. Try again in 1 hour."
   },
 
   "onboarding": {
@@ -119,7 +124,7 @@
       "bioRequired": "Bio required",
       "artistName": "Artist name",
       "artistNamePlaceholder": "e.g.: DJ Koze, Reinier Zonneveld...",
-      "bioPresentation": "Bio / About",
+      "bioPresentation": "Tell us about yourself in a few words",
       "bioPlaceholder": "Tell us who you are, your style, your journey...",
       "linksToSets": "Links to your sets",
       "addAtLeastOneLink": "Add at least one link",
@@ -379,6 +384,16 @@
     "logoutMessage": "You will be logged out of SHUT.",
     "deleteAccountReauthTitle": "Re-authentication required",
     "deleteAccountReauthMessage": "For security reasons, please log out and log back in before deleting your account.",
+    "reapply": {
+      "sectionTitle": "DJ Application",
+      "button": "Reapply as DJ",
+      "desc": "Your previous application was declined. You can submit a new one (max 2 per day).",
+      "confirmTitle": "New application",
+      "confirmMessage": "Do you want to submit a new DJ application? Your current profile info will be used.",
+      "success": "Your application has been submitted! You'll be notified of the result.",
+      "rateLimited": "You've reached the limit of 2 applications per day. Try again tomorrow.",
+      "error": "Unable to submit the application. Please try again later."
+    },
     "footer": "SHUT v0.1.0 — © 2026 SHUT. All rights reserved."
   },
 
@@ -649,6 +664,195 @@
     "djLive": "DJ Live",
     "mySets": "My sets",
     "myFavorites": "My favorites",
+    "admin": "Admin",
     "profile": "Profile"
+  },
+
+  "report": {
+    "title": "Report",
+    "selectReason": "Why are you reporting this content?",
+    "reasons": {
+      "inappropriate": "Inappropriate content",
+      "spam": "Spam",
+      "harassment": "Harassment",
+      "copyright": "Copyright violation",
+      "other": "Other"
+    },
+    "descriptionLabel": "Details (optional)",
+    "descriptionPlaceholder": "Describe the issue...",
+    "submit": "Submit report",
+    "successTitle": "Report submitted",
+    "successMessage": "Thank you. Our team will review this report.",
+    "errorMessage": "Unable to submit the report.",
+    "reportUser": "Report this user"
+  },
+
+  "blocked": {
+    "title": "Account blocked",
+    "message": "Your account has been suspended by an administrator. If you believe this is an error, please contact us by email.",
+    "logout": "Log out"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "SHUT platform overview",
+      "analytics": "Analytics",
+      "quickActions": "Quick actions",
+      "reviewApplications": "Review applications",
+      "reviewReports": "Review reports",
+      "manageUsers": "Manage users",
+      "apiCosts": "API Costs"
+    },
+    "stats": {
+      "totalUsers": "Users",
+      "broadcasters": "Broadcasters",
+      "livesActive": "Active lives",
+      "replays": "Replays",
+      "pendingApps": "Applications",
+      "pendingReports": "Reports"
+    },
+    "chart": {
+      "metrics": {
+        "users": "Users",
+        "events": "Events",
+        "replays": "Replays"
+      },
+      "periods": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "year": "Year"
+      }
+    },
+    "applications": {
+      "title": "Applications",
+      "detail": "Application detail",
+      "bio": "Bio",
+      "genres": "Genres",
+      "location": "Location",
+      "links": "Links",
+      "submittedOn": "Submitted on {{date}}",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "filter": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "all": "All"
+      },
+      "approve": "Approve",
+      "reject": "Reject",
+      "confirmApprove": "Approve this application?",
+      "confirmReject": "Reject this application?",
+      "confirmMessage": "This action is final.",
+      "approvedSuccess": "Application approved! The user is now a broadcaster.",
+      "rejectedSuccess": "Application rejected.",
+      "actionError": "Unable to process this application.",
+      "notFound": "Application not found",
+      "empty": "No applications"
+    },
+    "reports": {
+      "title": "Reports",
+      "confirmAction": "Confirm action?",
+      "dismiss": "Dismiss",
+      "warn": "Warn",
+      "ban": "Ban",
+      "actions": {
+        "dismissed": "Dismiss this report",
+        "warning": "Send a warning",
+        "content_removed": "Remove content",
+        "user_banned": "Ban user"
+      },
+      "targetTypes": {
+        "user": "User",
+        "event": "Live",
+        "replay": "Replay"
+      },
+      "statusLabels": {
+        "reviewed": "Reviewed",
+        "dismissed": "Dismissed"
+      },
+      "filter": {
+        "pending": "Pending",
+        "reviewed": "Reviewed",
+        "dismissed": "Dismissed",
+        "all": "All"
+      },
+      "actionError": "Unable to process this report.",
+      "empty": "No reports"
+    },
+    "users": {
+      "title": "Users",
+      "searchPlaceholder": "Search a user...",
+      "empty": "No users",
+      "changeRole": "Change role",
+      "block": "Block",
+      "unblock": "Unblock",
+      "blocked": "Blocked",
+      "roleChanged": "Role changed successfully",
+      "userBlocked": "User blocked",
+      "userUnblocked": "User unblocked",
+      "actionError": "Unable to perform this action.",
+      "confirmBlock": "Are you sure you want to block this user?",
+      "confirmUnblock": "Are you sure you want to unblock this user?",
+      "selectRole": "Select a role",
+      "roles": {
+        "viewer": "Viewer",
+        "broadcaster": "DJ / Broadcaster",
+        "admin": "Administrator"
+      },
+      "loadMore": "Load more",
+      "clearFilters": "Clear"
+    },
+    "costs": {
+      "title": "API Costs",
+      "last30days": "Last 30 days",
+      "currentUsage": "Current usage",
+      "estimatedCost": "Estimated cost",
+      "threshold": "Alert threshold",
+      "lastAlert": "Last alert",
+      "breakdown": "Cost breakdown",
+      "liveInput": "Live streaming (input)",
+      "encoding": "Encoding",
+      "storage": "Storage",
+      "delivery": "Delivery",
+      "fbUsers": "Users",
+      "fbEvents": "Events",
+      "fbReplays": "Replays",
+      "fbReports": "Reports",
+      "firebaseNote": "Firebase costs are calculated by Google Cloud. Check the Firebase console for exact details.",
+      "muxDisclaimer": "Estimate based on Mux Plus 720p rates and actual live durations.",
+      "viewMuxDashboard": "View Mux dashboard"
+    }
+  },
+
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "emptyDesc": "You'll see updates from your favorite DJs and the community here",
+    "markAllRead": "Mark all read",
+    "types": {
+      "new_follower": "{{name}} started following you",
+      "live_started": "{{name}} is live!",
+      "application_approved": "Your application has been approved!",
+      "application_rejected": "Your application has been declined",
+      "admin_announcement": "SHUT announcement"
+    },
+    "applicationDetail": {
+      "approvedTitle": "Congratulations!",
+      "approvedMessage": "Your application has been approved! Restart the app to switch to DJ mode.",
+      "rejectedTitle": "Application declined",
+      "rejectedMessage": "Unfortunately, your application was not accepted. If you have any questions, feel free to contact us.",
+      "contactUs": "Contact us"
+    },
+    "timeAgo": {
+      "now": "Just now",
+      "minutes": "{{count}}m ago",
+      "hours": "{{count}}h ago",
+      "days": "{{count}}d ago"
+    }
   }
 }

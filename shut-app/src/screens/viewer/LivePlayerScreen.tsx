@@ -15,6 +15,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { LiveActionBar } from '../../components/live/LiveActionBar';
+import { ReportModal } from '../../components/report/ReportModal';
 import { eventsService, userService } from '../../services';
 import type { HomeStackParamList } from '../../navigation/ViewerTabs';
 
@@ -30,6 +31,7 @@ export function LivePlayerScreen({ navigation, route }: Props) {
   const [djName, setDjName] = useState('');
   const [djAvatarUrl, setDjAvatarUrl] = useState<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [reportVisible, setReportVisible] = useState(false);
 
   // ── Video player: create once with null source, then use replaceAsync.
   //    This ensures the AVPlayerViewController's video layer is connected
@@ -214,6 +216,21 @@ export function LivePlayerScreen({ navigation, route }: Props) {
         djName={djName}
         bottomInset={insets.bottom}
       />
+
+      {/* Report button — top right */}
+      <Pressable
+        style={[styles.reportBtn, { top: insets.top + spacing.sm }]}
+        onPress={() => setReportVisible(true)}
+      >
+        <Ionicons name="flag-outline" size={18} color="rgba(255,255,255,0.7)" />
+      </Pressable>
+
+      <ReportModal
+        visible={reportVisible}
+        onClose={() => setReportVisible(false)}
+        targetType="event"
+        targetId={eventId}
+      />
     </View>
   );
 }
@@ -337,5 +354,16 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0,0,0,0.7)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
+  },
+  reportBtn: {
+    position: 'absolute',
+    right: spacing.md,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
   },
 });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
@@ -67,6 +68,10 @@ export function LoginScreen({ navigation }: Props) {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
+          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
+          </Pressable>
+
           <View style={styles.header}>
             <Text style={styles.logo}>SHUT</Text>
             <Text style={styles.tagline}>{t('auth.tagline')}</Text>
@@ -136,6 +141,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: spacing.lg,
     justifyContent: 'center',
+  },
+  backButton: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: 0,
+    padding: spacing.sm,
+    zIndex: 1,
   },
   header: {
     alignItems: 'center',

@@ -22,6 +22,7 @@ interface AuthContextType extends AuthState {
   refreshUser: () => Promise<void>;
   updateUser: (patch: UpdateProfilePayload) => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  isBlocked: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -33,13 +34,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading: true,
     isGuest: false,
   });
+  const [isBlocked, setIsBlocked] = useState(false);
 
   // Restore auth state on mount
   useEffect(() => {
     (async () => {
       const user = await authService.getCurrentUser();
       if (user) {
-        setState({ user, isAuthenticated: true, isLoading: false, isGuest: false });
+        if (user.blocked) {
+          setIsBlocked(true);
+          setState({ user: null, isAuthenticated: false, isLoading: false, isGuest: false });
+        } else {
+          setState({ user, isAuthenticated: true, isLoading: false, isGuest: false });
+        }
       } else {
         setState(prev => ({ ...prev, isLoading: false }));
       }
@@ -49,8 +56,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const result = await authService.login(email, password);
     if (result.success && result.user) {
+      setIsBlocked(false);
       setState({ user: result.user, isAuthenticated: true, isLoading: false, isGuest: false });
       return { success: true };
+    }
+    if (result.error === '__BLOCKED__') {
+      setIsBlocked(true);
+      return { success: false, error: '__BLOCKED__' };
     }
     return { success: false, error: result.error };
   }, []);
@@ -71,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await authService.logout();
+    setIsBlocked(false);
     setState({ user: null, isAuthenticated: false, isLoading: false, isGuest: false });
   }, []);
 
@@ -129,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.user]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, deleteAccount, enterGuestMode, exitGuestMode, refreshUser, updateUser, resetPassword }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, deleteAccount, enterGuestMode, exitGuestMode, refreshUser, updateUser, resetPassword, isBlocked }}>
       {children}
     </AuthContext.Provider>
   );

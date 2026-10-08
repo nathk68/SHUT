@@ -23,6 +23,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import { userService, replaysService, likesService, favoritesService } from '../../services';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
+import { ReportModal } from '../../components/report/ReportModal';
 
 type ReplayPlayerParams = {
   ReplayPlayer: {
@@ -62,6 +63,7 @@ export function ReplayPlayerScreen() {
   const { isFavorite, isLiked, toggleFavorite, toggleLike } = useFavorites();
 
   const isOwner = !!(currentUser && djUserId && currentUser.id === djUserId);
+  const [reportVisible, setReportVisible] = useState(false);
 
   // DJ profile
   const [djName, setDjName] = useState('');
@@ -248,7 +250,7 @@ export function ReplayPlayerScreen() {
   };
 
   const handleReport = () => {
-    Alert.alert(t('replayPlayer.report'), t('replayPlayer.reportMessage'));
+    setReportVisible(true);
   };
 
   const handleShare = async () => {
@@ -441,6 +443,14 @@ export function ReplayPlayerScreen() {
             )}
           </View>
         </Pressable>
+      )}
+      {replayId && (
+        <ReportModal
+          visible={reportVisible}
+          onClose={() => setReportVisible(false)}
+          targetType="replay"
+          targetId={replayId}
+        />
       )}
     </View>
   );

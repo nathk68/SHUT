@@ -36,7 +36,7 @@ type CapacityOption = string;
 
 export function DAOnboardingScreen({ navigation }: Props) {
   const { t } = useTranslation();
-  const { register } = useAuth();
+  const { register, refreshUser } = useAuth();
 
   const VENUE_TYPES = [
     t('onboarding.da.venueTypes.club'),
@@ -161,6 +161,7 @@ export function DAOnboardingScreen({ navigation }: Props) {
             submittedAt: new Date().toISOString(),
           }),
         ]);
+        await refreshUser();
       } catch (err: any) {
         setLoading(false);
         Alert.alert(t('common.error'), err?.message ?? t('validation.usernameTaken'));

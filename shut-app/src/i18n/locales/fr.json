@@ -15,6 +15,10 @@
     "archive": "Archiver",
     "report": "Signaler",
     "replay": "Rediffusion",
+    "back": "Retour",
+    "loading": "Chargement...",
+    "success": "Succes",
+    "retry": "Reessayer",
     "untitled": "Sans titre",
     "bio": "Bio",
     "genres": "Genres",
@@ -83,7 +87,8 @@
     "forgotPasswordEnterEmail": "Entre ton email ci-dessus avant de réinitialiser.",
     "forgotPasswordSentTitle": "Email envoyé",
     "forgotPasswordSentMessage": "Un email de réinitialisation a été envoyé. Vérifie ta boîte de réception (et les spams).",
-    "forgotPasswordError": "Impossible d'envoyer l'email de réinitialisation."
+    "forgotPasswordError": "Impossible d'envoyer l'email de réinitialisation.",
+    "forgotPasswordRateLimited": "Trop de tentatives. Réessaie dans 1 heure."
   },
 
   "onboarding": {
@@ -119,7 +124,7 @@
       "bioRequired": "Présentation requise",
       "artistName": "Nom d'artiste",
       "artistNamePlaceholder": "ex: DJ Koze, Reinier Zonneveld...",
-      "bioPresentation": "Bio / Présentation",
+      "bioPresentation": "Parle-nous de toi en quelques mots",
       "bioPlaceholder": "Dis-nous qui tu es, ton style, ton parcours...",
       "linksToSets": "Liens vers tes sets",
       "addAtLeastOneLink": "Ajoute au moins un lien",
@@ -379,6 +384,16 @@
     "logoutMessage": "Tu vas être déconnecté de SHUT.",
     "deleteAccountReauthTitle": "Reconnexion requise",
     "deleteAccountReauthMessage": "Pour des raisons de sécurité, déconnecte-toi puis reconnecte-toi avant de supprimer ton compte.",
+    "reapply": {
+      "sectionTitle": "Candidature DJ",
+      "button": "Refaire une candidature",
+      "desc": "Ta candidature précédente a été refusée. Tu peux en soumettre une nouvelle (max 2 par jour).",
+      "confirmTitle": "Nouvelle candidature",
+      "confirmMessage": "Souhaites-tu soumettre une nouvelle candidature DJ ? Tes informations de profil actuelles seront utilisées.",
+      "success": "Ta candidature a été envoyée ! Tu seras notifié du résultat.",
+      "rateLimited": "Tu as atteint la limite de 2 candidatures par jour. Réessaie demain.",
+      "error": "Impossible d'envoyer la candidature. Réessaie plus tard."
+    },
     "footer": "SHUT v0.1.0 — © 2026 SHUT. Tous droits réservés."
   },
 
@@ -649,6 +664,195 @@
     "djLive": "DJ Live",
     "mySets": "Mes sets",
     "myFavorites": "Mes favoris",
+    "admin": "Admin",
     "profile": "Profil"
+  },
+
+  "report": {
+    "title": "Signaler",
+    "selectReason": "Pourquoi signales-tu ce contenu ?",
+    "reasons": {
+      "inappropriate": "Contenu inapproprie",
+      "spam": "Spam",
+      "harassment": "Harcelement",
+      "copyright": "Violation de droits d'auteur",
+      "other": "Autre"
+    },
+    "descriptionLabel": "Details (optionnel)",
+    "descriptionPlaceholder": "Decris le probleme...",
+    "submit": "Envoyer le signalement",
+    "successTitle": "Signalement envoye",
+    "successMessage": "Merci. Notre equipe examinera ce signalement.",
+    "errorMessage": "Impossible d'envoyer le signalement.",
+    "reportUser": "Signaler cet utilisateur"
+  },
+
+  "blocked": {
+    "title": "Compte bloqué",
+    "message": "Votre compte a été suspendu par un administrateur. Si vous pensez qu'il s'agit d'une erreur, veuillez nous contacter par email.",
+    "logout": "Se déconnecter"
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Vue d'ensemble de la plateforme SHUT",
+      "analytics": "Analytiques",
+      "quickActions": "Actions rapides",
+      "reviewApplications": "Examiner les candidatures",
+      "reviewReports": "Examiner les signalements",
+      "manageUsers": "Gerer les utilisateurs",
+      "apiCosts": "Couts API"
+    },
+    "stats": {
+      "totalUsers": "Utilisateurs",
+      "broadcasters": "Diffuseurs",
+      "livesActive": "Lives actifs",
+      "replays": "Rediffusions",
+      "pendingApps": "Candidatures",
+      "pendingReports": "Signalements"
+    },
+    "chart": {
+      "metrics": {
+        "users": "Utilisateurs",
+        "events": "Evenements",
+        "replays": "Rediffusions"
+      },
+      "periods": {
+        "day": "Jour",
+        "week": "Semaine",
+        "month": "Mois",
+        "year": "Annee"
+      }
+    },
+    "applications": {
+      "title": "Candidatures",
+      "detail": "Detail candidature",
+      "bio": "Bio",
+      "genres": "Genres",
+      "location": "Localisation",
+      "links": "Liens",
+      "submittedOn": "Soumise le {{date}}",
+      "status": {
+        "pending": "En attente",
+        "approved": "Approuvee",
+        "rejected": "Refusee"
+      },
+      "filter": {
+        "pending": "En attente",
+        "approved": "Approuvees",
+        "rejected": "Refusees",
+        "all": "Toutes"
+      },
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "confirmApprove": "Approuver cette candidature ?",
+      "confirmReject": "Refuser cette candidature ?",
+      "confirmMessage": "Cette action est definitive.",
+      "approvedSuccess": "Candidature approuvee ! L'utilisateur est maintenant diffuseur.",
+      "rejectedSuccess": "Candidature refusee.",
+      "actionError": "Impossible de traiter cette candidature.",
+      "notFound": "Candidature introuvable",
+      "empty": "Aucune candidature"
+    },
+    "reports": {
+      "title": "Signalements",
+      "confirmAction": "Confirmer l'action ?",
+      "dismiss": "Ignorer",
+      "warn": "Avertir",
+      "ban": "Bannir",
+      "actions": {
+        "dismissed": "Ignorer ce signalement",
+        "warning": "Envoyer un avertissement",
+        "content_removed": "Supprimer le contenu",
+        "user_banned": "Bannir l'utilisateur"
+      },
+      "targetTypes": {
+        "user": "Utilisateur",
+        "event": "Live",
+        "replay": "Rediffusion"
+      },
+      "statusLabels": {
+        "reviewed": "Traite",
+        "dismissed": "Ignore"
+      },
+      "filter": {
+        "pending": "En attente",
+        "reviewed": "Traites",
+        "dismissed": "Ignores",
+        "all": "Tous"
+      },
+      "actionError": "Impossible de traiter ce signalement.",
+      "empty": "Aucun signalement"
+    },
+    "users": {
+      "title": "Utilisateurs",
+      "searchPlaceholder": "Rechercher un utilisateur...",
+      "empty": "Aucun utilisateur",
+      "changeRole": "Changer le rôle",
+      "block": "Bloquer",
+      "unblock": "Débloquer",
+      "blocked": "Bloqué",
+      "roleChanged": "Rôle modifié avec succès",
+      "userBlocked": "Utilisateur bloqué",
+      "userUnblocked": "Utilisateur débloqué",
+      "actionError": "Impossible d'effectuer cette action.",
+      "confirmBlock": "Êtes-vous sûr de vouloir bloquer cet utilisateur ?",
+      "confirmUnblock": "Êtes-vous sûr de vouloir débloquer cet utilisateur ?",
+      "selectRole": "Sélectionner un rôle",
+      "roles": {
+        "viewer": "Spectateur",
+        "broadcaster": "DJ / Diffuseur",
+        "admin": "Administrateur"
+      },
+      "loadMore": "Charger plus",
+      "clearFilters": "Effacer"
+    },
+    "costs": {
+      "title": "Couts API",
+      "last30days": "30 derniers jours",
+      "currentUsage": "Usage actuel",
+      "estimatedCost": "Cout estime",
+      "threshold": "Seuil d'alerte",
+      "lastAlert": "Derniere alerte",
+      "breakdown": "Detail des couts",
+      "liveInput": "Live streaming (input)",
+      "encoding": "Encodage",
+      "storage": "Stockage",
+      "delivery": "Diffusion (delivery)",
+      "fbUsers": "Utilisateurs",
+      "fbEvents": "Evenements",
+      "fbReplays": "Rediffusions",
+      "fbReports": "Signalements",
+      "firebaseNote": "Les couts Firebase sont calcules par Google Cloud. Consultez la console Firebase pour le detail exact.",
+      "muxDisclaimer": "Estimation basee sur les tarifs Mux Plus 720p et les durees reelles de vos lives.",
+      "viewMuxDashboard": "Voir le dashboard Mux"
+    }
+  },
+
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Aucune notification",
+    "emptyDesc": "Tu verras ici les nouvelles de tes DJs favoris et de la communaute",
+    "markAllRead": "Tout marquer lu",
+    "types": {
+      "new_follower": "{{name}} s'est abonne(e) a toi",
+      "live_started": "{{name}} est en live !",
+      "application_approved": "Ta candidature a ete acceptee !",
+      "application_rejected": "Ta candidature a ete refusee",
+      "admin_announcement": "Annonce SHUT"
+    },
+    "applicationDetail": {
+      "approvedTitle": "Félicitations !",
+      "approvedMessage": "Ta candidature a été acceptée ! Redémarre l'application pour passer en mode DJ.",
+      "rejectedTitle": "Candidature refusée",
+      "rejectedMessage": "Malheureusement, ta candidature n'a pas été retenue. Si tu as des questions, n'hésite pas à nous contacter.",
+      "contactUs": "Nous contacter"
+    },
+    "timeAgo": {
+      "now": "A l'instant",
+      "minutes": "Il y a {{count}} min",
+      "hours": "Il y a {{count}} h",
+      "days": "Il y a {{count}} j"
+    }
   }
 }

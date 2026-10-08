@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -8,11 +9,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { LiveStackParamList } from '../navigation/MainTabs';
 import { useAuth } from '../contexts/AuthContext';
 import { userService, followService, replaysService, likesService } from '../services';
+import { DjNotifToggle } from '../components/profile/DjNotifToggle';
 import { ProfileHeader } from '../components/profile/ProfileHeader';
 import { GenreTagList } from '../components/profile/GenreTagList';
 import { ReplayList } from '../components/profile/ReplayList';
+import { ReportModal } from '../components/report/ReportModal';
 
-import { colors, fonts, fontSize, spacing } from '../config/theme';
+import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
 import type { User } from '../types/user';
 
 type Route = RouteProp<LiveStackParamList, 'PublicProfile'>;
@@ -32,6 +35,8 @@ export function PublicProfileScreen() {
   const [totalLikes, setTotalLikes] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [reportVisible, setReportVisible] = useState(false);
+  const [notifEnabled, setNotifEnabled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,13 +45,15 @@ export function PublicProfileScreen() {
       currentUser ? followService.isFollowing(currentUser.id, userId) : Promise.resolve(false),
       followService.getFollowers(userId),
       followService.getFollowing(userId),
+      currentUser ? followService.getNotificationsEnabled(currentUser.id, userId) : Promise.resolve(false),
     ])
-      .then(([user, following, followers, followingList]) => {
+      .then(([user, following, followers, followingList, notifOn]) => {
         if (cancelled) return;
         setProfileUser(user);
         setIsFollowing(following);
         setFollowersCount(followers.length);
         setFollowingCount(followingList.length);
+        setNotifEnabled(notifOn);
         // Compute total likes for broadcasters
         if (user?.role === 'broadcaster') {
           replaysService.getReplaysByUser(user.id).then((replays) => {
@@ -89,6 +96,17 @@ export function PublicProfileScreen() {
     }
   }, [currentUser, profileUser, isFollowing]);
 
+  const handleNotifToggle = useCallback(async () => {
+    if (!currentUser || !profileUser) return;
+    const next = !notifEnabled;
+    setNotifEnabled(next);
+    try {
+      await followService.setNotificationsEnabled(currentUser.id, profileUser.id, next);
+    } catch {
+      setNotifEnabled(!next);
+    }
+  }, [currentUser, profileUser, notifEnabled]);
+
   if (loading) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
@@ -115,6 +133,11 @@ export function PublicProfileScreen() {
         onFollowPress={handleFollowPress}
         onFollowersTap={() => navigation.navigate('FollowList' as any, { userId: profileUser.id, mode: 'followers' })}
         onFollowingTap={() => navigation.navigate('FollowList' as any, { userId: profileUser.id, mode: 'following' })}
+        notifToggle={
+          isFollowing && currentUser?.id !== profileUser.id
+            ? <DjNotifToggle enabled={notifEnabled} onToggle={handleNotifToggle} />
+            : undefined
+        }
       />
 
       {profileUser.bio ? (
@@ -147,6 +170,21 @@ export function PublicProfileScreen() {
           }}
         />
       ) : null}
+
+      {/* Report button */}
+      {currentUser && currentUser.id !== profileUser.id && (
+        <Pressable style={styles.reportRow} onPress={() => setReportVisible(true)}>
+          <Ionicons name="flag-outline" size={18} color={colors.error} />
+          <Text style={styles.reportText}>{t('report.reportUser')}</Text>
+        </Pressable>
+      )}
+
+      <ReportModal
+        visible={reportVisible}
+        onClose={() => setReportVisible(false)}
+        targetType="user"
+        targetId={userId}
+      />
     </ScrollView>
   );
 }
@@ -159,4 +197,17 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.textSecondary, fontFamily: fonts.body.medium, fontSize: fontSize.sm },
   bio: { color: colors.textPrimary, fontFamily: fonts.body.regular, fontSize: fontSize.md, lineHeight: 22 },
   errorText: { color: colors.textSecondary, fontFamily: fonts.body.regular, fontSize: fontSize.md },
+  reportRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    marginTop: spacing.md,
+  },
+  reportText: {
+    fontFamily: fonts.body.medium,
+    fontSize: fontSize.sm,
+    color: colors.error,
+  },
 });

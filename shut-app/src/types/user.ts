@@ -39,6 +39,9 @@ export interface User {
   followingCount?: number;
   totalLikesCount?: number;
   language?: string;
+  // Admin
+  blocked?: boolean;
+  blockedAt?: string | null;
 }
 
 export interface AuthState {

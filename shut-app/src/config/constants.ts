@@ -1,7 +1,7 @@
 // Toggle this single flag to switch from mock to real services
 export const USE_MOCK = false;
 
-export type UserRole = 'viewer' | 'broadcaster' | 'dj' | 'artistic_director';
+export type UserRole = 'viewer' | 'broadcaster' | 'dj' | 'artistic_director' | 'admin';
 
 export const MUSIC_GENRES = [
   'Acid House', 'Acid Techno', 'Afro House', 'Afro Tech', 'Ambient',

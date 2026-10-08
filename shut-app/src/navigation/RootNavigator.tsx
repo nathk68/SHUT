@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import { usePreferences } from '../contexts/PreferencesContext';
 import { FavoritesProvider } from '../contexts/FavoritesContext';
+import { NotificationProvider } from '../contexts/NotificationContext';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
+import { BlockedScreen } from '../screens/BlockedScreen';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { colors } from '../config/theme';
 import { getStoredData } from '../utils/storage';
@@ -27,12 +30,18 @@ const navTheme = {
 };
 
 export function RootNavigator() {
-  const { isAuthenticated, isLoading, isGuest } = useAuth();
+  const { isAuthenticated, isLoading, isGuest, isBlocked, user } = useAuth();
+  const { setUserId } = usePreferences();
   const [hasSeenSplash, setHasSeenSplash] = useState<boolean | null>(null);
 
   useEffect(() => {
     getStoredData<boolean>('@shut_has_seen_splash').then(v => setHasSeenSplash(!!v));
   }, []);
+
+  // Sync user ID to preferences so language changes are saved to Firestore
+  useEffect(() => {
+    setUserId(user?.id ?? null);
+  }, [user?.id, setUserId]);
 
   if (isLoading || hasSeenSplash === null) {
     return <LoadingSpinner message="Chargement..." />;
@@ -40,9 +49,13 @@ export function RootNavigator() {
 
   return (
     <NavigationContainer theme={navTheme}>
-      {isAuthenticated || isGuest ? (
+      {isBlocked ? (
+        <BlockedScreen />
+      ) : isAuthenticated || isGuest ? (
         <FavoritesProvider>
-          <MainTabs />
+          <NotificationProvider>
+            <MainTabs />
+          </NotificationProvider>
         </FavoritesProvider>
       ) : (
         // Comportement officiel

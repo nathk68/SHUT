@@ -37,7 +37,7 @@ const TOTAL_STEPS = 6;
 
 export function SpectatorOnboardingScreen({ navigation }: Props) {
   const { t } = useTranslation();
-  const { register } = useAuth();
+  const { register, refreshUser } = useAuth();
 
   const STEP_TITLES = [
     t('onboarding.spectatorOnboarding.stepTitles.0'),
@@ -145,6 +145,7 @@ export function SpectatorOnboardingScreen({ navigation }: Props) {
           countryCode: location.countryCode ?? '',
           cityId: location.cityId ?? '',
         }, { merge: true });
+        await refreshUser();
       } catch (err: any) {
         setLoading(false);
         Alert.alert(t('common.error'), err?.message ?? t('validation.usernameTaken'));
