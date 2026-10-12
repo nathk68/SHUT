@@ -86,4 +86,10 @@ export class MockStreamingService implements IStreamingService {
       streamKey: key,
     };
   }
+
+  async ensurePermanentStream(): Promise<{ streamKey: string; rtmpUrl: string }> {
+    return { streamKey: 'mock-key', rtmpUrl: 'rtmp://global-live.mux.com:5222/app' };
+  }
+
+  async clearPermanentStream(): Promise<void> {}
 }

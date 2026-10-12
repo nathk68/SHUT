@@ -12,6 +12,7 @@ import { IFavoritesService } from './favorites.service';
 
 export class FirebaseFavoritesService implements IFavoritesService {
   async getFavorites(userId: string): Promise<string[]> {
+    if (!userId) return [];
     const q = query(
       collection(db, 'userFavorites'),
       where('userId', '==', userId),
@@ -21,6 +22,7 @@ export class FirebaseFavoritesService implements IFavoritesService {
   }
 
   async addFavorite(userId: string, eventId: string): Promise<void> {
+    if (!userId || !eventId) return;
     const exists = await this.isFavorite(userId, eventId);
     if (exists) return;
     await addDoc(collection(db, 'userFavorites'), {
@@ -31,6 +33,7 @@ export class FirebaseFavoritesService implements IFavoritesService {
   }
 
   async removeFavorite(userId: string, eventId: string): Promise<void> {
+    if (!userId || !eventId) return;
     const q = query(
       collection(db, 'userFavorites'),
       where('userId', '==', userId),
@@ -41,6 +44,7 @@ export class FirebaseFavoritesService implements IFavoritesService {
   }
 
   async isFavorite(userId: string, eventId: string): Promise<boolean> {
+    if (!userId || !eventId) return false;
     const q = query(
       collection(db, 'userFavorites'),
       where('userId', '==', userId),
@@ -51,6 +55,7 @@ export class FirebaseFavoritesService implements IFavoritesService {
   }
 
   async getFavoritesCountForItem(eventId: string): Promise<number> {
+    if (!eventId) return 0;
     const q = query(
       collection(db, 'userFavorites'),
       where('eventId', '==', eventId),

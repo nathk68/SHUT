@@ -50,10 +50,18 @@ export function MesFavorisScreen() {
     }
     setLoadingReplays(true);
     const ids = Array.from(favoriteIds);
-    Promise.all(ids.map((id) => replaysService.getReplayById(id)))
+    Promise.all(ids.map(async (id) => {
+      // Try as replayId first, then as eventId (favorites from live use eventId)
+      const byId = await replaysService.getReplayById(id);
+      if (byId) return byId;
+      return replaysService.getReplayByEventId(id);
+    }))
       .then(async (results) => {
         const found = results.filter(Boolean) as Replay[];
-        setReplays(found);
+        // Deduplicate by replay id
+        const seen = new Set<string>();
+        const unique = found.filter((r) => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+        setReplays(unique);
         const userIds = [...new Set(found.map((r) => r.userId))];
         const users = await Promise.all(userIds.map((uid) => userService.getUserById(uid)));
         const map: Record<string, User> = {};

@@ -3,7 +3,7 @@
     "name": "shut-app",
     "slug": "shut-app",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
@@ -37,6 +37,7 @@
     "plugins": [
       "expo-font",
       "expo-video",
+      "expo-screen-orientation",
       "expo-splash-screen",
       "expo-status-bar",
       "expo-audio",

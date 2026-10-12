@@ -24,6 +24,8 @@ import { useFavorites } from '../../contexts/FavoritesContext';
 import { userService, replaysService, likesService, favoritesService } from '../../services';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { ReportModal } from '../../components/report/ReportModal';
+import { RotateDeviceOverlay } from '../../components/player/RotateDeviceOverlay';
+import { useVideoOrientation } from '../../hooks/useVideoOrientation';
 
 type ReplayPlayerParams = {
   ReplayPlayer: {
@@ -64,6 +66,8 @@ export function ReplayPlayerScreen() {
 
   const isOwner = !!(currentUser && djUserId && currentUser.id === djUserId);
   const [reportVisible, setReportVisible] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [showUI, setShowUI] = useState(true);
 
   // DJ profile
   const [djName, setDjName] = useState('');
@@ -98,6 +102,8 @@ export function ReplayPlayerScreen() {
     p.timeUpdateEventInterval = 0.25;
     p.play();
   });
+
+  const { isLandscape, showRotateOverlay, lockPortrait } = useVideoOrientation(player);
 
   const { isPlaying } = useEvent(player, 'playingChange', { isPlaying: player.playing });
 
@@ -257,12 +263,20 @@ export function ReplayPlayerScreen() {
     await Share.share({ message: t('replayPlayer.shareMessage', { title, djName }) });
   };
 
+  const handleGoBack = useCallback(() => {
+    if (isLandscape) {
+      lockPortrait().then(() => navigation.goBack());
+    } else {
+      navigation.goBack();
+    }
+  }, [navigation, isLandscape, lockPortrait]);
+
   const handleTogglePlay = () => {
     if (isPlaying) player.pause();
     else player.play();
   };
 
-  const eventIdForSocial = replayId ?? 'replay';
+  const eventIdForSocial = eventId ?? replayId ?? 'replay';
 
   // Likes & favorites counts
   const [likesCount, setLikesCount] = useState(0);
@@ -294,127 +308,180 @@ export function ReplayPlayerScreen() {
         <VideoView
           player={player}
           style={styles.video}
-          contentFit="contain"
+          contentFit={isZoomed ? 'cover' : 'contain'}
           nativeControls={false}
         />
       </Pressable>
 
-      {/* Play/Pause overlay (briefly visible) */}
-      {!isPlaying && (
-        <View style={styles.playOverlay} pointerEvents="none">
-          <View style={styles.playCircle}>
-            <Ionicons name="play" size={36} color={colors.white} style={{ marginLeft: 4 }} />
-          </View>
-        </View>
-      )}
-
-      {/* Top bar: close + title */}
-      <View style={[styles.topBar, { paddingTop: insets.top + spacing.sm }]}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={12} style={styles.closeBtn}>
-          <Ionicons name="close" size={24} color={colors.white} />
-        </Pressable>
-        <Text style={styles.topTitle} numberOfLines={1}>{title || t('common.replay')}</Text>
-        <View style={{ width: 36 }} />
-      </View>
-
-      {/* Bottom: progress bar + time */}
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + spacing.md }]}>
-        {/* DJ name */}
-        {djName ? (
-          <Pressable
-            onPress={() => djUserId && navigation.navigate('PublicProfile', { userId: djUserId })}
-            style={styles.djRow}
-          >
-            <Text style={styles.djName} numberOfLines={1}>{djName}</Text>
-          </Pressable>
-        ) : null}
-
-        {/* Location & date tags */}
-        {(replayLocation || replayDate) && (
-          <View style={styles.tagsRow}>
-            {replayLocation && (
-              <View style={styles.infoTag}>
-                <Ionicons name="location-outline" size={12} color={colors.white} />
-                <Text style={styles.infoTagText}>{replayLocation}</Text>
+      {/* UI overlay — hidden when showUI is false */}
+      {showUI && (
+        <>
+          {/* Play/Pause overlay */}
+          {!isPlaying && (
+            <View style={styles.playOverlay} pointerEvents="none">
+              <View style={styles.playCircle}>
+                <Ionicons name="play" size={36} color={colors.white} style={{ marginLeft: 4 }} />
               </View>
-            )}
-            {replayDate && (
-              <View style={styles.infoTag}>
-                <Ionicons name="calendar-outline" size={12} color={colors.white} />
-                <Text style={styles.infoTagText}>
-                  {new Date(replayDate).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Progress bar (scrubbable) */}
-        <View style={styles.progressContainer}>
-          <View
-            style={styles.progressHitArea}
-            onLayout={(e) => { progressBarWidthRef.current = e.nativeEvent.layout.width; }}
-            {...progressPan.panHandlers}
-          >
-            <View style={[styles.progressTrack, isScrubbing && styles.progressTrackActive]}>
-              <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-            </View>
-            {isScrubbing && (
-              <View style={[styles.scrubThumb, { left: `${progress * 100}%` }]} />
-            )}
-          </View>
-          <View style={styles.timeRow}>
-            <Text style={styles.timeText}>{formatTime(Math.max(0, currentPos - trimStart))}</Text>
-            <Text style={styles.timeText}>{formatTime(trimmedDuration)}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Right-side action bar */}
-      <View style={[styles.actionBar, { bottom: insets.bottom + spacing.xl + 60 }]}>
-        {/* Avatar DJ */}
-        <Pressable onPress={() => djUserId && navigation.navigate('PublicProfile', { userId: djUserId })}>
-          {djAvatarUrl ? (
-            <Image source={{ uri: djAvatarUrl }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarFallback}>
-              <Text style={styles.avatarInitial}>
-                {(djName || '?').charAt(0).toUpperCase()}
-              </Text>
             </View>
           )}
-        </Pressable>
 
-        {/* Like */}
-        <Pressable style={styles.action} onPress={handleToggleLike}>
-          <Ionicons
-            name={isLiked(eventIdForSocial) ? 'heart' : 'heart-outline'}
-            size={30}
-            color={isLiked(eventIdForSocial) ? colors.accent : colors.white}
-          />
-          {likesCount > 0 && <Text style={styles.actionCount}>{likesCount}</Text>}
-        </Pressable>
+          {/* Top bar: close + title + hide-UI + report */}
+          <View style={[styles.topBar, {
+            paddingTop: isLandscape ? spacing.md : insets.top + spacing.sm,
+            paddingLeft: Math.max(insets.left, isLandscape ? spacing.lg : spacing.md),
+            paddingRight: Math.max(insets.right, isLandscape ? spacing.lg : spacing.md),
+          }]}>
+            <Pressable onPress={handleGoBack} hitSlop={12} style={styles.closeBtn}>
+              <Ionicons name="close" size={24} color={colors.white} />
+            </Pressable>
+            <Text style={styles.topTitle} numberOfLines={1}>{title || t('common.replay')}</Text>
+            <Pressable
+              style={styles.uiToggleBtn}
+              onPress={() => setShowUI(false)}
+            >
+              <Ionicons name="eye-off-outline" size={16} color="rgba(255,255,255,0.5)" />
+            </Pressable>
+            <Pressable
+              style={styles.reportBtn}
+              onPress={() => setReportVisible(true)}
+            >
+              <Ionicons name="flag-outline" size={18} color="rgba(255,255,255,0.7)" />
+            </Pressable>
+          </View>
 
-        {/* Share */}
-        <Pressable style={styles.action} onPress={handleShare}>
-          <Ionicons name="share-social-outline" size={28} color={colors.white} />
-        </Pressable>
+          {/* Bottom: progress bar + time */}
+          <View style={[styles.bottomBar, {
+            paddingBottom: isLandscape ? spacing.sm : insets.bottom + spacing.md,
+            paddingLeft: Math.max(insets.left, isLandscape ? spacing.lg : spacing.md),
+            right: isLandscape ? 80 + Math.max(insets.right, spacing.lg) : spacing.md,
+          }]}>
+            {/* DJ name */}
+            {djName ? (
+              <Pressable
+                onPress={() => djUserId && navigation.navigate('PublicProfile', { userId: djUserId })}
+                style={styles.djRow}
+              >
+                <Text style={styles.djName} numberOfLines={1}>{djName}</Text>
+              </Pressable>
+            ) : null}
 
-        {/* Favorite */}
-        <Pressable style={styles.action} onPress={handleToggleFavorite}>
-          <Ionicons
-            name={isFavorite(eventIdForSocial) ? 'bookmark' : 'bookmark-outline'}
-            size={28}
-            color={isFavorite(eventIdForSocial) ? colors.accent : colors.white}
-          />
-          {favsCount > 0 && <Text style={styles.actionCount}>{favsCount}</Text>}
-        </Pressable>
+            {/* Location & date tags */}
+            {(replayLocation || replayDate) && (
+              <View style={styles.tagsRow}>
+                {replayLocation && (
+                  <View style={styles.infoTag}>
+                    <Ionicons name="location-outline" size={12} color={colors.white} />
+                    <Text style={styles.infoTagText}>{replayLocation}</Text>
+                  </View>
+                )}
+                {replayDate && (
+                  <View style={styles.infoTag}>
+                    <Ionicons name="calendar-outline" size={12} color={colors.white} />
+                    <Text style={styles.infoTagText}>
+                      {new Date(replayDate).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
 
-        {/* More "..." */}
-        <Pressable style={styles.action} onPress={handleMore}>
-          <Ionicons name="ellipsis-horizontal" size={28} color={colors.white} />
+            {/* Progress bar (scrubbable) */}
+            <View style={styles.progressContainer}>
+              <View
+                style={styles.progressHitArea}
+                onLayout={(e) => { progressBarWidthRef.current = e.nativeEvent.layout.width; }}
+                {...progressPan.panHandlers}
+              >
+                <View style={[styles.progressTrack, isScrubbing && styles.progressTrackActive]}>
+                  <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+                </View>
+                {isScrubbing && (
+                  <View style={[styles.scrubThumb, { left: `${progress * 100}%` }]} />
+                )}
+              </View>
+              <View style={styles.timeRow}>
+                <Text style={styles.timeText}>{formatTime(Math.max(0, currentPos - trimStart))}</Text>
+                <Text style={styles.timeText}>{formatTime(trimmedDuration)}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Right-side action bar */}
+          <View style={[styles.actionBar,
+            isLandscape
+              ? { top: spacing.md + 48, right: Math.max(insets.right + 20, spacing.lg) }
+              : { bottom: insets.bottom + spacing.md + 50, right: spacing.md },
+          ]}>
+            {/* Avatar DJ */}
+            <Pressable onPress={() => djUserId && navigation.navigate('PublicProfile', { userId: djUserId })}>
+              {djAvatarUrl ? (
+                <Image source={{ uri: djAvatarUrl }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={styles.avatarInitial}>
+                    {(djName || '?').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+
+            {/* Like */}
+            <Pressable style={styles.action} onPress={handleToggleLike}>
+              <Ionicons
+                name={isLiked(eventIdForSocial) ? 'heart' : 'heart-outline'}
+                size={30}
+                color={isLiked(eventIdForSocial) ? colors.accent : colors.white}
+              />
+              {likesCount > 0 && <Text style={styles.actionCount}>{likesCount}</Text>}
+            </Pressable>
+
+            {/* Share */}
+            <Pressable style={styles.action} onPress={handleShare}>
+              <Ionicons name="share-social-outline" size={28} color={colors.white} />
+            </Pressable>
+
+            {/* Favorite */}
+            <Pressable style={styles.action} onPress={handleToggleFavorite}>
+              <Ionicons
+                name={isFavorite(eventIdForSocial) ? 'bookmark' : 'bookmark-outline'}
+                size={28}
+                color={isFavorite(eventIdForSocial) ? colors.accent : colors.white}
+              />
+              {favsCount > 0 && <Text style={styles.actionCount}>{favsCount}</Text>}
+            </Pressable>
+
+            {/* More "..." */}
+            <Pressable style={styles.action} onPress={handleMore}>
+              <Ionicons name="ellipsis-horizontal" size={28} color={colors.white} />
+            </Pressable>
+          </View>
+
+          {/* Zoom toggle */}
+          <View style={[styles.zoomBtnContainer, {
+            bottom: isLandscape ? spacing.lg + 50 : insets.bottom + spacing.md + 14,
+          }]}>
+            <Pressable
+              style={({ pressed }) => [styles.zoomBtn, { opacity: pressed ? 0.6 : 1 }]}
+              onPress={() => setIsZoomed((z) => !z)}
+            >
+              <Ionicons name={isZoomed ? 'contract-outline' : 'expand-outline'} size={20} color={colors.white} />
+            </Pressable>
+          </View>
+        </>
+      )}
+
+      {/* Show UI button — only visible when UI is hidden */}
+      {!showUI && (
+        <Pressable
+          style={[styles.showUiBtn, {
+            top: isLandscape ? spacing.md : insets.top + spacing.sm,
+            right: Math.max(insets.right, isLandscape ? spacing.lg : spacing.md),
+          }]}
+          onPress={() => setShowUI(true)}
+        >
+          <Ionicons name="eye-outline" size={16} color="rgba(255,255,255,0.5)" />
         </Pressable>
-      </View>
+      )}
 
       {/* Android fallback menu */}
       {menuVisible && Platform.OS !== 'ios' && (
@@ -452,6 +519,8 @@ export function ReplayPlayerScreen() {
           targetId={replayId}
         />
       )}
+
+      {showRotateOverlay && <RotateDeviceOverlay />}
     </View>
   );
 }
@@ -511,7 +580,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     left: 0,
-    right: spacing.md,
     paddingHorizontal: spacing.md,
     zIndex: 10,
   },
@@ -546,7 +614,7 @@ const styles = StyleSheet.create({
   },
   progressContainer: { gap: 4 },
   progressHitArea: {
-    height: 24,
+    height: 36,
     justifyContent: 'center',
   },
   progressTrack: {
@@ -565,12 +633,12 @@ const styles = StyleSheet.create({
   },
   scrubThumb: {
     position: 'absolute',
-    top: 6,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    top: 12,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: colors.accent,
-    marginLeft: -6,
+    marginLeft: -7,
   },
   timeRow: {
     flexDirection: 'row',
@@ -648,5 +716,51 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontFamily: fonts.body.medium,
     fontSize: fontSize.md,
+  },
+
+  // UI toggle & report buttons (top bar)
+  uiToggleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  reportBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  showUiBtn: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+
+  // Zoom button (landscape)
+  zoomBtnContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  zoomBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

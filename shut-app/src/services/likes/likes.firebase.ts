@@ -12,6 +12,7 @@ import { ILikesService } from './likes.service';
 
 export class FirebaseLikesService implements ILikesService {
   async getLikes(userId: string): Promise<string[]> {
+    if (!userId) return [];
     const q = query(
       collection(db, 'userLikes'),
       where('userId', '==', userId),
@@ -21,6 +22,7 @@ export class FirebaseLikesService implements ILikesService {
   }
 
   async toggleLike(userId: string, eventId: string): Promise<boolean> {
+    if (!userId || !eventId) return false;
     const q = query(
       collection(db, 'userLikes'),
       where('userId', '==', userId),
@@ -40,6 +42,7 @@ export class FirebaseLikesService implements ILikesService {
   }
 
   async isLiked(userId: string, eventId: string): Promise<boolean> {
+    if (!userId || !eventId) return false;
     const q = query(
       collection(db, 'userLikes'),
       where('userId', '==', userId),

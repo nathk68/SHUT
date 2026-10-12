@@ -14,8 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
-import { eventsService, streamingService } from '../../services';
+import { eventsService, streamingService, likesService, favoritesService } from '../../services';
 import { usePreferences } from '../../contexts/PreferencesContext';
 
 // ─── NodePublisher (RTMP streaming only, loaded dynamically) ──────────────────
@@ -80,6 +81,7 @@ export function PhoneCameraScreen() {
   const nodeRef = useRef<any>(null);
 
   const [phase, setPhase] = useState<Phase>('preview');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFront, setIsFront] = useState(true);
   const [duration, setDuration] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -92,6 +94,11 @@ export function PhoneCameraScreen() {
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
+
+  // ── Likes, favorites & viewer counts ────────────────────────────────────
+  const [likesCount, setLikesCount] = useState(0);
+  const [favsCount, setFavsCount] = useState(0);
+  const [viewerCount, setViewerCount] = useState(0);
 
   // ── External mode: HLS preview ────────────────────────────────────────────
   const [extPlaybackUrl, setExtPlaybackUrl] = useState<string | null>(null);
@@ -109,6 +116,7 @@ export function PhoneCameraScreen() {
       if (!e) return;
       const live = e.status === 'live';
       setExtIsLive(live);
+      setViewerCount(e.viewerCount ?? 0);
       if (e.playbackUrl && e.playbackUrl !== extPlaybackUrl) {
         setExtPlaybackUrl(e.playbackUrl);
       }
@@ -152,6 +160,23 @@ export function PhoneCameraScreen() {
   const isConnecting = !isExternal && phase === 'connecting';
   const isReconnecting = !isExternal && phase === 'reconnecting';
 
+  useEffect(() => {
+    if (!isLive || !eventId) return;
+    const refresh = () => {
+      likesService.getLikesCountForItems([eventId]).then(setLikesCount).catch(() => {});
+      favoritesService.getFavoritesCountForItem(eventId).then(setFavsCount).catch(() => {});
+      // In phone mode, poll viewerCount (external mode uses onSnapshot)
+      if (!isExternal) {
+        eventsService.getEventById(eventId).then((e) => {
+          if (e) setViewerCount(e.viewerCount ?? 0);
+        }).catch(() => {});
+      }
+    };
+    refresh();
+    const interval = setInterval(refresh, 15000);
+    return () => clearInterval(interval);
+  }, [isLive, eventId, isExternal]);
+
   // ── Permissions (phone mode only) ─────────────────────────────────────────
 
   useEffect(() => {
@@ -189,6 +214,7 @@ export function PhoneCameraScreen() {
       timerRef.current && clearInterval(timerRef.current);
       reconnectTimerRef.current && clearTimeout(reconnectTimerRef.current);
       if (phase !== 'preview') callNP(nodeRef, 'stop');
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -285,6 +311,7 @@ export function PhoneCameraScreen() {
             }
             timerRef.current && clearInterval(timerRef.current);
             setDuration(0);
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
             if (recordLives && eventId) {
               navigation.replace('PostLive', { eventId });
             } else {
@@ -298,9 +325,13 @@ export function PhoneCameraScreen() {
             timerRef.current && clearInterval(timerRef.current);
             setPhase('preview');
             setDuration(0);
-            if (eventId) eventsService.updateEvent(eventId, { status: 'ended' }).catch(() => {});
+            if (eventId) {
+              streamingService.stopStream(eventId).catch(() => {});
+            }
             if (recordLives && eventId) {
               navigation.replace('PostLive', { eventId });
+            } else {
+              navigation.goBack();
             }
           }
         },
@@ -308,15 +339,29 @@ export function PhoneCameraScreen() {
     ]);
   }, [eventId, isExternal, navigation, recordLives]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const toggleFullscreen = useCallback(async () => {
+    if (isFullscreen) {
+      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      setIsFullscreen(false);
+    } else {
+      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      setIsFullscreen(true);
+    }
+  }, [isFullscreen]);
+
   function handleBack() {
     if (isExternal) {
+      const goBackAndRestore = () => {
+        ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+        navigation.goBack();
+      };
       if (extIsLive) {
         Alert.alert(t('broadcaster.phoneCamera.quitTitle'), t('broadcaster.phoneCamera.quitExternalMessage'), [
           { text: t('broadcaster.phoneCamera.stay'), style: 'cancel' },
-          { text: t('common.quit'), onPress: () => navigation.goBack() },
+          { text: t('common.quit'), onPress: goBackAndRestore },
         ]);
       } else {
-        navigation.goBack();
+        goBackAndRestore();
       }
     } else if (phase !== 'preview') {
       Alert.alert(t('broadcaster.phoneCamera.quitTitle'), t('broadcaster.phoneCamera.quitPhoneMessage'), [
@@ -361,7 +406,7 @@ export function PhoneCameraScreen() {
           <VideoView
             player={hlsPlayer}
             style={styles.absoluteFill}
-            contentFit="cover"
+            contentFit="contain"
             nativeControls={false}
           />
           {!extIsLive && (
@@ -441,6 +486,37 @@ export function PhoneCameraScreen() {
           }
         </View>
       </View>
+
+      {/* Live stats: viewers, likes & favorites */}
+      {isLive && eventId && (
+        <View style={[styles.liveStats, { top: insets.top + 50 }]}>
+          <View style={styles.liveStat}>
+            <Ionicons name="eye" size={14} color={colors.textPrimary} />
+            <Text style={styles.liveStatText}>{viewerCount}</Text>
+          </View>
+          <View style={styles.liveStat}>
+            <Ionicons name="heart" size={14} color="#ef4444" />
+            <Text style={styles.liveStatText}>{likesCount}</Text>
+          </View>
+          <View style={styles.liveStat}>
+            <Ionicons name="bookmark" size={14} color={colors.accent} />
+            <Text style={styles.liveStatText}>{favsCount}</Text>
+          </View>
+        </View>
+      )}
+
+      {/* Fullscreen toggle (external mode) */}
+      {isExternal && extIsLive && (
+        <Pressable
+          onPress={toggleFullscreen}
+          style={[styles.fullscreenBtn, {
+            bottom: insets.bottom + spacing.lg + 70,
+            right: Math.max(insets.right, spacing.md),
+          }]}
+        >
+          <Ionicons name={isFullscreen ? 'contract-outline' : 'expand-outline'} size={22} color="#fff" />
+        </Pressable>
+      )}
 
       {/* ── BOTTOM BAR ──────────────────────────────────────────────────────── */}
       <View style={styles.bottomOverlay} pointerEvents="box-none">
@@ -636,6 +712,37 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  liveStats: {
+    position: 'absolute' as const,
+    left: spacing.lg,
+    flexDirection: 'row' as const,
+    gap: spacing.md,
+    zIndex: 20,
+  },
+  liveStat: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  liveStatText: {
+    color: '#fff',
+    fontFamily: fonts.mono.regular,
+    fontSize: 11,
+  },
+  fullscreenBtn: {
+    position: 'absolute' as const,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    zIndex: 20,
   },
   extWaiting: {
     position: 'absolute' as const,

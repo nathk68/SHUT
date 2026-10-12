@@ -45,9 +45,11 @@ export const createLiveStream = onCall(
     }
 
     const uid = request.auth.uid;
-    const userDoc = await admin.firestore()
-      .doc(`users/${uid}`).get();
-    if (userDoc.data()?.role !== "broadcaster") {
+    const userRef = admin.firestore()
+      .doc(`users/${uid}`);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+    if (userData?.role !== "broadcaster") {
       throw new HttpsError(
         "permission-denied",
         "Broadcaster role required"
@@ -56,57 +58,104 @@ export const createLiveStream = onCall(
 
     const {eventId, record} = request.data;
     const shouldRecord = record === true;
-    console.log("createLiveStream called for eventId:", eventId,
-      "record:", shouldRecord);
-    console.log("MUX_TOKEN_ID length:", muxTokenId.value()?.length);
+    // eventId is optional: when null, we only
+    // ensure the DJ has a permanent stream key
 
     const mux = getMux();
 
-    let liveStream;
-    try {
-      const createParams: any = {
-        playback_policy: ["public"],
-        new_asset_settings: {
-          playback_policy: ["public"],
-        },
-        latency_mode: "low",
-        reconnect_window: 60,
-        max_continuous_duration: 43200,
-      };
-      // Enable recording — Mux will auto-create an Asset when stream ends
-      if (shouldRecord) {
-        createParams.new_asset_settings.mp4_support = "standard";
+    // ── Reuse existing Mux live stream if DJ already has one ──
+    let muxId = userData?.muxLiveStreamId as
+      string | undefined;
+    let streamKey = userData?.muxStreamKey as
+      string | undefined;
+    let playbackId = userData?.muxPlaybackId as
+      string | undefined;
+    let needsCreate = !muxId;
+    let alreadyLive = false;
+
+    if (muxId) {
+      try {
+        const existing = await mux.video.liveStreams
+          .retrieve(muxId);
+        if (existing.status === "disabled") {
+          needsCreate = true;
+        } else {
+          streamKey = existing.stream_key;
+          playbackId =
+            existing.playback_ids?.[0]?.id;
+          alreadyLive =
+            existing.status === "active";
+        }
+      } catch {
+        needsCreate = true;
       }
-      liveStream = await mux.video.liveStreams.create(createParams);
-    } catch (muxError: any) {
-      console.error("Mux API error:", JSON.stringify({
-        message: muxError?.message,
-        status: muxError?.status,
-        error: muxError?.error,
-      }));
-      throw new HttpsError(
-        "internal",
-        `Mux error: ${muxError?.message ?? "unknown"}`
-      );
     }
 
-    const playbackId =
-      liveStream.playback_ids?.[0]?.id;
+    // Create stream if first live or old disabled
+    if (needsCreate) {
+      let liveStream;
+      try {
+        liveStream =
+          await mux.video.liveStreams.create({
+            playback_policy: ["public"],
+            new_asset_settings: {
+              playback_policy: ["public"],
+              mp4_support: "standard",
+            },
+            latency_mode: "low",
+            reconnect_window: 60,
+            max_continuous_duration: 43200,
+          });
+      } catch (muxError: any) {
+        console.error("Mux API error:",
+          JSON.stringify({
+            message: muxError?.message,
+            status: muxError?.status,
+            error: muxError?.error,
+          }));
+        throw new HttpsError("internal",
+          `Mux error: ${muxError?.message ?? "unknown"}`
+        );
+      }
+
+      muxId = liveStream.id;
+      streamKey = liveStream.stream_key;
+      playbackId =
+        liveStream.playback_ids?.[0]?.id;
+
+      // Save permanent stream on user profile
+      await userRef.update({
+        muxLiveStreamId: muxId,
+        muxStreamKey: streamKey,
+        muxPlaybackId: playbackId,
+      });
+    }
+
     const playbackUrl =
       `https://stream.mux.com/${playbackId}.m3u8`;
 
-    const eventUpdate: Record<string, any> = {
-      muxLiveStreamId: liveStream.id,
-      muxStreamKey: liveStream.stream_key,
-      muxRtmpUrl: RTMP,
-      playbackUrl,
-    };
-    if (shouldRecord) eventUpdate.record = true;
-    await admin.firestore()
-      .doc(`events/${eventId}`).update(eventUpdate);
+    // Only update event doc if eventId provided
+    if (eventId) {
+      const eventUpdate: Record<string, any> = {
+        muxLiveStreamId: muxId,
+        muxStreamKey: streamKey,
+        muxRtmpUrl: RTMP,
+        playbackUrl,
+      };
+      if (shouldRecord) eventUpdate.record = true;
+      if (alreadyLive) {
+        eventUpdate.status = "live";
+        eventUpdate.actualStartTime =
+          admin.firestore
+            .FieldValue.serverTimestamp();
+      }
+      await admin.firestore()
+        .doc(`events/${eventId}`)
+        .update(eventUpdate);
+    }
 
     return {
-      streamKey: liveStream.stream_key,
+      streamKey,
       rtmpUrl: RTMP,
       playbackId,
       playbackUrl,
@@ -137,22 +186,95 @@ export const endLiveStream = onCall(
       );
     }
     const {eventId} = request.data;
-    const mux = getMux();
+    const fdb = admin.firestore();
 
-    // Look up muxLiveStreamId from the event document
-    const eventDoc = await admin.firestore()
-      .doc(`events/${eventId}`).get();
-    const muxLiveStreamId = eventDoc.data()?.muxLiveStreamId;
-    if (muxLiveStreamId) {
-      await mux.video.liveStreams.disable(muxLiveStreamId);
+    // Mark event as ended
+    const eventRef = fdb.doc(`events/${eventId}`);
+    const eventSnap = await eventRef.get();
+    const eventData = eventSnap.data();
+    await eventRef.update({
+      status: "ended",
+      actualEndTime: admin.firestore
+        .FieldValue.serverTimestamp(),
+    });
+
+    // Retrieve the asset BEFORE completing the
+    // stream (active_asset_id disappears after
+    // the stream goes idle).
+    const muxId = eventData?.muxLiveStreamId;
+    let mux: Mux | null = null;
+    let assetPlaybackUrl: string | null = null;
+    let assetThumbnail: string | null = null;
+    let assetDuration = 0;
+    let assetId: string | null = null;
+
+    if (muxId) {
+      mux = getMux();
+
+      // Grab the active asset info while the
+      // stream is still live
+      if (eventData?.record === true) {
+        try {
+          const stream =
+            await mux.video.liveStreams
+              .retrieve(muxId);
+          const activeAssetId =
+            stream.active_asset_id;
+          if (activeAssetId) {
+            const asset =
+              await mux.video.assets
+                .retrieve(activeAssetId);
+            assetId = asset.id;
+            const pid =
+              asset.playback_ids?.[0]?.id;
+            if (pid) {
+              assetPlaybackUrl =
+                `https://stream.mux.com/${pid}.m3u8`;
+              assetThumbnail =
+                `https://image.mux.com/${pid}/thumbnail.png?width=640&height=360&time=0`;
+            }
+            assetDuration = Math.round(
+              asset.duration ?? 0
+            );
+          }
+        } catch (err) {
+          console.warn(
+            "Could not retrieve Mux asset:", err
+          );
+        }
+      }
+
+      // NOW signal Mux to complete the stream
+      try {
+        await mux.video.liveStreams
+          .complete(muxId);
+      } catch {/* stream may already be idle */}
     }
 
-    await admin.firestore()
-      .doc(`events/${eventId}`).update({
-        status: "ended",
-        actualEndTime: admin.firestore
-          .FieldValue.serverTimestamp(),
+    // Create replay doc with the asset's own
+    // playback URL (permanent, unlike the live
+    // stream URL which gets reused).
+    if (eventData?.record === true) {
+      await fdb.collection("replays").add({
+        userId: eventData.userId ?? null,
+        eventId,
+        muxAssetId: assetId,
+        playbackUrl: assetPlaybackUrl,
+        thumbnailUrl: assetThumbnail,
+        duration: assetDuration,
+        title: eventData.title ?? "",
+        genres: [],
+        trimStart: 0,
+        trimEnd: 0,
+        location: null,
+        liveDate: null,
+        status: assetPlaybackUrl ?
+          "draft" : "processing",
+        createdAt: new Date().toISOString(),
+        publishedAt: null,
       });
+    }
+
     return {success: true};
   }
 );
@@ -162,36 +284,61 @@ export const muxWebhook = onRequest(
     const {type, data} = req.body;
     const ts = admin.firestore
       .FieldValue.serverTimestamp();
+    const fdb = admin.firestore();
 
     // ── Live stream events ──────────────────────────
-    if (
-      type === "video.live_stream.active" ||
-      type === "video.live_stream.idle"
-    ) {
+    if (type === "video.live_stream.active") {
       const streamId = data?.id;
-      const eventsSnap = await admin.firestore()
+      // Find the most recent non-ended event
+      // for this reusable stream
+      const eventsSnap = await fdb
         .collection("events")
         .where("muxLiveStreamId", "==", streamId)
+        .where("status", "in",
+          ["scheduled", "reconnecting"])
         .limit(1)
         .get();
 
-      if (eventsSnap.empty) {
-        res.status(200).send("OK");
-        return;
-      }
-
-      const eventDoc = eventsSnap.docs[0];
-
-      if (type === "video.live_stream.active") {
-        await eventDoc.ref.update({
+      if (!eventsSnap.empty) {
+        await eventsSnap.docs[0].ref.update({
           status: "live",
           actualStartTime: ts,
         });
-      } else {
+      }
+      res.status(200).send("OK");
+      return;
+    }
+
+    if (type === "video.live_stream.idle") {
+      const streamId = data?.id;
+      // End ALL live/scheduled events for this
+      // stream (prevents ghost live cards)
+      const liveSnap = await fdb
+        .collection("events")
+        .where("muxLiveStreamId", "==", streamId)
+        .where("status", "in",
+          ["live", "scheduled", "reconnecting"])
+        .get();
+
+      let lastEventDoc = liveSnap.empty ?
+        null : liveSnap.docs[0];
+      for (const eventDoc of liveSnap.docs) {
         await eventDoc.ref.update({
           status: "ended",
           actualEndTime: ts,
         });
+        lastEventDoc = eventDoc;
+      }
+
+      if (lastEventDoc) {
+        // Save reference so asset.ready can find
+        // the right event
+        await fdb
+          .doc(`_muxSessions/${streamId}`)
+          .set({
+            lastEventId: lastEventDoc.id,
+            endedAt: new Date().toISOString(),
+          });
       }
       res.status(200).send("OK");
       return;
@@ -200,29 +347,33 @@ export const muxWebhook = onRequest(
     // ── Asset ready (recording finished encoding) ───
     if (type === "video.asset.ready") {
       const asset = data;
-      // asset.live_stream_id links back to the original stream
       const liveStreamId = asset?.live_stream_id;
       if (!liveStreamId) {
         res.status(200).send("OK");
         return;
       }
 
-      const eventsSnap = await admin.firestore()
-        .collection("events")
-        .where("muxLiveStreamId", "==", liveStreamId)
-        .limit(1)
-        .get();
-
-      if (eventsSnap.empty) {
+      // Look up the event that just ended for
+      // this stream (saved by the idle handler)
+      const sessionDoc = await fdb
+        .doc(`_muxSessions/${liveStreamId}`).get();
+      const lastEventId =
+        sessionDoc.data()?.lastEventId;
+      if (!lastEventId) {
         res.status(200).send("OK");
         return;
       }
 
-      const eventDoc = eventsSnap.docs[0];
+      const eventDoc = await fdb
+        .doc(`events/${lastEventId}`).get();
       const eventData = eventDoc.data();
+      if (!eventData) {
+        res.status(200).send("OK");
+        return;
+      }
 
-      // Only create replay if recording was enabled
-      if (!eventData?.record) {
+      // Only process replay if recording was enabled
+      if (!eventData.record) {
         res.status(200).send("OK");
         return;
       }
@@ -239,30 +390,48 @@ export const muxWebhook = onRequest(
         `https://image.mux.com/${assetPlaybackId}/thumbnail.png?width=640&height=360&time=0` :
         null;
 
-      await admin.firestore()
-        .collection("replays").add({
+      const replayData = {
+        muxAssetId: asset.id,
+        playbackUrl,
+        thumbnailUrl,
+        duration: assetDuration,
+        status: "draft",
+      };
+
+      // Update the placeholder created by endLiveStream,
+      // or create a new doc if it doesn't exist
+      const existingReplay = await fdb
+        .collection("replays")
+        .where("eventId", "==", eventDoc.id)
+        .limit(1)
+        .get();
+
+      if (!existingReplay.empty) {
+        await existingReplay.docs[0].ref
+          .update(replayData);
+        console.log(
+          "Replay updated for event:",
+          eventDoc.id, "asset:", asset.id
+        );
+      } else {
+        await fdb.collection("replays").add({
           userId: eventData.userId ?? null,
           eventId: eventDoc.id,
-          muxAssetId: asset.id,
-          playbackUrl,
-          thumbnailUrl,
-          duration: assetDuration,
+          ...replayData,
           title: eventData.title ?? "",
           genres: [],
           trimStart: 0,
           trimEnd: 0,
           location: null,
           liveDate: null,
-          status: "draft",
           createdAt: new Date().toISOString(),
           publishedAt: null,
         });
-
-      console.log(
-        "Replay created for event:",
-        eventDoc.id,
-        "asset:", asset.id
-      );
+        console.log(
+          "Replay created for event:",
+          eventDoc.id, "asset:", asset.id
+        );
+      }
       res.status(200).send("OK");
       return;
     }

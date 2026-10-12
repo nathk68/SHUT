@@ -16,6 +16,7 @@ export class FirebaseFollowService implements IFollowService {
   private col = collection(db, 'userFollows');
 
   async follow(followerId: string, followeeId: string): Promise<void> {
+    if (!followerId || !followeeId) return;
     const existing = await getDocs(
       query(this.col, where('followerId', '==', followerId), where('followeeId', '==', followeeId))
     );
@@ -36,6 +37,7 @@ export class FirebaseFollowService implements IFollowService {
   }
 
   async unfollow(followerId: string, followeeId: string): Promise<void> {
+    if (!followerId || !followeeId) return;
     const snap = await getDocs(
       query(this.col, where('followerId', '==', followerId), where('followeeId', '==', followeeId))
     );
@@ -52,6 +54,7 @@ export class FirebaseFollowService implements IFollowService {
   }
 
   async isFollowing(followerId: string, followeeId: string): Promise<boolean> {
+    if (!followerId || !followeeId) return false;
     const snap = await getDocs(
       query(this.col, where('followerId', '==', followerId), where('followeeId', '==', followeeId))
     );
@@ -59,16 +62,19 @@ export class FirebaseFollowService implements IFollowService {
   }
 
   async getFollowing(userId: string): Promise<string[]> {
+    if (!userId) return [];
     const snap = await getDocs(query(this.col, where('followerId', '==', userId)));
     return snap.docs.map((d) => d.data().followeeId as string);
   }
 
   async getFollowers(userId: string): Promise<string[]> {
+    if (!userId) return [];
     const snap = await getDocs(query(this.col, where('followeeId', '==', userId)));
     return snap.docs.map((d) => d.data().followerId as string);
   }
 
   async getNotificationsEnabled(followerId: string, followeeId: string): Promise<boolean> {
+    if (!followerId || !followeeId) return false;
     const snap = await getDocs(
       query(this.col, where('followerId', '==', followerId), where('followeeId', '==', followeeId))
     );
@@ -77,6 +83,7 @@ export class FirebaseFollowService implements IFollowService {
   }
 
   async setNotificationsEnabled(followerId: string, followeeId: string, enabled: boolean): Promise<void> {
+    if (!followerId || !followeeId) return;
     const snap = await getDocs(
       query(this.col, where('followerId', '==', followerId), where('followeeId', '==', followeeId))
     );

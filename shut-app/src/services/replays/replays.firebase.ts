@@ -30,6 +30,7 @@ export class FirebaseReplaysService implements IReplaysService {
   }
 
   async getReplaysByUser(userId: string): Promise<Replay[]> {
+    if (!userId) return [];
     const q = query(
       collection(db, COLLECTION),
       where('userId', '==', userId),
@@ -40,6 +41,7 @@ export class FirebaseReplaysService implements IReplaysService {
   }
 
   async getPublishedReplaysByUser(userId: string): Promise<Replay[]> {
+    if (!userId) return [];
     const q = query(
       collection(db, COLLECTION),
       where('userId', '==', userId),
@@ -51,6 +53,7 @@ export class FirebaseReplaysService implements IReplaysService {
   }
 
   async getDraftReplaysByUser(userId: string): Promise<Replay[]> {
+    if (!userId) return [];
     const q = query(
       collection(db, COLLECTION),
       where('userId', '==', userId),
@@ -68,6 +71,7 @@ export class FirebaseReplaysService implements IReplaysService {
   }
 
   async getReplayByEventId(eventId: string): Promise<Replay | null> {
+    if (!eventId) return null;
     const q = query(
       collection(db, COLLECTION),
       where('eventId', '==', eventId),
@@ -85,6 +89,7 @@ export class FirebaseReplaysService implements IReplaysService {
   }
 
   onReplayByEventId(eventId: string, callback: (replay: Replay | null) => void): () => void {
+    if (!eventId) return () => {};
     const q = query(
       collection(db, COLLECTION),
       where('eventId', '==', eventId),

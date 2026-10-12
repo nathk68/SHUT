@@ -57,6 +57,7 @@ export class FirebaseEventsService implements IEventsService {
   }
 
   async getEventsByFestival(festivalId: string): Promise<LiveEvent[]> {
+    if (!festivalId) return [];
     const q = query(
       collection(db, COLLECTION),
       where('festivalId', '==', festivalId),

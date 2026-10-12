@@ -110,6 +110,9 @@ export function PublicProfileScreen() {
   if (loading) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backButtonAbsolute}>
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
+        </Pressable>
         <ActivityIndicator color={colors.accent} />
       </View>
     );
@@ -118,6 +121,9 @@ export function PublicProfileScreen() {
   if (!profileUser) {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
+        <Pressable onPress={() => navigation.goBack()} style={styles.backButtonAbsolute}>
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
+        </Pressable>
         <Text style={styles.errorText}>{t('profile.notFound')}</Text>
       </View>
     );
@@ -125,6 +131,13 @@ export function PublicProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.md }]}>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.6 : 1 }]}
+      >
+        <Ionicons name="chevron-back" size={24} color={colors.white} />
+      </Pressable>
+
       <ProfileHeader
         user={{ ...profileUser, totalLikesCount: totalLikes, followersCount, followingCount }}
         isOwnProfile={currentUser?.id === profileUser.id}
@@ -209,5 +222,26 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body.medium,
     fontSize: fontSize.sm,
     color: colors.error,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  backButtonAbsolute: {
+    position: 'absolute',
+    top: spacing.xl + 20,
+    left: spacing.md,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

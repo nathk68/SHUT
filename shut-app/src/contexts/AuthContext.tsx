@@ -103,32 +103,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const deleteAccount = useCallback(async () => {
-    const userId = state.user?.id;
+    const fbUser = getAuth().currentUser;
+    const userId = state.user?.id ?? fbUser?.uid;
     if (!userId) return;
 
-    // 1. Release username reservation
+    // 1. Delete Firebase Auth user FIRST (may require recent login)
+    if (fbUser) await deleteUser(fbUser);
+
+    // 2. Release username reservation
     if (state.user?.username) {
       try { await releaseUsername(state.user.username); } catch {}
     }
 
-    // 2. Delete Firestore user document
-    await deleteDoc(doc(db, 'users', userId));
+    // 3. Delete Firestore user document
+    try { await deleteDoc(doc(db, 'users', userId)); } catch {}
 
-    // 3. Delete Storage avatar (ignore if missing)
+    // 4. Delete Storage avatar (ignore if missing)
     try {
       await deleteObject(storageRef(storage, `avatars/${userId}.jpg`));
     } catch {}
 
-    // 4. Delete Firebase Auth user
-    const fbUser = getAuth().currentUser;
-    if (fbUser) await deleteUser(fbUser);
-
     // 5. Clear local state
     await removeStoredData(STORAGE_KEY);
     setState({ user: null, isAuthenticated: false, isLoading: false, isGuest: false });
-
-    // Note: userFollows + likes cleanup requires a Cloud Function
-    // (client-side deletion of others' documents is blocked by Firestore rules)
   }, [state.user]);
 
   const resetPassword = useCallback(async (email: string) => {

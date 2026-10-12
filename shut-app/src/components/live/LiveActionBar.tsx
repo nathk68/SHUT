@@ -10,9 +10,11 @@ interface LiveActionBarProps {
   djAvatarUrl: string | null;
   djName: string;
   bottomInset?: number;
+  rightInset?: number;
+  onAvatarPress?: () => void;
 }
 
-export function LiveActionBar({ eventId, djAvatarUrl, djName, bottomInset = 0 }: LiveActionBarProps) {
+export function LiveActionBar({ eventId, djAvatarUrl, djName, bottomInset = 0, rightInset = 0, onAvatarPress }: LiveActionBarProps) {
   const { isFavorite, isLiked, toggleFavorite, toggleLike } = useFavorites();
   const liked = isLiked(eventId);
   const favorited = isFavorite(eventId);
@@ -20,8 +22,8 @@ export function LiveActionBar({ eventId, djAvatarUrl, djName, bottomInset = 0 }:
   const [favsCount, setFavsCount] = useState(0);
 
   useEffect(() => {
-    likesService.getLikesCountForItems([eventId]).then(setLikesCount);
-    favoritesService.getFavoritesCountForItem(eventId).then(setFavsCount);
+    likesService.getLikesCountForItems([eventId]).then(setLikesCount).catch(() => {});
+    favoritesService.getFavoritesCountForItem(eventId).then(setFavsCount).catch(() => {});
   }, [eventId]);
 
   const handleToggleLike = async () => {
@@ -34,17 +36,19 @@ export function LiveActionBar({ eventId, djAvatarUrl, djName, bottomInset = 0 }:
   };
 
   return (
-    <View style={[styles.container, { bottom: bottomInset + spacing.xl }]}>
+    <View style={[styles.container, { bottom: bottomInset + spacing.xl, right: spacing.md + rightInset }]}>
       {/* Avatar DJ */}
-      {djAvatarUrl ? (
-        <Image source={{ uri: djAvatarUrl }} style={styles.avatar} />
-      ) : (
-        <View style={styles.avatarFallback}>
-          <Text style={styles.avatarInitial}>
-            {(djName || '?').charAt(0).toUpperCase()}
-          </Text>
-        </View>
-      )}
+      <Pressable onPress={onAvatarPress} disabled={!onAvatarPress}>
+        {djAvatarUrl ? (
+          <Image source={{ uri: djAvatarUrl }} style={styles.avatar} />
+        ) : (
+          <View style={styles.avatarFallback}>
+            <Text style={styles.avatarInitial}>
+              {(djName || '?').charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
+      </Pressable>
 
       {/* Like */}
       <Pressable

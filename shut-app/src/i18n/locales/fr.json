@@ -380,6 +380,7 @@
     "website": "Site web SHUT",
     "dangerZone": "Zone de danger",
     "deleteAccount": "Supprimer mon compte",
+    "deleteAccountMessage": "Cette action est irréversible. Toutes tes données seront supprimées définitivement.",
     "logoutTitle": "Se déconnecter",
     "logoutMessage": "Tu vas être déconnecté de SHUT.",
     "deleteAccountReauthTitle": "Reconnexion requise",
@@ -519,7 +520,7 @@
       "audioReminder": "Rappel audio : la sortie de ta table de mix doit être branchée sur l'entrée mic de l'Osmo AVANT de démarrer Mimo.",
       "phoneCameraTitle": "Caméra de ce téléphone",
       "phoneCameraDesc": "Streame directement depuis cet iPhone",
-      "goLive": "Démarrer le live →",
+      "goLive": "Voir le dashboard →",
       "regenerate": "Réinitialiser (générer de nouveaux identifiants)",
       "djiSteps": [
         { "title": "Ouvrir DJI Mimo", "desc": "Lance DJI Mimo et connecte ta caméra DJI." },
@@ -631,6 +632,10 @@
       "cannotAddCamera": "Impossible d'ajouter la caméra.",
       "addCameraButton": "Ajouter une caméra"
     }
+  },
+
+  "player": {
+    "rotateDevice": "Tourne ton téléphone"
   },
 
   "replayPlayer": {

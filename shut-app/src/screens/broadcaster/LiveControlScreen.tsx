@@ -16,7 +16,7 @@ import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { IconButton } from '../../components/ui/IconButton';
 import { DashboardStackParamList } from '../../navigation/BroadcasterTabs';
 import { formatDuration } from '../../utils/formatDuration';
-import { eventsService, chatService, streamingService } from '../../services';
+import { eventsService, chatService, streamingService, likesService, favoritesService } from '../../services';
 import { LiveEvent, ChatMessage as ChatMsg } from '../../types';
 import {
   colors,
@@ -48,6 +48,8 @@ export function LiveControlScreen() {
   const [viewerCount, setViewerCount] = useState(0);
   const [streamHealth, setStreamHealth] = useState<'active' | 'idle' | 'disconnected'>('disconnected');
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null);
+  const [likesCount, setLikesCount] = useState(0);
+  const [favsCount, setFavsCount] = useState(0);
 
   const videoPlayer = useVideoPlayer(null, (player) => {
     player.loop = false;
@@ -167,6 +169,18 @@ export function LiveControlScreen() {
     return () => {
       if (viewerRef.current) clearInterval(viewerRef.current);
     };
+  }, [isLive, eventId]);
+
+  // Likes & favorites — poll every 15s while live
+  useEffect(() => {
+    if (!isLive) return;
+    const refresh = () => {
+      likesService.getLikesCountForItems([eventId]).then(setLikesCount).catch(() => {});
+      favoritesService.getFavoritesCountForItem(eventId).then(setFavsCount).catch(() => {});
+    };
+    refresh();
+    const interval = setInterval(refresh, 15000);
+    return () => clearInterval(interval);
   }, [isLive, eventId]);
 
   // Load and play video only when Mux stream is actually active
@@ -337,6 +351,26 @@ export function LiveControlScreen() {
               {streamHealth === 'active' ? 'Actif' : streamHealth === 'idle' ? 'En attente' : 'Hors ligne'}
             </Text>
             <Text style={styles.statLabel}>Qualite</Text>
+          </View>
+
+          <View style={styles.statDivider} />
+
+          <View style={styles.statItem}>
+            <View style={styles.statIconRow}>
+              <Ionicons name="heart" size={16} color={colors.accentLight} />
+            </View>
+            <Text style={styles.statValue}>{likesCount}</Text>
+            <Text style={styles.statLabel}>Likes</Text>
+          </View>
+
+          <View style={styles.statDivider} />
+
+          <View style={styles.statItem}>
+            <View style={styles.statIconRow}>
+              <Ionicons name="bookmark" size={16} color={colors.accentLight} />
+            </View>
+            <Text style={styles.statValue}>{favsCount}</Text>
+            <Text style={styles.statLabel}>Favoris</Text>
           </View>
         </View>
       )}

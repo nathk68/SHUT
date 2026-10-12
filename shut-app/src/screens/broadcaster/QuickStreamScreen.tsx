@@ -8,11 +8,10 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { copyToClipboard } from '../../utils/clipboard';
-import { getStoredData, setStoredData, removeStoredData } from '../../utils/storage';
-import { streamingService } from '../../services';
+import { streamingService, userService } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
@@ -78,47 +77,63 @@ export function QuickStreamScreen() {
     steps: guideSteps,
   };
   const [loading, setLoading] = useState(false);
-  const [eventId, setEventId] = useState<string | null>(null);
   const [rtmpUrl, setRtmpUrl] = useState<string | null>(null);
   const [streamKey, setStreamKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [copiedField, setCopiedField] = useState<'full' | 'url' | 'key' | null>(null);
 
-  // Restore saved credentials on mount
-  useEffect(() => {
-    getStoredData<{ eventId: string; rtmpUrl: string; streamKey: string }>('@shut_quick_stream')
-      .then((saved) => {
-        if (saved) {
-          setEventId(saved.eventId);
-          setRtmpUrl(saved.rtmpUrl);
-          setStreamKey(saved.streamKey);
+  // Reload the DJ's permanent RTMP key every time the screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      userService.getUserById(user.id).then((u) => {
+        if (u?.muxStreamKey) {
+          setStreamKey(u.muxStreamKey);
+          setRtmpUrl('rtmp://global-live.mux.com:5222/app');
+        } else {
+          setStreamKey(null);
+          setRtmpUrl(null);
         }
-      })
-      .catch(() => {});
-  }, []);
+      }).catch(() => {});
+    }, [user?.id]),
+  );
 
   const fullUrl = rtmpUrl && streamKey ? `${rtmpUrl}/${streamKey}` : null;
   const maskedKey = streamKey ? streamKey.replace(/./g, '\u2022').substring(0, 20) + '...' : '';
 
+  // Generate permanent RTMP key (first time only)
   const handleGenerate = useCallback(async () => {
     setLoading(true);
     try {
-      const creds = await streamingService.startQuickStream(user?.id ?? 'anonymous', { record: recordLives });
-      setEventId(creds.eventId);
+      const creds = await streamingService.ensurePermanentStream();
       setRtmpUrl(creds.rtmpUrl);
       setStreamKey(creds.streamKey);
       setShowKey(false);
-      await setStoredData('@shut_quick_stream', {
-        eventId: creds.eventId,
+    } catch (error: any) {
+      Alert.alert(t('common.error'), error?.message ?? t('broadcaster.quickStream.generateError'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Create a new event and navigate to live screen
+  const handleStartLive = useCallback(async (mode?: 'external') => {
+    if (!streamKey || !rtmpUrl) return;
+    setLoading(true);
+    try {
+      const creds = await streamingService.startQuickStream(user?.id ?? 'anonymous', { record: recordLives });
+      navigation.navigate('PhoneCamera', {
         rtmpUrl: creds.rtmpUrl,
         streamKey: creds.streamKey,
+        eventId: creds.eventId,
+        ...(mode ? { mode } : {}),
       });
     } catch (error: any) {
       Alert.alert(t('common.error'), error?.message ?? t('broadcaster.quickStream.generateError'));
     } finally {
       setLoading(false);
     }
-  }, [user?.id, recordLives]);
+  }, [streamKey, rtmpUrl, user?.id, recordLives, navigation]);
 
   async function handleCopyFull() {
     if (!fullUrl) return;
@@ -280,7 +295,7 @@ export function QuickStreamScreen() {
       {/* Phone camera CTA */}
       {hasCredentials && (
         <Pressable
-          onPress={() => navigation.navigate('PhoneCamera', { rtmpUrl, streamKey, eventId: eventId ?? undefined })}
+          onPress={() => handleStartLive()}
           style={styles.phoneCameraButton}
         >
           <View style={styles.phoneCameraButtonLeft}>
@@ -299,7 +314,7 @@ export function QuickStreamScreen() {
       {/* CTA */}
       {hasCredentials && (
         <Pressable
-          onPress={() => navigation.navigate('PhoneCamera', { rtmpUrl, streamKey, eventId: eventId ?? undefined, mode: 'external' })}
+          onPress={() => handleStartLive('external')}
           style={styles.goLiveButton}
         >
           <Ionicons name="radio-outline" size={20} color={colors.white} />
@@ -307,14 +322,27 @@ export function QuickStreamScreen() {
         </Pressable>
       )}
 
-      {/* Regenerate */}
+      {/* Regenerate key (edge case: if key gets compromised) */}
       {hasCredentials && (
         <Pressable
-          onPress={async () => {
-            await removeStoredData('@shut_quick_stream');
-            setEventId(null);
-            setRtmpUrl(null);
-            setStreamKey(null);
+          onPress={() => {
+            Alert.alert(
+              t('broadcaster.quickStream.regenerateTitle', { defaultValue: 'Régénérer la clé ?' }),
+              t('broadcaster.quickStream.regenerateWarning', { defaultValue: 'Tu devras reconfigurer ta caméra/OBS avec la nouvelle clé.' }),
+              [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                  text: t('broadcaster.quickStream.regenerateConfirm', { defaultValue: 'Régénérer' }),
+                  style: 'destructive',
+                  onPress: async () => {
+                    setStreamKey(null);
+                    setRtmpUrl(null);
+                    // Force creation of a new Mux stream by clearing user's saved stream
+                    await streamingService.clearPermanentStream(user?.id ?? '');
+                  },
+                },
+              ],
+            );
           }}
           style={styles.regenerateButton}
         >

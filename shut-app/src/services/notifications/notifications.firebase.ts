@@ -20,6 +20,7 @@ export class FirebaseNotificationsService implements INotificationsService {
   private col = collection(db, COLLECTION);
 
   async getNotifications(userId: string, limitCount = 50): Promise<AppNotification[]> {
+    if (!userId) return [];
     const q = query(
       this.col,
       where('userId', '==', userId),
@@ -31,6 +32,7 @@ export class FirebaseNotificationsService implements INotificationsService {
   }
 
   onNotifications(userId: string, callback: (notifications: AppNotification[]) => void): () => void {
+    if (!userId) return () => {};
     const q = query(
       this.col,
       where('userId', '==', userId),
@@ -44,6 +46,7 @@ export class FirebaseNotificationsService implements INotificationsService {
   }
 
   onUnreadCount(userId: string, callback: (count: number) => void): () => void {
+    if (!userId) return () => {};
     const q = query(
       this.col,
       where('userId', '==', userId),
@@ -59,6 +62,7 @@ export class FirebaseNotificationsService implements INotificationsService {
   }
 
   async markAllAsRead(userId: string): Promise<void> {
+    if (!userId) return;
     const q = query(
       this.col,
       where('userId', '==', userId),

@@ -16,6 +16,8 @@ import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { LiveActionBar } from '../../components/live/LiveActionBar';
 import { ReportModal } from '../../components/report/ReportModal';
+import { RotateDeviceOverlay } from '../../components/player/RotateDeviceOverlay';
+import { useVideoOrientation } from '../../hooks/useVideoOrientation';
 import { eventsService, userService } from '../../services';
 import type { HomeStackParamList } from '../../navigation/ViewerTabs';
 
@@ -30,6 +32,7 @@ export function LivePlayerScreen({ navigation, route }: Props) {
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null);
   const [djName, setDjName] = useState('');
   const [djAvatarUrl, setDjAvatarUrl] = useState<string | null>(null);
+  const [djUserId, setDjUserId] = useState<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [reportVisible, setReportVisible] = useState(false);
 
@@ -41,6 +44,10 @@ export function LivePlayerScreen({ navigation, route }: Props) {
     player.loop = false;
     player.muted = false;
   });
+
+  const { isLandscape, showRotateOverlay, lockPortrait, orientationReady } = useVideoOrientation(videoPlayer);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [showUI, setShowUI] = useState(true);
 
   const videoLoadedRef = useRef(false);
   const userFetchedRef = useRef(false);
@@ -90,7 +97,7 @@ export function LivePlayerScreen({ navigation, route }: Props) {
       setIsReconnecting(e.status === 'reconnecting');
 
       if (e.status === 'ended') {
-        navigation.goBack();
+        lockPortrait().then(() => navigation.goBack());
         return;
       }
 
@@ -106,6 +113,7 @@ export function LivePlayerScreen({ navigation, route }: Props) {
 
       // Fetch DJ avatar + displayName from user profile (once)
       const userId = e.userId;
+      if (userId) setDjUserId(userId);
       if (userId && !userFetchedRef.current) {
         userFetchedRef.current = true;
         console.log('[LivePlayer] Fetching DJ profile for userId:', userId);
@@ -131,7 +139,9 @@ export function LivePlayerScreen({ navigation, route }: Props) {
       }
     });
 
-    eventsService.incrementViewerCount(eventId, 1).catch(() => {});
+    eventsService.incrementViewerCount(eventId, 1).then(() => {
+      setViewCount((c) => Math.max(c, 1));
+    }).catch(() => {});
 
     return () => {
       retryTimerRef.current && clearTimeout(retryTimerRef.current);
@@ -142,7 +152,13 @@ export function LivePlayerScreen({ navigation, route }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, navigation]);
 
-  const handleClose = useCallback(() => navigation.goBack(), [navigation]);
+  const handleClose = useCallback(() => {
+    if (isLandscape) {
+      lockPortrait().then(() => navigation.goBack());
+    } else {
+      navigation.goBack();
+    }
+  }, [navigation, isLandscape, lockPortrait]);
 
   return (
     <View style={styles.container}>
@@ -155,9 +171,9 @@ export function LivePlayerScreen({ navigation, route }: Props) {
       <VideoView
         player={videoPlayer}
         style={styles.video}
-        contentFit="cover"
+        contentFit={isLandscape ? (isZoomed ? 'cover' : 'contain') : 'cover'}
         nativeControls={false}
-        onFirstFrameRender={() => console.log('[LivePlayer] ✅ First video frame rendered!')}
+        onFirstFrameRender={() => console.log('[LivePlayer] First video frame rendered!')}
       />
 
       {/* Gradient overlay while waiting for stream */}
@@ -173,6 +189,11 @@ export function LivePlayerScreen({ navigation, route }: Props) {
         </LinearGradient>
       )}
 
+      {/* Black overlay while detecting video orientation */}
+      {playbackUrl && !orientationReady && (
+        <View style={styles.orientationDetectOverlay} />
+      )}
+
       {/* Reconnecting overlay */}
       {isReconnecting && (
         <View style={styles.reconnectOverlay}>
@@ -182,48 +203,95 @@ export function LivePlayerScreen({ navigation, route }: Props) {
         </View>
       )}
 
-      {/* Top bar: close + LIVE badge + viewer count */}
-      <View style={[styles.topOverlay, { paddingTop: insets.top + spacing.sm }]}>
+      {/* UI overlay elements — hidden when showUI is false */}
+      {showUI && (
+        <>
+          {/* Top bar: close + LIVE badge + viewer count + report */}
+          <View style={[styles.topOverlay, {
+            paddingTop: isLandscape ? spacing.md : insets.top + spacing.sm,
+            paddingLeft: Math.max(insets.left, isLandscape ? spacing.lg : spacing.md),
+            paddingRight: Math.max(insets.right, isLandscape ? spacing.lg : spacing.md),
+          }]}>
+            <Pressable
+              onPress={handleClose}
+              style={({ pressed }) => [styles.closeButton, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Ionicons name="close" size={24} color={colors.white} />
+            </Pressable>
+
+            <View style={styles.liveBadge}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveBadgeText}>LIVE</Text>
+            </View>
+
+            <View style={styles.viewerCount}>
+              <Ionicons name="eye" size={14} color={colors.textPrimary} />
+              <Text style={styles.viewerCountText}>{viewCount}</Text>
+            </View>
+
+            <View style={{ flex: 1 }} />
+
+            <Pressable
+              style={({ pressed }) => [styles.uiToggleBtn, { opacity: pressed ? 0.6 : 1 }]}
+              onPress={() => setShowUI((v) => !v)}
+            >
+              <Ionicons name="eye-off-outline" size={16} color="rgba(255,255,255,0.5)" />
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [styles.reportBtn, { opacity: pressed ? 0.6 : 1 }]}
+              onPress={() => setReportVisible(true)}
+            >
+              <Ionicons name="flag-outline" size={18} color="rgba(255,255,255,0.7)" />
+            </Pressable>
+          </View>
+
+          {/* DJ name — bottom left */}
+          {djName ? (
+            <View style={[styles.djNameContainer, {
+              bottom: isLandscape ? spacing.lg : insets.bottom + spacing.xl,
+              left: Math.max(insets.left, isLandscape ? spacing.lg : spacing.md),
+            }]}>
+              <Text style={styles.djNameText} numberOfLines={1}>{djName}</Text>
+            </View>
+          ) : null}
+
+          {/* Right-side action bar — anchored at the bottom */}
+          <LiveActionBar
+            eventId={eventId}
+            djAvatarUrl={djAvatarUrl}
+            djName={djName}
+            bottomInset={insets.bottom}
+            rightInset={insets.right + (isLandscape ? 20 : 0)}
+            onAvatarPress={djUserId ? () => navigation.navigate('PublicProfile' as any, { userId: djUserId }) : undefined}
+          />
+
+          {/* Zoom toggle — landscape only */}
+          {isLandscape && (
+            <View style={styles.zoomBtnContainer}>
+              <Pressable
+                style={({ pressed }) => [styles.zoomBtn, { opacity: pressed ? 0.6 : 1 }]}
+                onPress={() => setIsZoomed((z) => !z)}
+              >
+                <Ionicons name={isZoomed ? 'contract-outline' : 'expand-outline'} size={20} color={colors.white} />
+              </Pressable>
+            </View>
+          )}
+        </>
+      )}
+
+      {/* Show UI button — only visible when UI is hidden */}
+      {!showUI && (
         <Pressable
-          onPress={handleClose}
-          style={({ pressed }) => [styles.closeButton, { opacity: pressed ? 0.6 : 1 }]}
+          style={[styles.showUiBtn, {
+            top: isLandscape ? spacing.md : insets.top + spacing.sm,
+            right: Math.max(insets.right, isLandscape ? spacing.lg : spacing.md),
+          }]}
+          onPress={() => setShowUI(true)}
         >
-          <Ionicons name="close" size={24} color={colors.white} />
+          <Ionicons name="eye-outline" size={16} color="rgba(255,255,255,0.5)" />
         </Pressable>
-
-        <View style={styles.liveBadge}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveBadgeText}>LIVE</Text>
-        </View>
-
-        <View style={styles.viewerCount}>
-          <Ionicons name="eye" size={14} color={colors.textPrimary} />
-          <Text style={styles.viewerCountText}>{viewCount}</Text>
-        </View>
-      </View>
-
-      {/* DJ name — bottom left */}
-      {djName ? (
-        <View style={[styles.djNameContainer, { bottom: insets.bottom + spacing.xl }]}>
-          <Text style={styles.djNameText} numberOfLines={1}>{djName}</Text>
-        </View>
-      ) : null}
-
-      {/* Right-side action bar — anchored at the bottom */}
-      <LiveActionBar
-        eventId={eventId}
-        djAvatarUrl={djAvatarUrl}
-        djName={djName}
-        bottomInset={insets.bottom}
-      />
-
-      {/* Report button — top right */}
-      <Pressable
-        style={[styles.reportBtn, { top: insets.top + spacing.sm }]}
-        onPress={() => setReportVisible(true)}
-      >
-        <Ionicons name="flag-outline" size={18} color="rgba(255,255,255,0.7)" />
-      </Pressable>
+      )}
 
       <ReportModal
         visible={reportVisible}
@@ -231,6 +299,8 @@ export function LivePlayerScreen({ navigation, route }: Props) {
         targetType="event"
         targetId={eventId}
       />
+
+      {showRotateOverlay && <RotateDeviceOverlay />}
     </View>
   );
 }
@@ -356,12 +426,53 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   reportBtn: {
-    position: 'absolute',
-    right: spacing.md,
     width: 36,
     height: 36,
     borderRadius: 18,
     backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  orientationDetectOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#000',
+    zIndex: 3,
+  },
+  zoomBtnContainer: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  zoomBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uiToggleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  showUiBtn: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,

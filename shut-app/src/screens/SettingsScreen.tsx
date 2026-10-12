@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
-import { removeStoredData } from '../utils/storage';
+import { streamingService } from '../services';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
 
@@ -81,13 +81,13 @@ export function SettingsScreen() {
             text: t('common.confirm'),
             onPress: async () => {
               setRecordLives(newValue);
-              await removeStoredData('@shut_quick_stream');
+              await streamingService.clearPermanentStream(user?.id ?? '');
             },
           },
         ],
       );
     },
-    [setRecordLives, t],
+    [setRecordLives, t, user?.id],
   );
 
   const notifCount = Object.values(notifications).filter(Boolean).length;
@@ -115,10 +115,16 @@ export function SettingsScreen() {
             try {
               await deleteAccount();
             } catch (e: any) {
+              console.error('deleteAccount error:', e);
               if (e?.code === 'auth/requires-recent-login') {
                 Alert.alert(
                   t('settings.deleteAccountReauthTitle'),
                   t('settings.deleteAccountReauthMessage'),
+                );
+              } else {
+                Alert.alert(
+                  t('common.error'),
+                  e?.message ?? 'Unknown error',
                 );
               }
             }

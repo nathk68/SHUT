@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -21,18 +21,32 @@ export function ProfileScreen() {
   const [totalLikes, setTotalLikes] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  const loadProfileData = useCallback(async () => {
     if (!user?.id) return;
-    followService.getFollowers(user.id).then((ids) => setFollowersCount(ids.length));
-    followService.getFollowing(user.id).then((ids) => setFollowingCount(ids.length));
-    if (user.role !== 'broadcaster') return;
-    replaysService.getReplaysByUser(user.id).then((replays) => {
+    const [followers, following] = await Promise.all([
+      followService.getFollowers(user.id),
+      followService.getFollowing(user.id),
+    ]);
+    setFollowersCount(followers.length);
+    setFollowingCount(following.length);
+    if (user.role === 'broadcaster') {
+      const replays = await replaysService.getReplaysByUser(user.id);
       const ids = replays.map((r) => r.id);
       if (ids.length === 0) { setTotalLikes(0); return; }
-      likesService.getLikesCountForItems(ids).then(setTotalLikes);
-    });
+      const count = await likesService.getLikesCountForItems(ids);
+      setTotalLikes(count);
+    }
   }, [user?.id, user?.role]);
+
+  useEffect(() => { loadProfileData(); }, [loadProfileData]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadProfileData();
+    setRefreshing(false);
+  }, [loadProfileData]);
 
   const handleAvatarPick = useCallback(async (uri: string) => {
     if (!user) return;
@@ -52,7 +66,17 @@ export function ProfileScreen() {
         <Ionicons name="settings-outline" size={28} color={colors.textSecondary} />
       </Pressable>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+          />
+        }
+      >
         <ProfileHeader
           user={{ ...user, totalLikesCount: totalLikes, followersCount, followingCount }}
           isOwnProfile

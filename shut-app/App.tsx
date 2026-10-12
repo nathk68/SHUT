@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import {
   useFonts,
   SpaceGrotesk_400Regular,
@@ -25,6 +26,7 @@ import { PreferencesProvider } from './src/contexts/PreferencesContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 SplashScreen.preventAutoHideAsync();
+ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
 
 export default function App() {
   const [fontsLoaded] = useFonts({

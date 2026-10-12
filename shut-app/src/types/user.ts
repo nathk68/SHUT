@@ -39,6 +39,10 @@ export interface User {
   followingCount?: number;
   totalLikesCount?: number;
   language?: string;
+  // Mux permanent stream
+  muxStreamKey?: string;
+  muxLiveStreamId?: string;
+  muxPlaybackId?: string;
   // Admin
   blocked?: boolean;
   blockedAt?: string | null;

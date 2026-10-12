@@ -49,7 +49,7 @@ export function ReportModal({ visible, onClose, targetType, targetId }: Props) {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.header}>

@@ -16,6 +16,7 @@ import { CameraConfig, StreamState } from '../../types';
 export class MuxStreamingService implements IStreamingService {
 
   async getCamerasByFestival(festivalId: string): Promise<CameraConfig[]> {
+    if (!festivalId) return [];
     const q = query(collection(db, 'cameras'), where('festivalId', '==', festivalId));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as CameraConfig));
@@ -76,14 +77,47 @@ export class MuxStreamingService implements IStreamingService {
   }
 
   async startQuickStream(userId: string, options?: { record?: boolean }): Promise<QuickStreamCredentials> {
-    // Reuse the existing createLiveStream Cloud Function.
-    // Create a minimal event doc first so the CF can update it.
-    // Doc must be in 'events' so the CF's .update() succeeds
+    if (!userId) throw new Error('userId required');
+
+    // If a live event already exists for this user, reuse it
+    const liveSnap = await getDocs(
+      query(
+        collection(db, 'events'),
+        where('userId', '==', userId),
+        where('status', '==', 'live'),
+      ),
+    );
+    if (!liveSnap.empty) {
+      const existing = liveSnap.docs[0];
+      const d = existing.data();
+      return {
+        eventId: existing.id,
+        rtmpUrl: d.muxRtmpUrl ?? 'rtmp://global-live.mux.com:5222/app',
+        streamKey: d.muxStreamKey ?? '',
+      };
+    }
+
+    // Clean up orphaned scheduled events only
+    const staleSnap = await getDocs(
+      query(
+        collection(db, 'events'),
+        where('userId', '==', userId),
+        where('status', '==', 'scheduled'),
+      ),
+    );
+    const now = new Date().toISOString();
+    await Promise.all(
+      staleSnap.docs.map((d) =>
+        updateDoc(d.ref, { status: 'ended', actualEndTime: now }),
+      ),
+    );
+
+    // Create a fresh event doc
     const eventRef = await addDoc(collection(db, 'events'), {
       userId,
       type: 'quick-stream',
       status: 'scheduled',
-      createdAt: new Date().toISOString(),
+      createdAt: now,
     });
     const fn = httpsCallable(functions, 'createLiveStream');
     const result = await fn({ eventId: eventRef.id, cameraId: '', record: options?.record ?? false });
@@ -93,6 +127,26 @@ export class MuxStreamingService implements IStreamingService {
       rtmpUrl: data.rtmpUrl ?? 'rtmp://global-live.mux.com:5222/app',
       streamKey: data.streamKey,
     };
+  }
+
+  async ensurePermanentStream(): Promise<{ streamKey: string; rtmpUrl: string }> {
+    const fn = httpsCallable(functions, 'createLiveStream');
+    const result = await fn({ record: false });
+    const data = result.data as any;
+    return {
+      streamKey: data.streamKey,
+      rtmpUrl: data.rtmpUrl ?? 'rtmp://global-live.mux.com:5222/app',
+    };
+  }
+
+  async clearPermanentStream(userId: string): Promise<void> {
+    if (!userId) return;
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      muxLiveStreamId: null,
+      muxStreamKey: null,
+      muxPlaybackId: null,
+    });
   }
 }
 

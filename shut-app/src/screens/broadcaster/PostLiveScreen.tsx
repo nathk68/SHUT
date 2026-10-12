@@ -421,6 +421,7 @@ export function PostLiveScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}
+      keyboardShouldPersistTaps="handled"
     >
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>

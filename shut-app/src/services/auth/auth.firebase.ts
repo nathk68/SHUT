@@ -92,7 +92,7 @@ export class FirebaseAuthService implements IAuthService {
   private async getUserProfile(uid: string): Promise<User | null> {
     const docSnap = await getDoc(doc(db, 'users', uid));
     if (!docSnap.exists()) return null;
-    return docSnap.data() as User;
+    return { ...docSnap.data(), id: uid } as User;
   }
 
   async resetPassword(email: string) {
