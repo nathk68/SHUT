@@ -10,6 +10,7 @@ import { BlockedScreen } from '../screens/BlockedScreen';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { colors } from '../config/theme';
 import { getStoredData } from '../utils/storage';
+import { linking } from '../config/linking';
 
 const navTheme = {
   dark: true,
@@ -48,7 +49,7 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} linking={linking}>
       {isBlocked ? (
         <BlockedScreen />
       ) : isAuthenticated || isGuest ? (

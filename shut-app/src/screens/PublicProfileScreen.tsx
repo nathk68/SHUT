@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -16,6 +16,7 @@ import { ReplayList } from '../components/profile/ReplayList';
 import { ReportModal } from '../components/report/ReportModal';
 
 import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
+import { buildShareUrl } from '../config/linking';
 import type { User } from '../types/user';
 
 type Route = RouteProp<LiveStackParamList, 'PublicProfile'>;
@@ -96,6 +97,15 @@ export function PublicProfileScreen() {
     }
   }, [currentUser, profileUser, isFollowing]);
 
+  const handleShare = useCallback(async () => {
+    if (!profileUser) return;
+    const name = profileUser.artistName || profileUser.displayName;
+    const shareUrl = buildShareUrl('profile', userId);
+    await Share.share({
+      message: `${t('profile.shareMessage', { name })}\n${shareUrl}`,
+    });
+  }, [profileUser, userId, t]);
+
   const handleNotifToggle = useCallback(async () => {
     if (!currentUser || !profileUser) return;
     const next = !notifEnabled;
@@ -131,12 +141,20 @@ export function PublicProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.md }]}>
-      <Pressable
-        onPress={() => navigation.goBack()}
-        style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.6 : 1 }]}
-      >
-        <Ionicons name="chevron-back" size={24} color={colors.white} />
-      </Pressable>
+      <View style={styles.headerRow}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
+        </Pressable>
+        <Pressable
+          onPress={handleShare}
+          style={({ pressed }) => [styles.shareButton, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Ionicons name="share-social-outline" size={22} color={colors.white} />
+        </Pressable>
+      </View>
 
       <ProfileHeader
         user={{ ...profileUser, totalLikesCount: totalLikes, followersCount, followingCount }}
@@ -223,6 +241,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.error,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
   backButton: {
     width: 36,
     height: 36,
@@ -230,8 +255,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: spacing.md,
-    marginBottom: spacing.sm,
+  },
+  shareButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   backButtonAbsolute: {
     position: 'absolute',

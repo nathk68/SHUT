@@ -11,9 +11,11 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "scheme": "shut",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nathk68.shut-app"
+      "bundleIdentifier": "com.nathk68.shut-app",
+      "associatedDomains": ["applinks:shutdiffusion.com"]
     },
     "android": {
       "adaptiveIcon": {
@@ -29,7 +31,31 @@
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
-      "package": "com.nathk68.shutapp"
+      "package": "com.nathk68.shutapp",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "shutdiffusion.com",
+              "pathPrefix": "/live"
+            },
+            {
+              "scheme": "https",
+              "host": "shutdiffusion.com",
+              "pathPrefix": "/replay"
+            },
+            {
+              "scheme": "https",
+              "host": "shutdiffusion.com",
+              "pathPrefix": "/profile"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

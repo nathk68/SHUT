@@ -1,0 +1,32 @@
+"use client";
+
+import { useState } from "react";
+import SmoothScroll from "@/components/SmoothScroll";
+import Preloader from "@/components/Preloader";
+import Navbar from "@/components/Navbar";
+import HeroSection from "@/components/HeroSection";
+import FeaturesScroll from "@/components/FeaturesScroll";
+import PhoneMockup from "@/components/PhoneMockup";
+import StatsSection from "@/components/StatsSection";
+import CTASection from "@/components/CTASection";
+import Footer from "@/components/Footer";
+
+export default function Home() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  return (
+    <>
+      <SmoothScroll />
+      <Preloader onComplete={() => setIsLoading(false)} />
+      <Navbar />
+      <main>
+        <HeroSection isLoading={isLoading} />
+        <FeaturesScroll />
+        <PhoneMockup />
+        <StatsSection />
+        <CTASection />
+      </main>
+      <Footer />
+    </>
+  );
+}

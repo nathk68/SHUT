@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, fontSize, spacing } from '../../config/theme';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import { likesService, favoritesService } from '../../services';
+import { buildShareUrl } from '../../config/linking';
 
 interface LiveActionBarProps {
   eventId: string;
@@ -32,7 +33,8 @@ export function LiveActionBar({ eventId, djAvatarUrl, djName, bottomInset = 0, r
   };
 
   const handleShare = async () => {
-    await Share.share({ message: `Regarde ${djName} en live sur SHUT !` });
+    const shareUrl = buildShareUrl('live', eventId);
+    await Share.share({ message: `Regarde ${djName} en live sur SHUT !\n${shareUrl}` });
   };
 
   return (

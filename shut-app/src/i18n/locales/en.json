@@ -309,7 +309,8 @@
     "genres": "Genres",
     "editProfile": "Edit profile",
     "notFound": "Profile not found",
-    "memberSince": "Member since"
+    "memberSince": "Member since",
+    "shareMessage": "Check out {{name}} on SHUT!"
   },
 
   "editProfile": {

@@ -309,7 +309,8 @@
     "genres": "Genres",
     "editProfile": "Modifier le profil",
     "notFound": "Profil introuvable",
-    "memberSince": "Membre depuis"
+    "memberSince": "Membre depuis",
+    "shareMessage": "Découvre {{name}} sur SHUT !"
   },
 
   "editProfile": {

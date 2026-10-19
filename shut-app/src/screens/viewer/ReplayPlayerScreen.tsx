@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
   ActionSheetIOS,
+  ActivityIndicator,
   Alert,
   Image,
   PanResponder,
@@ -26,11 +27,12 @@ import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/the
 import { ReportModal } from '../../components/report/ReportModal';
 import { RotateDeviceOverlay } from '../../components/player/RotateDeviceOverlay';
 import { useVideoOrientation } from '../../hooks/useVideoOrientation';
+import { buildShareUrl } from '../../config/linking';
 
 type ReplayPlayerParams = {
   ReplayPlayer: {
-    playbackUrl: string;
-    title: string;
+    playbackUrl?: string;
+    title?: string;
     trimStart?: number;
     trimEnd?: number;
     replayId?: string;
@@ -52,17 +54,50 @@ export function ReplayPlayerScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<Route>();
   const {
-    playbackUrl,
-    title,
-    trimStart = 0,
-    trimEnd: rawTrimEnd,
+    playbackUrl: paramPlaybackUrl,
+    title: paramTitle,
+    trimStart: paramTrimStart,
+    trimEnd: paramTrimEnd,
     replayId,
-    djUserId,
-    eventId,
+    djUserId: paramDjUserId,
+    eventId: paramEventId,
   } = route.params;
   const insets = useSafeAreaInsets();
   const { user: currentUser } = useAuth();
   const { isFavorite, isLiked, toggleFavorite, toggleLike } = useFavorites();
+
+  // Deep link resolution: when opened via URL we only have replayId
+  const [resolvedUrl, setResolvedUrl] = useState(paramPlaybackUrl ?? '');
+  const [resolvedTitle, setResolvedTitle] = useState(paramTitle || t('common.replay'));
+  const [resolvedTrimStart, setResolvedTrimStart] = useState(paramTrimStart ?? 0);
+  const [resolvedTrimEnd, setResolvedTrimEnd] = useState(paramTrimEnd);
+  const [resolvedDjUserId, setResolvedDjUserId] = useState(paramDjUserId ?? '');
+  const [resolvedEventId, setResolvedEventId] = useState(paramEventId ?? '');
+  const [deepLinkLoading, setDeepLinkLoading] = useState(!paramPlaybackUrl);
+
+  const playbackUrl = resolvedUrl;
+  const title = resolvedTitle;
+  const trimStart = resolvedTrimStart;
+  const rawTrimEnd = resolvedTrimEnd;
+  const djUserId = resolvedDjUserId;
+  const eventId = resolvedEventId;
+
+  useEffect(() => {
+    if (!deepLinkLoading || !replayId) return;
+    replaysService.getReplayById(replayId).then((r) => {
+      if (!r) {
+        navigation.goBack();
+        return;
+      }
+      setResolvedUrl(r.playbackUrl);
+      setResolvedTitle(r.title || t('common.replay'));
+      setResolvedTrimStart(r.trimStart ?? 0);
+      setResolvedTrimEnd(r.trimEnd);
+      setResolvedDjUserId(r.userId);
+      setResolvedEventId(r.eventId);
+      setDeepLinkLoading(false);
+    });
+  }, [replayId, deepLinkLoading]);
 
   const isOwner = !!(currentUser && djUserId && currentUser.id === djUserId);
   const [reportVisible, setReportVisible] = useState(false);
@@ -96,12 +131,21 @@ export function ReplayPlayerScreen() {
   }, [replayId]);
 
   // Video player
-  const player = useVideoPlayer(playbackUrl, (p) => {
+  const player = useVideoPlayer(playbackUrl || null, (p) => {
     p.loop = false;
     if (trimStart > 0) p.currentTime = trimStart;
     p.timeUpdateEventInterval = 0.25;
-    p.play();
+    if (playbackUrl) p.play();
   });
+
+  // When deep link resolves, replace the player source and start playback
+  useEffect(() => {
+    if (!deepLinkLoading && playbackUrl && player) {
+      player.replace(playbackUrl);
+      if (trimStart > 0) player.currentTime = trimStart;
+      player.play();
+    }
+  }, [deepLinkLoading]);
 
   const { isLandscape, showRotateOverlay, lockPortrait } = useVideoOrientation(player);
 
@@ -260,7 +304,11 @@ export function ReplayPlayerScreen() {
   };
 
   const handleShare = async () => {
-    await Share.share({ message: t('replayPlayer.shareMessage', { title, djName }) });
+    const shareUrl = replayId ? buildShareUrl('replay', replayId) : '';
+    const message = shareUrl
+      ? `${t('replayPlayer.shareMessage', { title, djName })}\n${shareUrl}`
+      : t('replayPlayer.shareMessage', { title, djName });
+    await Share.share({ message });
   };
 
   const handleGoBack = useCallback(() => {
@@ -298,6 +346,15 @@ export function ReplayPlayerScreen() {
     await toggleFavorite(eventIdForSocial);
     setFavsCount((c) => wasFav ? Math.max(0, c - 1) : c + 1);
   };
+
+  if (deepLinkLoading) {
+    return (
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <StatusBar style="light" />
+        <ActivityIndicator color={colors.accent} size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
