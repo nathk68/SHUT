@@ -57,7 +57,7 @@ export function ReplayList({ userId, onPress }: Props) {
 
           {replay.duration > 0 && (
             <View style={styles.durationBadge}>
-              <Text style={styles.durationText}>{formatDuration(replay.duration)}</Text>
+              <Text style={styles.durationText}>{formatDuration((replay.trimEnd || replay.duration) - (replay.trimStart || 0))}</Text>
             </View>
           )}
 

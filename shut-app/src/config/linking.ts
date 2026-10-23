@@ -3,7 +3,7 @@ import type { LinkingOptions } from '@react-navigation/native';
 export const DEEP_LINK_DOMAIN = 'https://shutdiffusion.com';
 
 export const linking: LinkingOptions<ReactNavigation.RootParamList> = {
-  prefixes: ['https://shutdiffusion.com', 'https://www.shutdiffusion.com', 'shut://'],
+  prefixes: ['https://shutdiffusion.com', 'https://www.shutdiffusion.com', 'shut://', 'com.nathk68.shut-app://'],
   config: {
     screens: {
       ShutDiffusion: {

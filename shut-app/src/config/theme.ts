@@ -1,7 +1,8 @@
 // Design tokens - mirrored from scroll-stop/index.html CSS variables
 
 export const colors = {
-  accent: '#974dfb',
+  // before : accent: '#974dfb',
+  accent: '#662483',
   accentLight: '#9D6FF5',
   accentDark: '#5B21B6',
   accentRgb: '124, 58, 237',
