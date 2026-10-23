@@ -23,11 +23,11 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "SHUT — Live DJ Streaming",
   description:
-    "SHUT redefinit le streaming DJ. Audio haute qualite, diffusion en direct, experience immersive sur iOS & Android.",
+    "SHUT redefines DJ streaming. High-quality audio, live broadcasting, immersive experience on iOS & Android.",
   openGraph: {
     title: "SHUT — Live DJ Streaming",
     description:
-      "Rejoins la communaute SHUT et regarde des DJs en live.",
+      "Join the SHUT community and watch DJs live.",
     type: "website",
     url: "https://shutdiffusion.com",
   },
@@ -43,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="fr"
+      lang="en"
       className={`${spaceGrotesk.variable} ${archivo.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >

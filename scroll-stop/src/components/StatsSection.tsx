@@ -2,13 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
-
-const stats = [
-  { target: 99.9, suffix: "%", label: "Uptime garanti", isText: false },
-  { target: 320, suffix: " kbps", label: "Audio stream", isText: false },
-  { target: 720, suffix: "p", label: "Qualite video", isText: false },
-  { target: 0, suffix: "", label: "Protocole", isText: true, display: "RTMP natif" },
-];
+import { useI18n } from "@/lib/i18n";
 
 function easeOutExpo(t: number): number {
   return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
@@ -17,6 +11,14 @@ function easeOutExpo(t: number): number {
 export default function StatsSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const hasAnimated = useRef(false);
+  const { t } = useI18n();
+
+  const stats = [
+    { target: 99.9, suffix: "%", label: t.statUptime, isText: false },
+    { target: 320, suffix: " kbps", label: t.statAudio, isText: false },
+    { target: 720, suffix: "p", label: t.statVideo, isText: false },
+    { target: 0, suffix: "", label: t.statProtocol, isText: true, display: t.statProtocolValue },
+  ];
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -49,7 +51,6 @@ export default function StatsSection() {
     numbers.forEach((el, i) => {
       const stat = stats[i];
       if (stat.isText) {
-        // Just fade in the text
         gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.5, delay: i * 0.2 });
         return;
       }
@@ -87,7 +88,7 @@ export default function StatsSection() {
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse, rgba(151,77,251,0.06) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse, rgba(102,36,131,0.06) 0%, transparent 70%)",
         }}
       />
 
@@ -95,7 +96,7 @@ export default function StatsSection() {
         {stats.map((stat, i) => (
           <div
             key={i}
-            className="stat-card glassmorphism p-6 md:p-8 rounded-2xl text-center transition-[border-color] duration-300 hover:border-[rgba(151,77,251,0.2)]"
+            className="stat-card glassmorphism p-6 md:p-8 rounded-2xl text-center transition-[border-color] duration-300 hover:border-[rgba(102,36,131,0.2)]"
           >
             <span
               className="stat-number block font-[family-name:var(--font-space-grotesk)] font-bold gradient-text"

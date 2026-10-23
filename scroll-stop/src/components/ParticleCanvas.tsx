@@ -89,14 +89,14 @@ export default function ParticleCanvas() {
 
         ctx.beginPath();
         ctx.arc(x, y, p.size * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(151, 77, 251, ${alpha})`;
+        ctx.fillStyle = `rgba(102, 36, 131, ${alpha})`;
         ctx.fill();
 
         // Glow for bigger particles
         if (p.size > 1.5) {
           ctx.beginPath();
           ctx.arc(x, y, p.size * 3 * dpr, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(151, 77, 251, ${alpha * 0.1})`;
+          ctx.fillStyle = `rgba(102, 36, 131, ${alpha * 0.1})`;
           ctx.fill();
         }
       }

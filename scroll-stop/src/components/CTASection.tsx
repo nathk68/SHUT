@@ -2,10 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { gsap, ScrollTrigger, SplitText } from "@/lib/gsap";
+import { useI18n } from "@/lib/i18n";
 
 export default function CTASection() {
   const sectionRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -93,7 +95,7 @@ export default function CTASection() {
             cx="300"
             cy="300"
             r="280"
-            stroke="#974dfb"
+            stroke="#662483"
             strokeWidth="1"
             opacity="0.12"
             strokeDasharray="8 12"
@@ -107,7 +109,7 @@ export default function CTASection() {
           className="cta-tag font-[family-name:var(--font-jetbrains-mono)] text-xs uppercase mb-6"
           style={{ color: "var(--color-accent-light)", letterSpacing: "3px" }}
         >
-          Ready?
+          {t.ctaTag}
         </p>
 
         <h2
@@ -118,16 +120,15 @@ export default function CTASection() {
             letterSpacing: "-0.5px",
           }}
         >
-          Le live commence{" "}
-          <span className="gradient-text">maintenant.</span>
+          {t.ctaTitle}{" "}
+          <span className="gradient-text">{t.ctaTitleAccent}</span>
         </h2>
 
         <p
           className="cta-sub text-lg mb-10 leading-relaxed max-w-[500px] mx-auto"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Rejoignez les DJs qui ont choisi SHUT pour diffuser leurs sets en
-          live. Audio haute qualite, zero compromis.
+          {t.ctaSubtitle}
         </p>
 
         <a
@@ -135,15 +136,15 @@ export default function CTASection() {
           className="cta-button inline-flex items-center gap-3 px-10 py-4 rounded-2xl font-[family-name:var(--font-space-grotesk)] font-semibold text-lg text-white transition-all duration-300 hover:scale-[1.03] no-underline"
           style={{
             background: "var(--color-accent)",
-            boxShadow: "0 0 30px rgba(151, 77, 251, 0.35)",
+            boxShadow: "0 0 30px rgba(102, 36, 131, 0.35)",
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLElement).style.boxShadow =
-              "0 0 50px rgba(151, 77, 251, 0.5)";
+              "0 0 50px rgba(102, 36, 131, 0.5)";
           }}
           onMouseLeave={(e) => {
             (e.currentTarget as HTMLElement).style.boxShadow =
-              "0 0 30px rgba(151, 77, 251, 0.35)";
+              "0 0 30px rgba(102, 36, 131, 0.35)";
           }}
         >
           <svg
@@ -157,7 +158,7 @@ export default function CTASection() {
           >
             <polygon points="5 3 19 12 5 21 5 3" />
           </svg>
-          Lancer SHUT
+          {t.ctaButton}
         </a>
       </div>
     </section>

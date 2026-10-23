@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { gsap, ScrollTrigger } from "@/lib/gsap";
+import { useI18n } from "@/lib/i18n";
 
-const screens = [
+const screensFr = [
   "/images/onglet_explore_fr.jpeg",
   "/images/onglet_live_fr.jpeg",
   "/images/onglet_endirect.jpeg",
@@ -12,15 +13,16 @@ const screens = [
   "/images/onglet_profil_fr.jpeg",
 ];
 
-const badges = [
-  { label: "Audio 320kbps", icon: "music", pos: "top-[10%] -right-4 md:right-[-60px]", delay: "0s" },
-  { label: "720p Video", icon: "video", pos: "top-[25%] -left-4 md:left-[-50px]", delay: "0.5s" },
-  { label: "RTMP natif", icon: "zap", pos: "bottom-[25%] -right-4 md:right-[-55px]", delay: "1s" },
-  { label: "Reconnexion auto", icon: "refresh", pos: "bottom-[10%] -left-4 md:left-[-60px]", delay: "1.5s" },
+const screensEn = [
+  "/images/onglet_explore_en.png",
+  "/images/onglet_live_en.jpeg",
+  "/images/onglet_endirect.jpeg",
+  "/images/onglet_favorites_en.jpeg",
+  "/images/onglet_profil_en.jpeg",
 ];
 
 function BadgeIcon({ type }: { type: string }) {
-  const props = { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "#974dfb", strokeWidth: 2, strokeLinecap: "round" as const };
+  const props = { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "#662483", strokeWidth: 2, strokeLinecap: "round" as const };
   switch (type) {
     case "music":
       return <svg {...props}><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>;
@@ -39,6 +41,16 @@ export default function PhoneMockup() {
   const sectionRef = useRef<HTMLElement>(null);
   const phoneRef = useRef<HTMLDivElement>(null);
   const [currentScreen, setCurrentScreen] = useState(0);
+  const { locale, t } = useI18n();
+
+  const screens = locale === "fr" ? screensFr : screensEn;
+
+  const badges = [
+    { label: t.phoneBadge1, icon: "music", pos: "top-[10%] -right-4 md:right-[-60px]", delay: "0s" },
+    { label: t.phoneBadge2, icon: "video", pos: "top-[25%] -left-4 md:left-[-50px]", delay: "0.5s" },
+    { label: t.phoneBadge3, icon: "zap", pos: "bottom-[25%] -right-4 md:right-[-55px]", delay: "1s" },
+    { label: t.phoneBadge4, icon: "refresh", pos: "bottom-[10%] -left-4 md:left-[-60px]", delay: "1.5s" },
+  ];
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -94,7 +106,7 @@ export default function PhoneMockup() {
       ctx.revert();
       clearInterval(interval);
     };
-  }, []);
+  }, [screens.length]);
 
   return (
     <section ref={sectionRef} className="relative z-[1] py-32 px-6 overflow-hidden">
@@ -102,7 +114,7 @@ export default function PhoneMockup() {
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"
         style={{
-          background: "radial-gradient(circle, rgba(151,77,251,0.15) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(102,36,131,0.15) 0%, transparent 70%)",
         }}
       />
 
@@ -115,7 +127,7 @@ export default function PhoneMockup() {
             className="relative w-[260px] h-[540px] md:w-[300px] md:h-[620px] rounded-[40px] p-[6px] overflow-hidden"
             style={{
               background: "linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))",
-              boxShadow: "0 25px 80px rgba(0,0,0,0.5), 0 0 40px rgba(151,77,251,0.15)",
+              boxShadow: "0 25px 80px rgba(0,0,0,0.5), 0 0 40px rgba(102,36,131,0.15)",
               transformStyle: "preserve-3d",
             }}
           >
@@ -130,7 +142,7 @@ export default function PhoneMockup() {
               {/* Screenshot carousel */}
               {screens.map((src, i) => (
                 <div
-                  key={i}
+                  key={src}
                   className="absolute inset-0 transition-opacity duration-700"
                   style={{ opacity: currentScreen === i ? 1 : 0 }}
                 >
@@ -173,7 +185,7 @@ export default function PhoneMockup() {
             className="font-[family-name:var(--font-space-grotesk)] text-lg font-semibold mb-6"
             style={{ color: "var(--color-text-secondary)" }}
           >
-            Disponible bientot sur iOS & Android
+            {t.phoneAvailability}
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             {/* App Store button (disabled) */}

@@ -2,57 +2,61 @@
 
 import { useEffect, useRef, useState } from "react";
 import { gsap, ScrollTrigger, SplitText } from "@/lib/gsap";
+import { useI18n } from "@/lib/i18n";
 
-const features = [
-  {
-    num: "01",
-    title: "Live Streaming",
-    desc: "Diffusez vos sets en direct depuis n'importe quel lieu. Connectez vos platines, lancez le stream, et partagez votre musique avec le monde.",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#974dfb" strokeWidth="2" strokeLinecap="round">
-        <polygon points="23 7 16 12 23 17 23 7" />
-        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-      </svg>
-    ),
-    visual: "live",
-  },
-  {
-    num: "02",
-    title: "Explore par Pays",
-    desc: "Decouvrez les scenes live du monde entier. Parcourez les pays partenaires et trouvez les DJs de chaque ville.",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#974dfb" strokeWidth="2" strokeLinecap="round">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="2" y1="12" x2="22" y2="12" />
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-      </svg>
-    ),
-    visual: "globe",
-  },
-  {
-    num: "03",
-    title: "Regarde tes DJs",
-    desc: "Suivez vos DJs preferes et recevez des notifications quand ils passent en live. Ne ratez plus aucun set.",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#974dfb" strokeWidth="2" strokeLinecap="round">
-        <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-      </svg>
-    ),
-    visual: "djs",
-  },
-  {
-    num: "04",
-    title: "Chat & Reactions",
-    desc: "Interagissez en temps reel pendant le set. Chat live, reactions, et compteur de viewers — votre audience fait partie du show.",
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#974dfb" strokeWidth="2" strokeLinecap="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      </svg>
-    ),
-    visual: "chat",
-  },
-];
+function useFeatures() {
+  const { t } = useI18n();
+  return [
+    {
+      num: "01",
+      title: t.feature1Title,
+      desc: t.feature1Desc,
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#662483" strokeWidth="2" strokeLinecap="round">
+          <polygon points="23 7 16 12 23 17 23 7" />
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+        </svg>
+      ),
+      visual: "live",
+    },
+    {
+      num: "02",
+      title: t.feature2Title,
+      desc: t.feature2Desc,
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#662483" strokeWidth="2" strokeLinecap="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </svg>
+      ),
+      visual: "globe",
+    },
+    {
+      num: "03",
+      title: t.feature3Title,
+      desc: t.feature3Desc,
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#662483" strokeWidth="2" strokeLinecap="round">
+          <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+          <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+        </svg>
+      ),
+      visual: "djs",
+    },
+    {
+      num: "04",
+      title: t.feature4Title,
+      desc: t.feature4Desc,
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#662483" strokeWidth="2" strokeLinecap="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      ),
+      visual: "chat",
+    },
+  ];
+}
 
 function FeatureVisual({ type }: { type: string }) {
   if (type === "live") {
@@ -110,9 +114,9 @@ function FeatureVisual({ type }: { type: string }) {
             key={i}
             className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
             style={{
-              background: "rgba(151, 77, 251, 0.2)",
+              background: "rgba(102, 36, 131, 0.2)",
               border: "2px solid var(--color-accent)",
-              boxShadow: "0 0 15px rgba(151, 77, 251, 0.3)",
+              boxShadow: "0 0 15px rgba(102, 36, 131, 0.3)",
               animation: `float 3s ease-in-out ${i * 0.4}s infinite`,
             }}
           >
@@ -131,8 +135,8 @@ function FeatureVisual({ type }: { type: string }) {
           key={i}
           className="absolute text-xs px-3 py-1 rounded-full whitespace-nowrap"
           style={{
-            background: "rgba(151, 77, 251, 0.15)",
-            border: "1px solid rgba(151, 77, 251, 0.2)",
+            background: "rgba(102, 36, 131, 0.15)",
+            border: "1px solid rgba(102, 36, 131, 0.2)",
             color: "var(--color-accent-light)",
             left: i * 30 + 10,
             animation: `chatFloat 3s ease-in-out ${i * 0.8}s infinite`,
@@ -150,6 +154,8 @@ export default function FeaturesScroll() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const { t } = useI18n();
+  const features = useFeatures();
 
   useEffect(() => {
     if (!sectionRef.current || !titleRef.current) return;
@@ -236,8 +242,6 @@ export default function FeaturesScroll() {
     return () => ctx.revert();
   }, []);
 
-  const isMobileSSR = false; // SSR-safe, real check in useEffect
-
   return (
     <section id="features" ref={sectionRef} className="relative z-[1]">
       {/* Section header */}
@@ -246,7 +250,7 @@ export default function FeaturesScroll() {
           className="features-tag font-[family-name:var(--font-jetbrains-mono)] text-xs uppercase mb-3"
           style={{ color: "var(--color-accent-light)", letterSpacing: "3px" }}
         >
-          Features
+          {t.featuresTag}
         </p>
         <div
           className="features-line h-[2px] w-[60px] mx-auto mb-4 rounded-full"
@@ -257,10 +261,10 @@ export default function FeaturesScroll() {
           className="font-[family-name:var(--font-space-grotesk)] font-bold mb-3"
           style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", letterSpacing: "-0.5px" }}
         >
-          Tout ce qu&apos;il faut pour le live
+          {t.featuresTitle}
         </h2>
         <p style={{ color: "var(--color-text-secondary)" }} className="text-base leading-relaxed">
-          Une plateforme complete pensee par et pour les DJs.
+          {t.featuresSubtitle}
         </p>
       </div>
 
@@ -282,7 +286,7 @@ export default function FeaturesScroll() {
               }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.borderColor =
-                  "rgba(151, 77, 251, 0.3)";
+                  "rgba(102, 36, 131, 0.3)";
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.borderColor =
@@ -292,7 +296,7 @@ export default function FeaturesScroll() {
               {/* Card number */}
               <span
                 className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-5xl font-bold leading-none"
-                style={{ color: "rgba(151, 77, 251, 0.08)" }}
+                style={{ color: "rgba(102, 36, 131, 0.08)" }}
               >
                 {feature.num}
               </span>
@@ -300,7 +304,7 @@ export default function FeaturesScroll() {
               {/* Icon */}
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center"
-                style={{ background: "rgba(151, 77, 251, 0.1)" }}
+                style={{ background: "rgba(102, 36, 131, 0.1)" }}
               >
                 {feature.icon}
               </div>

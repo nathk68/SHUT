@@ -1,9 +1,10 @@
 @import "tailwindcss";
 
 @theme {
-  --color-accent: #974dfb;
-  --color-accent-light: #b47dfc;
-  --color-accent-dark: #7a2ee0;
+  /* couleur ancienne : --color-accent: #974dfb; */
+  --color-accent: #662483;
+  --color-accent-light: #8a3aab;
+  --color-accent-dark: #4a1a60;
   --color-bg: #050508;
   --color-bg-card: rgba(255, 255, 255, 0.03);
   --color-border: rgba(255, 255, 255, 0.08);
@@ -47,7 +48,7 @@ body {
 /* Utility classes */
 .gradient-text,
 .gradient-text * {
-  background: linear-gradient(135deg, var(--color-accent), #e879f9) !important;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light)) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
@@ -93,7 +94,7 @@ body {
 }
 
 .counting {
-  text-shadow: 0 0 30px rgba(151, 77, 251, 0.5);
+  text-shadow: 0 0 30px rgba(102, 36, 131, 0.5);
 }
 
 @keyframes chatFloat {

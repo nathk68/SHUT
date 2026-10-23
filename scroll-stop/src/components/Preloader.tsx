@@ -41,32 +41,23 @@ export default function Preloader({ onComplete }: PreloaderProps) {
         },
       });
 
-      // Draw circle outline
-      const circle = containerRef.current?.querySelector(".preloader-circle");
-      if (circle) {
-        const length = (circle as SVGCircleElement).getTotalLength?.() || 283;
-        gsap.set(circle, {
-          strokeDasharray: length,
-          strokeDashoffset: length,
-        });
-        tl.to(circle, {
-          strokeDashoffset: 0,
-          duration: 1.2,
-          ease: "power2.inOut",
-        });
-      }
+      // Fade in face/crescent
+      tl.from(".preloader-face", {
+        opacity: 0,
+        scale: 0.8,
+        duration: 0.8,
+        ease: "power2.out",
+        transformOrigin: "center center",
+      });
 
-      // Fade in face and vinyl
-      tl.from(
-        ".preloader-face",
-        { opacity: 0, duration: 0.5, ease: "power2.out" },
-        "-=0.4"
-      );
-      tl.from(
-        ".preloader-vinyl",
-        { opacity: 0, scale: 0.8, duration: 0.4, ease: "back.out(1.7)" },
-        "-=0.2"
-      );
+      // Pop in dot
+      tl.from(".preloader-dot", {
+        opacity: 0,
+        scale: 0,
+        duration: 0.4,
+        ease: "back.out(1.7)",
+        transformOrigin: "center center",
+      }, "-=0.3");
 
       // Text reveal
       tl.from(".preloader-letter", {
@@ -109,48 +100,33 @@ export default function Preloader({ onComplete }: PreloaderProps) {
       style={{ background: "var(--color-bg)" }}
     >
       <div className="flex flex-col items-center">
-        {/* Logo SVG */}
+        {/* Logo SVG — real SHUT logo (logo only, no text) */}
         <div className="preloader-logo mb-8">
           <svg
-            viewBox="0 0 200 200"
+            viewBox="90 50 310 380"
             width="120"
-            height="120"
-            fill="none"
+            height="148"
             xmlns="http://www.w3.org/2000/svg"
           >
-            {/* Circle outline */}
-            <circle
-              className="preloader-circle"
-              cx="100"
-              cy="85"
-              r="70"
-              stroke="#974dfb"
-              strokeWidth="3"
-              fill="none"
-            />
-            {/* Face silhouette */}
+            {/* Moon / face crescent */}
             <path
               className="preloader-face"
-              d="M75 45 C65 45, 50 60, 50 85 C50 110, 60 130, 80 135 C85 136, 88 134, 92 130 C96 126, 100 118, 100 110 C100 95, 90 85, 85 80 C80 75, 78 68, 78 60 C78 52, 75 45, 75 45Z"
-              fill="#974dfb"
+              d="M378.35,83.22c0.05,0.01,0.08-0.06,0.03-0.08c-25.68-12.48-53.06-20.57-83.54-20.57
+                c-107.68,0-194.96,87.29-194.96,194.96c0,64.81,31.9,121.6,80.56,157.05c0,0,0.04,0.04,0,0c-7.15-6.72-65.07-63.51-25.65-104.79
+                c0,0,4.82-7.65,19.28-12.19c0,0,8.65-2.8,21.54,2.55c9.78,4.06,22.27,6.99,28.33,8.16c3.72,0.72,7.53,0.92,11.29,0.44
+                c6.37-0.82,14.55-3.65,16.23-12.57c0,0,1.49-7.72-1.28-13.25c-2.76-5.53,2.91-7.37,2.91-7.37s6.73-1.77,6.45-7.02
+                c-0.28-5.24-7.02-6.87-7.02-6.87s8.86-1.63,9.85-6.52c0,0,1.56-3.47-4.54-8.29c0,0-4.96-4.18,3.19-7.02s11.34-5.88,11.34-5.88
+                s6.31-5.88-6.09-14.03c-12.4-8.15-13.18-22.25-13.18-22.25s-0.78-6.45,2.69-15.8s-0.64-20.98-0.64-20.98s-4.82-14.1-19.7-23.95
+                s-12.26-22.75-12.26-22.75s1.06-7.09,10.63-14.31s30.12-14.39,30.12-14.39S308.81,67.93,378.35,83.22z"
+              fill="var(--color-accent)"
             />
-            {/* Vinyl record */}
+            {/* Dot */}
             <circle
-              className="preloader-vinyl"
-              cx="115"
-              cy="95"
-              r="25"
-              fill="#1a1025"
-              stroke="#974dfb"
-              strokeWidth="1"
-              opacity="0.8"
-            />
-            <circle
-              className="preloader-vinyl"
-              cx="115"
-              cy="95"
-              r="4"
-              fill="rgba(255,255,255,0.3)"
+              className="preloader-dot"
+              cx="320.41"
+              cy="260.42"
+              r="29.86"
+              fill="var(--color-accent)"
             />
           </svg>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { I18nProvider } from "@/lib/i18n";
 import SmoothScroll from "@/components/SmoothScroll";
 import Preloader from "@/components/Preloader";
 import Navbar from "@/components/Navbar";
@@ -15,7 +16,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
   return (
-    <>
+    <I18nProvider>
       <SmoothScroll />
       <Preloader onComplete={() => setIsLoading(false)} />
       <Navbar />
@@ -27,6 +28,6 @@ export default function Home() {
         <CTASection />
       </main>
       <Footer />
-    </>
+    </I18nProvider>
   );
 }
