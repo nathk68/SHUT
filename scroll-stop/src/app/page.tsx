@@ -22,7 +22,9 @@ export default function Home() {
       <Navbar />
       <main>
         <HeroSection isLoading={isLoading} />
-        <FeaturesScroll />
+        <div className="relative z-10 -mt-[40vh]">
+          <FeaturesScroll />
+        </div>
         <PhoneMockup />
         <StatsSection />
         <CTASection />

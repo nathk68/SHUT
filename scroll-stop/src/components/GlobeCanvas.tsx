@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import { feature } from "topojson-client";
 import type { Topology } from "topojson-specification";
 
@@ -10,7 +10,16 @@ interface Point3D {
   z: number;
 }
 
+export interface GlobeControl {
+  /** 0 = normal hero state, 1 = fully zoomed into France */
+  progress: number;
+}
+
 const ACCENT_RGB = [102, 36, 131];
+
+// France center (roughly)
+const FRANCE_LON = 2.2;
+const FRANCE_LAT = 46.6;
 
 function latLonToSphere(lat: number, lon: number): Point3D {
   const phi = (90 - lat) * (Math.PI / 180);
@@ -21,6 +30,15 @@ function latLonToSphere(lat: number, lon: number): Point3D {
     z: Math.sin(phi) * Math.sin(theta),
   };
 }
+
+// Compute the rotY angle that centers a given longitude on camera
+function lonToRotY(lon: number): number {
+  const theta = (lon + 180) * (Math.PI / 180);
+  return Math.PI / 2 - theta;
+}
+
+const FRANCE_ROTY = lonToRotY(FRANCE_LON);
+const FRANCE_ROTX = (FRANCE_LAT * Math.PI) / 180; // tilt north to center France's latitude
 
 const cities = [
   { lat: 48.86, lon: 2.35 },
@@ -41,16 +59,25 @@ const cities = [
   { lat: 34.05, lon: -118.24 },
 ];
 
-export default function GlobeCanvas() {
+interface Props {
+  controlRef?: MutableRefObject<GlobeControl>;
+  isLoading?: boolean;
+}
+
+export default function GlobeCanvas({ controlRef, isLoading }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef({
     countryPolygons: [] as Point3D[][],
     rotY: 0,
+    rotX: 0,
     mouseX: 0,
     mouseY: 0,
     targetMouseX: 0,
     targetMouseY: 0,
     time: 0,
+    startRotY: 0,
+    franceTargetRotY: 0,
+    hasLockedTarget: false,
     cityPoints: cities.map((c) => ({
       ...latLonToSphere(c.lat, c.lon),
       pulse: Math.random() * Math.PI * 2,
@@ -72,8 +99,10 @@ export default function GlobeCanvas() {
   });
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (isLoading) return;
+    const canvasOrNull = canvasRef.current;
+    if (!canvasOrNull) return;
+    const canvas = canvasOrNull;
     const ctxOrNull = canvas.getContext("2d");
     if (!ctxOrNull) return;
     const ctx = ctxOrNull;
@@ -83,11 +112,8 @@ export default function GlobeCanvas() {
 
     const dpr = window.devicePixelRatio || 1;
     let animId: number;
-    let W = 0,
-      H = 0,
-      centerX = 0,
-      centerY = 0,
-      radius = 0;
+    let W = 0, H = 0;
+    let baseCenterX = 0, baseCenterY = 0, baseRadius = 0;
 
     const resize = () => {
       const rect = canvas.parentElement!.getBoundingClientRect();
@@ -98,9 +124,9 @@ export default function GlobeCanvas() {
       canvas.style.width = W + "px";
       canvas.style.height = H + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      centerX = W * 0.58;
-      centerY = H * 0.5;
-      radius = Math.min(W, H) * 0.4;
+      baseCenterX = W * 0.58;
+      baseCenterY = H * 0.5;
+      baseRadius = Math.min(W, H) * 0.4;
     };
     resize();
     window.addEventListener("resize", resize);
@@ -135,40 +161,82 @@ export default function GlobeCanvas() {
     };
     window.addEventListener("mousemove", handleMouseMove);
 
-    function rotatePoint(p: Point3D) {
-      const s = stateRef.current;
-      const ry = s.rotY + s.mouseX;
-      const rx = s.mouseY;
-      const x = p.x * Math.cos(ry) + p.z * Math.sin(ry);
-      const z = -p.x * Math.sin(ry) + p.z * Math.cos(ry);
-      const y2 = p.y * Math.cos(rx) - z * Math.sin(rx);
-      const z2 = p.y * Math.sin(rx) + z * Math.cos(rx);
-      return { x, y: y2, z: z2 };
-    }
-
-    function project(p: Point3D) {
-      const r = rotatePoint(p);
-      return { x: centerX + r.x * radius, y: centerY - r.y * radius, z: r.z };
-    }
-
-    function slerp(a: Point3D, b: Point3D, t: number) {
-      const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y + a.z * b.z));
-      const omega = Math.acos(dot);
-      if (omega < 0.001) return { x: a.x, y: a.y, z: a.z };
-      const sinO = Math.sin(omega);
-      const fa = Math.sin((1 - t) * omega) / sinO;
-      const fb = Math.sin(t * omega) / sinO;
-      return { x: a.x * fa + b.x * fb, y: a.y * fa + b.y * fb, z: a.z * fa + b.z * fb };
-    }
-
     function draw() {
       const s = stateRef.current;
+      const progress = controlRef?.current?.progress ?? 0;
+
       s.time += 16;
-      s.rotY += 0.002;
       s.mouseX += (s.targetMouseX - s.mouseX) * 0.05;
       s.mouseY += (s.targetMouseY - s.mouseY) * 0.05;
 
+      // Smooth eased progress for visual interpolation
+      const ep = progress * progress * (3 - 2 * progress); // smoothstep
+
+      // --- Scroll-driven rotation & zoom ---
+      if (progress < 0.01) {
+        // Normal auto-rotation
+        s.rotY += 0.002;
+        s.hasLockedTarget = false;
+      } else {
+        // Lock start rotation & compute France target when scroll begins
+        if (!s.hasLockedTarget) {
+          s.startRotY = s.rotY;
+          const diff = FRANCE_ROTY - s.rotY;
+          const turns = Math.round(diff / (2 * Math.PI));
+          s.franceTargetRotY = FRANCE_ROTY - turns * 2 * Math.PI;
+          if (s.franceTargetRotY < s.rotY) s.franceTargetRotY += 2 * Math.PI;
+          s.hasLockedTarget = true;
+        }
+        // Direct interpolation tied to scroll progress (not frame-rate lerp)
+        s.rotY = s.startRotY + (s.franceTargetRotY - s.startRotY) * ep;
+      }
+
+      // Interpolate center position: from right-offset to screen center
+      const centerX = baseCenterX + (W * 0.5 - baseCenterX) * ep;
+      const centerY = baseCenterY;
+
+      // Interpolate radius: zoom in up to 4x
+      const radius = baseRadius * (1 + ep * 3);
+
+      // Interpolate rotX: tilt slightly to center France's latitude
+      const rotXOffset = FRANCE_ROTX * ep;
+
+      // Mouse influence decreases with progress
+      const mouseFade = 1 - ep;
+
+      // Effective rotation
+      const effectiveRotY = s.rotY + s.mouseX * mouseFade;
+      const effectiveRotX = s.mouseY * mouseFade + rotXOffset;
+
+      // Canvas opacity: fade out in last 40% of scroll
+      const canvasAlpha = progress > 0.6 ? 1 - (progress - 0.6) / 0.4 : 1;
+      canvas.style.opacity = String(canvasAlpha);
+
       ctx.clearRect(0, 0, W, H);
+
+      // --- Helper functions using current frame values ---
+      function rotatePoint(p: Point3D) {
+        const x = p.x * Math.cos(effectiveRotY) + p.z * Math.sin(effectiveRotY);
+        const z = -p.x * Math.sin(effectiveRotY) + p.z * Math.cos(effectiveRotY);
+        const y2 = p.y * Math.cos(effectiveRotX) - z * Math.sin(effectiveRotX);
+        const z2 = p.y * Math.sin(effectiveRotX) + z * Math.cos(effectiveRotX);
+        return { x, y: y2, z: z2 };
+      }
+
+      function project(p: Point3D) {
+        const r = rotatePoint(p);
+        return { x: centerX + r.x * radius, y: centerY - r.y * radius, z: r.z };
+      }
+
+      function slerpPt(a: Point3D, b: Point3D, t: number) {
+        const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y + a.z * b.z));
+        const omega = Math.acos(dot);
+        if (omega < 0.001) return { x: a.x, y: a.y, z: a.z };
+        const sinO = Math.sin(omega);
+        const fa = Math.sin((1 - t) * omega) / sinO;
+        const fb = Math.sin(t * omega) / sinO;
+        return { x: a.x * fa + b.x * fb, y: a.y * fa + b.y * fb, z: a.z * fa + b.z * fb };
+      }
 
       // Glow
       const glow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius * 1.5);
@@ -229,7 +297,7 @@ export default function GlobeCanvas() {
         const points = [];
         for (let i = 0; i <= steps; i++) {
           const t = i / steps;
-          const p = slerp(a, b, t);
+          const p = slerpPt(a, b, t);
           const lift = 1 + 0.15 * Math.sin(t * Math.PI);
           points.push(project({ x: p.x * lift, y: p.y * lift, z: p.z * lift }));
         }
@@ -304,12 +372,15 @@ export default function GlobeCanvas() {
         }
       }
 
-      // Outer ring
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius * 1.02, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${ACCENT_RGB[0]}, ${ACCENT_RGB[1]}, ${ACCENT_RGB[2]}, 0.06)`;
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      // Outer ring (fade out with zoom)
+      const ringAlpha = 0.06 * (1 - ep);
+      if (ringAlpha > 0.001) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, baseRadius * 1.02, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${ACCENT_RGB[0]}, ${ACCENT_RGB[1]}, ${ACCENT_RGB[2]}, ${ringAlpha})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
 
       animId = requestAnimationFrame(draw);
     }
@@ -321,7 +392,7 @@ export default function GlobeCanvas() {
       window.removeEventListener("resize", resize);
       window.removeEventListener("mousemove", handleMouseMove);
     };
-  }, []);
+  }, [controlRef, isLoading]);
 
   return (
     <canvas
