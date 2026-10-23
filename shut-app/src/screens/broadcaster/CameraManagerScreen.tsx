@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { Header } from '../../components/layout/Header';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -25,6 +26,7 @@ function truncateKey(key: string): string {
 
 export function CameraManagerScreen() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [cameras, setCameras] = useState<CameraConfig[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,7 +36,7 @@ export function CameraManagerScreen() {
       const result = await streamingService.getCamerasByFestival(user?.festivalId ?? '');
       setCameras(result);
     } catch (error) {
-      Alert.alert('Erreur', 'Impossible de charger les cameras.');
+      Alert.alert(t('common.error'), t('broadcaster.cameraManager.cannotLoad'));
     } finally {
       setLoading(false);
     }
@@ -50,20 +52,20 @@ export function CameraManagerScreen() {
 
   const handleRegenerateKey = (camera: CameraConfig) => {
     Alert.alert(
-      'Regenerer la cle',
-      `Regenerer la cle de stream pour "${camera.label}" ? L'ancienne cle ne fonctionnera plus.`,
+      t('broadcaster.cameraManager.regenerateKeyTitle'),
+      t('broadcaster.cameraManager.regenerateKeyMessage', { label: camera.label }),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Regenerer',
+          text: t('broadcaster.cameraManager.regenerate'),
           style: 'destructive',
           onPress: async () => {
             try {
               await streamingService.regenerateStreamKey(camera.id);
               await fetchCameras();
-              Alert.alert('Cle regeneree', 'La nouvelle cle a ete generee avec succes.');
+              Alert.alert(t('broadcaster.cameraManager.keyRegeneratedTitle'), t('broadcaster.cameraManager.keyRegeneratedMessage'));
             } catch (error) {
-              Alert.alert('Erreur', 'Impossible de regenerer la cle.');
+              Alert.alert(t('common.error'), t('broadcaster.cameraManager.cannotRegenerate'));
             }
           },
         },
@@ -73,20 +75,20 @@ export function CameraManagerScreen() {
 
   const handleDeleteCamera = (camera: CameraConfig) => {
     Alert.alert(
-      'Supprimer la camera',
-      `Supprimer la camera "${camera.label}" ? Cette action est irreversible.`,
+      t('broadcaster.cameraManager.deleteCameraTitle'),
+      t('broadcaster.cameraManager.deleteCameraMessage', { label: camera.label }),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await streamingService.removeCamera(camera.id);
               await fetchCameras();
-              Alert.alert('Camera supprimee', 'La camera a ete supprimee avec succes.');
+              Alert.alert(t('broadcaster.cameraManager.cameraDeletedTitle'), t('broadcaster.cameraManager.cameraDeletedMessage'));
             } catch (error) {
-              Alert.alert('Erreur', 'Impossible de supprimer la camera.');
+              Alert.alert(t('common.error'), t('broadcaster.cameraManager.cannotDeleteCamera'));
             }
           },
         },
@@ -96,15 +98,15 @@ export function CameraManagerScreen() {
 
   const handleAddCamera = () => {
     Alert.prompt(
-      'Ajouter une camera',
-      'Entrez le nom de la nouvelle camera.',
+      t('broadcaster.cameraManager.addCameraTitle'),
+      t('broadcaster.cameraManager.addCameraMessage'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Ajouter',
+          text: t('broadcaster.cameraManager.add'),
           onPress: async (label?: string) => {
             if (!label?.trim()) {
-              Alert.alert('Erreur', 'Le nom de la camera est requis.');
+              Alert.alert(t('common.error'), t('broadcaster.cameraManager.cameraNameRequired'));
               return;
             }
             try {
@@ -117,9 +119,9 @@ export function CameraManagerScreen() {
                 hardwareSerial: null,
               });
               await fetchCameras();
-              Alert.alert('Camera ajoutee', 'La nouvelle camera a ete ajoutee avec succes.');
+              Alert.alert(t('broadcaster.cameraManager.cameraAddedTitle'), t('broadcaster.cameraManager.cameraAddedMessage'));
             } catch (error) {
-              Alert.alert('Erreur', 'Impossible d\'ajouter la camera.');
+              Alert.alert(t('common.error'), t('broadcaster.cameraManager.cannotAddCamera'));
             }
           },
         },
@@ -262,7 +264,7 @@ export function CameraManagerScreen() {
             </GlassCard>
 
             <Button
-              title="Ajouter une camera"
+              title={t('broadcaster.cameraManager.addCameraButton')}
               onPress={handleAddCamera}
               variant="secondary"
               size="lg"

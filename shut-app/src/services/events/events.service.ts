@@ -12,4 +12,6 @@ export interface IEventsService {
   deleteEvent(id: string): Promise<void>;
   setEventStatus(id: string, status: EventStatus): Promise<LiveEvent>;
   incrementViewerCount(id: string, delta: 1 | -1): Promise<void>;
+  onEventChange(id: string, callback: (event: LiveEvent | null) => void): () => void;
+  onLiveEvents(callback: (events: LiveEvent[]) => void): () => void;
 }

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
@@ -34,6 +35,7 @@ const FILTER_TABS: { key: FilterTab; label: string }[] = [
 
 export function PlanningScreen() {
   const navigation = useNavigation<Navigation>();
+  const { t } = useTranslation();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,19 +64,19 @@ export function PlanningScreen() {
 
   const handleDeleteEvent = (event: LiveEvent) => {
     Alert.alert(
-      'Supprimer',
-      `Supprimer "${event.title}" ?`,
+      t('common.delete'),
+      `${t('common.delete')} "${event.title}" ?`,
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await eventsService.deleteEvent(event.id);
               await fetchEvents();
             } catch (error) {
-              Alert.alert('Erreur', 'Impossible de supprimer l\'event.');
+              Alert.alert(t('common.error'), t('broadcaster.planning.cannotDelete'));
             }
           },
         },

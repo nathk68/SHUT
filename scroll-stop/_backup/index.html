@@ -1122,7 +1122,8 @@
   // Lerp smooth scroll state
   let targetProgress = 0;
   let currentProgress = 0;
-  const LERP_FACTOR = 0.01;
+  const LERP_SPEED = 0.01; // vitesse de lerp normalisée à 60fps
+  let lastTime = 0;
 
   // Update target on scroll (lightweight)
   window.addEventListener('scroll', () => {
@@ -1135,12 +1136,15 @@
     targetProgress = Math.min(1, Math.max(0, -rect.top / scrollableHeight));
   }, { passive: true });
 
-  // Lerp render loop — runs independently at 60fps
-  function lerpRender() {
-    // Interpolate toward target
+  // Lerp render loop — delta-time based (identique à 60Hz et 120Hz)
+  function lerpRender(timestamp) {
+    const dt = lastTime ? Math.min((timestamp - lastTime) / 16.667, 4) : 1;
+    lastTime = timestamp;
+
+    // Lerp exponentiel basé sur le temps réel
     const diff = targetProgress - currentProgress;
-    if (Math.abs(diff) > 0.0001) {
-      currentProgress += diff * LERP_FACTOR;
+    if (Math.abs(diff) > 0.00005) {
+      currentProgress += diff * (1 - Math.pow(1 - LERP_SPEED, dt));
     } else {
       currentProgress = targetProgress;
     }

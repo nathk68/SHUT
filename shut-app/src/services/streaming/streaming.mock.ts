@@ -78,7 +78,7 @@ export class MockStreamingService implements IStreamingService {
     // Mock: nothing to clean up
   }
 
-  async startQuickStream(_userId: string): Promise<QuickStreamCredentials> {
+  async startQuickStream(_userId: string, _options?: { record?: boolean }): Promise<QuickStreamCredentials> {
     const key = `sk_live_${Crypto.randomUUID().replace(/-/g, '').slice(0, 24)}`;
     return {
       eventId: `mock-quick-${Crypto.randomUUID().slice(0, 8)}`,
@@ -86,4 +86,10 @@ export class MockStreamingService implements IStreamingService {
       streamKey: key,
     };
   }
+
+  async ensurePermanentStream(): Promise<{ streamKey: string; rtmpUrl: string }> {
+    return { streamKey: 'mock-key', rtmpUrl: 'rtmp://global-live.mux.com:5222/app' };
+  }
+
+  async clearPermanentStream(): Promise<void> {}
 }

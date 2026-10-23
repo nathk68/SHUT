@@ -7,10 +7,12 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../../config/firebase.config';
+import { httpsCallable } from 'firebase/functions';
+import { auth, db, functions } from '../../config/firebase.config';
 import { IAuthService } from './auth.service';
 import { User } from '../../types';
 import { UserRole } from '../../config/constants';
+import i18n from '../../i18n';
 
 export class FirebaseAuthService implements IAuthService {
 
@@ -20,6 +22,10 @@ export class FirebaseAuthService implements IAuthService {
       const user = await this.getUserProfile(credential.user.uid);
       if (!user) {
         return { success: false, error: 'Profil utilisateur introuvable' };
+      }
+      if (user.blocked) {
+        await signOut(auth);
+        return { success: false, error: '__BLOCKED__' };
       }
       return { success: true, user };
     } catch (error: any) {
@@ -48,6 +54,7 @@ export class FirebaseAuthService implements IAuthService {
         avatarUrl: null,
         role,
         festivalId: null,
+        language: i18n.language || 'fr',
         createdAt: new Date().toISOString(),
       };
 
@@ -71,7 +78,13 @@ export class FirebaseAuthService implements IAuthService {
   }
 
   async getCurrentUser(): Promise<User | null> {
-    const firebaseUser = auth.currentUser;
+    // Wait for Firebase Auth to restore the session from AsyncStorage
+    const firebaseUser = await new Promise<FirebaseUser | null>((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
     if (!firebaseUser) return null;
     return this.getUserProfile(firebaseUser.uid);
   }
@@ -79,7 +92,27 @@ export class FirebaseAuthService implements IAuthService {
   private async getUserProfile(uid: string): Promise<User | null> {
     const docSnap = await getDoc(doc(db, 'users', uid));
     if (!docSnap.exists()) return null;
-    return docSnap.data() as User;
+    return { ...docSnap.data(), id: uid } as User;
+  }
+
+  async resetPassword(email: string) {
+    try {
+      const callable = httpsCallable(functions, 'requestPasswordReset');
+      await callable({ email, lang: i18n.language || 'fr' });
+      return { success: true };
+    } catch (error: any) {
+      const code = error?.code ?? '';
+      if (code.includes('resource-exhausted')) {
+        return {
+          success: false,
+          error: i18n.t('auth.forgotPasswordRateLimited'),
+        };
+      }
+      return {
+        success: false,
+        error: i18n.t('auth.forgotPasswordError'),
+      };
+    }
   }
 
   onAuthStateChange(callback: (user: User | null) => void): () => void {

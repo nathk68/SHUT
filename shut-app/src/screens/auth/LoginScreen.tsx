@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -13,17 +15,19 @@ type Props = {
 };
 
 export function LoginScreen({ navigation }: Props) {
-  const { login, enterGuestMode } = useAuth();
+  const { t } = useTranslation();
+  const { login, enterGuestMode, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validate = () => {
     const e: typeof errors = {};
-    if (!email.trim()) e.email = 'Email requis';
-    else if (!email.includes('@')) e.email = 'Email invalide';
-    if (!password) e.password = 'Mot de passe requis';
+    if (!email.trim()) e.email = t('validation.emailRequired');
+    else if (!email.includes('@')) e.email = t('validation.emailInvalid');
+    if (!password) e.password = t('validation.passwordRequired');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -34,7 +38,23 @@ export function LoginScreen({ navigation }: Props) {
     const result = await login(email.trim().toLowerCase(), password);
     setLoading(false);
     if (!result.success) {
-      Alert.alert('Erreur', result.error || 'Connexion impossible');
+      Alert.alert(t('common.error'), result.error || t('validation.loginFailed'));
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) {
+      Alert.alert(t('common.error'), t('auth.forgotPasswordEnterEmail'));
+      return;
+    }
+    setResetLoading(true);
+    const result = await resetPassword(trimmed);
+    setResetLoading(false);
+    if (result.success) {
+      Alert.alert(t('auth.forgotPasswordSentTitle'), t('auth.forgotPasswordSentMessage'));
+    } else {
+      Alert.alert(t('common.error'), result.error || t('auth.forgotPasswordError'));
     }
   };
 
@@ -48,16 +68,20 @@ export function LoginScreen({ navigation }: Props) {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
+          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
+          </Pressable>
+
           <View style={styles.header}>
             <Text style={styles.logo}>SHUT</Text>
-            <Text style={styles.tagline}>Le son live, sans compromis</Text>
+            <Text style={styles.tagline}>{t('auth.tagline')}</Text>
           </View>
 
           <View style={styles.form}>
             <Input
-              label="Email"
+              label={t('common.email')}
               icon="mail-outline"
-              placeholder="email@exemple.com"
+              placeholder={t('auth.emailPlaceholder')}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -66,16 +90,21 @@ export function LoginScreen({ navigation }: Props) {
               error={errors.email}
             />
             <Input
-              label="Mot de passe"
+              label={t('common.password')}
               icon="lock-closed-outline"
-              placeholder="Votre mot de passe"
+              placeholder={t('auth.passwordPlaceholder')}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
               error={errors.password}
             />
+            <Pressable onPress={handleForgotPassword} style={styles.forgotRow}>
+              <Text style={styles.forgotLink}>
+                {resetLoading ? t('auth.forgotPasswordSending') : t('auth.forgotPassword')}
+              </Text>
+            </Pressable>
             <Button
-              title="Se connecter"
+              title={t('auth.login')}
               onPress={handleLogin}
               loading={loading}
               size="lg"
@@ -85,21 +114,21 @@ export function LoginScreen({ navigation }: Props) {
 
           <View style={styles.footer}>
             <Pressable onPress={enterGuestMode}>
-              <Text style={styles.guestLink}>Mode spectateur</Text>
+              <Text style={styles.guestLink}>{t('auth.guestMode')}</Text>
             </Pressable>
 
             <View style={styles.registerRow}>
-              <Text style={styles.registerText}>Pas encore de compte ? </Text>
+              <Text style={styles.registerText}>{t('auth.noAccount')}</Text>
               <Pressable onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.registerLink}>S'inscrire</Text>
+                <Text style={styles.registerLink}>{t('auth.register')}</Text>
               </Pressable>
             </View>
 
-            <View style={styles.demoInfo}>
-              <Text style={styles.demoTitle}>Comptes démo</Text>
+            {/* <View style={styles.demoInfo}>
+              <Text style={styles.demoTitle}>{t('auth.demoAccounts')}</Text>
               <Text style={styles.demoText}>Viewer : viewer@shut.app / demo123</Text>
               <Text style={styles.demoText}>Festival : festival@shut.app / demo123</Text>
-            </View>
+            </View> */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -112,6 +141,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: spacing.lg,
     justifyContent: 'center',
+  },
+  backButton: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: 0,
+    padding: spacing.sm,
+    zIndex: 1,
   },
   header: {
     alignItems: 'center',
@@ -131,6 +167,16 @@ const styles = StyleSheet.create({
   },
   form: {
     marginBottom: spacing.xl,
+  },
+  forgotRow: {
+    alignSelf: 'flex-end',
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  forgotLink: {
+    fontFamily: fonts.body.medium,
+    fontSize: fontSize.sm,
+    color: colors.textMuted,
   },
   loginButton: {
     marginTop: spacing.sm,

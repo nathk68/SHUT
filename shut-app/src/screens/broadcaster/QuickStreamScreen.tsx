@@ -8,105 +8,152 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { copyToClipboard } from '../../utils/clipboard';
-import { getStoredData, setStoredData, removeStoredData } from '../../utils/storage';
-import { streamingService } from '../../services';
+import { streamingService, userService } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePreferences } from '../../contexts/PreferencesContext';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 
-// ─── DJI Mimo guide steps ──────────────────────────────────────────────────────
+// ─── Camera guide data ─────────────────────────────────────────────────────────
 
-const MIMO_STEPS = [
-  {
-    icon: 'phone-portrait-outline' as const,
-    title: 'Ouvrir DJI Mimo',
-    desc: 'Lance l\'app DJI Mimo et connecte ton Osmo Pocket 3.',
-  },
-  {
-    icon: 'radio-outline' as const,
-    title: 'Onglet "Live"',
-    desc: 'Dans Mimo, appuie sur l\'icône Live en bas de l\'écran.',
-  },
-  {
-    icon: 'code-slash-outline' as const,
-    title: 'RTMP personnalisé',
-    desc: 'Choisis "Custom RTMP" ou "RTMP personnalisé" dans la liste.',
-  },
-  {
-    icon: 'copy-outline' as const,
-    title: 'Coller l\'URL complète',
-    desc: 'Copie l\'URL complète ci-dessus (URL + clé concaténées) et colle-la dans Mimo.',
-  },
-  {
-    icon: 'volume-high-outline' as const,
-    title: 'Vérifier l\'audio',
-    desc: 'Dans les réglages Mimo, confirme que le son vient bien de l\'entrée micro externe.',
-  },
-  {
-    icon: 'play-circle-outline' as const,
-    title: 'Démarrer',
-    desc: 'Appuie sur "Démarrer" dans Mimo. Ton live SHUT est en cours !',
-  },
+type GuideStep = {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  desc: string;
+};
+
+interface CameraGuide {
+  title: string;
+  subtitle: string;
+  steps: GuideStep[];
+}
+
+const DJI_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
+  'phone-portrait-outline', 'radio-outline', 'code-slash-outline',
+  'copy-outline', 'volume-high-outline', 'play-circle-outline',
 ];
+const LARIX_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
+  'download-outline', 'settings-outline', 'copy-outline',
+  'volume-high-outline', 'videocam-outline', 'play-circle-outline',
+];
+const GOPRO_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
+  'cloud-download-outline', 'copy-outline', 'qr-code-outline',
+  'camera-outline', 'play-circle-outline',
+];
+
+const STEP_KEYS: Record<string, { key: string; icons: (keyof typeof Ionicons.glyphMap)[] }> = {
+  'dji-pocket-3': { key: 'djiSteps', icons: DJI_ICONS },
+  'dji-pocket-2': { key: 'djiSteps', icons: DJI_ICONS },
+  'dji-action-4': { key: 'djiSteps', icons: DJI_ICONS },
+  'dji-action-3': { key: 'djiSteps', icons: DJI_ICONS },
+  'iphone':       { key: 'larixSteps', icons: LARIX_ICONS },
+  'gopro':        { key: 'goproSteps', icons: GOPRO_ICONS },
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function QuickStreamScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const { recordLives } = usePreferences();
+  const cameraId: string | undefined = route.params?.cameraId;
+
+  const stepConfig = cameraId ? STEP_KEYS[cameraId] : undefined;
+  const stepsKey = stepConfig?.key ?? 'djiSteps';
+  const stepsIcons = stepConfig?.icons ?? DJI_ICONS;
+  const rawSteps = t(`broadcaster.quickStream.${stepsKey}`, { returnObjects: true }) as { title: string; desc: string }[];
+  const guideSteps: GuideStep[] = rawSteps.map((s, i) => ({ ...s, icon: stepsIcons[i] ?? 'ellipse-outline' }));
+
+  const guideInfo = cameraId
+    ? { title: t(`broadcaster.quickStream.guides.${cameraId}.title`, { defaultValue: '' }), subtitle: t(`broadcaster.quickStream.guides.${cameraId}.subtitle`, { defaultValue: '' }) }
+    : null;
+  const guide: CameraGuide = {
+    title: guideInfo?.title || t('broadcaster.quickStream.defaultGuide.title'),
+    subtitle: guideInfo?.subtitle || t('broadcaster.quickStream.defaultGuide.subtitle'),
+    steps: guideSteps,
+  };
   const [loading, setLoading] = useState(false);
-  const [eventId, setEventId] = useState<string | null>(null);
   const [rtmpUrl, setRtmpUrl] = useState<string | null>(null);
   const [streamKey, setStreamKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(false);
+  const [copiedField, setCopiedField] = useState<'full' | 'url' | 'key' | null>(null);
 
-  // Restore saved credentials on mount
-  useEffect(() => {
-    getStoredData<{ eventId: string; rtmpUrl: string; streamKey: string }>('@shut_quick_stream')
-      .then((saved) => {
-        if (saved) {
-          setEventId(saved.eventId);
-          setRtmpUrl(saved.rtmpUrl);
-          setStreamKey(saved.streamKey);
+  // Reload the DJ's permanent RTMP key every time the screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      userService.getUserById(user.id).then((u) => {
+        if (u?.muxStreamKey) {
+          setStreamKey(u.muxStreamKey);
+          setRtmpUrl('rtmp://global-live.mux.com:5222/app');
+        } else {
+          setStreamKey(null);
+          setRtmpUrl(null);
         }
-      })
-      .catch(() => {});
-  }, []);
+      }).catch(() => {});
+    }, [user?.id]),
+  );
 
   const fullUrl = rtmpUrl && streamKey ? `${rtmpUrl}/${streamKey}` : null;
   const maskedKey = streamKey ? streamKey.replace(/./g, '\u2022').substring(0, 20) + '...' : '';
 
+  // Generate permanent RTMP key (first time only)
   const handleGenerate = useCallback(async () => {
     setLoading(true);
     try {
-      const creds = await streamingService.startQuickStream(user?.uid ?? 'anonymous');
-      setEventId(creds.eventId);
+      const creds = await streamingService.ensurePermanentStream();
       setRtmpUrl(creds.rtmpUrl);
       setStreamKey(creds.streamKey);
       setShowKey(false);
-      await setStoredData('@shut_quick_stream', {
-        eventId: creds.eventId,
-        rtmpUrl: creds.rtmpUrl,
-        streamKey: creds.streamKey,
-      });
     } catch (error: any) {
-      Alert.alert('Erreur', error?.message ?? 'Impossible de générer les identifiants. Réessaie.');
+      Alert.alert(t('common.error'), error?.message ?? t('broadcaster.quickStream.generateError'));
     } finally {
       setLoading(false);
     }
-  }, [user?.uid]);
+  }, []);
 
-  function handleCopyFull() {
-    if (fullUrl) copyToClipboard(fullUrl);
+  // Create a new event and navigate to live screen
+  const handleStartLive = useCallback(async (mode?: 'external') => {
+    if (!streamKey || !rtmpUrl) return;
+    setLoading(true);
+    try {
+      const creds = await streamingService.startQuickStream(user?.id ?? 'anonymous', { record: recordLives });
+      navigation.navigate('PhoneCamera', {
+        rtmpUrl: creds.rtmpUrl,
+        streamKey: creds.streamKey,
+        eventId: creds.eventId,
+        ...(mode ? { mode } : {}),
+      });
+    } catch (error: any) {
+      Alert.alert(t('common.error'), error?.message ?? t('broadcaster.quickStream.generateError'));
+    } finally {
+      setLoading(false);
+    }
+  }, [streamKey, rtmpUrl, user?.id, recordLives, navigation]);
+
+  async function handleCopyFull() {
+    if (!fullUrl) return;
+    try { await copyToClipboard(fullUrl); } catch {}
+    setCopiedField('full');
+    setTimeout(() => setCopiedField(null), 2000);
   }
 
-  function handleCopyUrl() {
-    if (rtmpUrl) copyToClipboard(rtmpUrl);
+  async function handleCopyUrl() {
+    if (!rtmpUrl) return;
+    try { await copyToClipboard(rtmpUrl); } catch {}
+    setCopiedField('url');
+    setTimeout(() => setCopiedField(null), 2000);
   }
 
-  function handleCopyKey() {
-    if (streamKey) copyToClipboard(streamKey);
+  async function handleCopyKey() {
+    if (!streamKey) return;
+    try { await copyToClipboard(streamKey); } catch {}
+    setCopiedField('key');
+    setTimeout(() => setCopiedField(null), 2000);
   }
 
   const hasCredentials = !!rtmpUrl && !!streamKey;
@@ -115,12 +162,10 @@ export function QuickStreamScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
       <Text style={styles.title}>
-        {'CAMÉRA + '}
-        <Text style={styles.titleAccent}>STREAM</Text>
+        {t('broadcaster.quickStream.headerTitle')}
+        <Text style={styles.titleAccent}>{t('broadcaster.quickStream.headerAccent')}</Text>
       </Text>
-      <Text style={styles.subtitle}>
-        Configure ton Osmo Pocket 3 avec DJI Mimo pour démarrer le live.
-      </Text>
+      <Text style={styles.subtitle}>{guide.subtitle}</Text>
 
       {/* Generate credentials card */}
       {!hasCredentials ? (
@@ -128,9 +173,9 @@ export function QuickStreamScreen() {
           <View style={styles.generateIcon}>
             <Ionicons name="key-outline" size={32} color={colors.accentLight} />
           </View>
-          <Text style={styles.generateTitle}>Génère tes identifiants SHUT</Text>
+          <Text style={styles.generateTitle}>{t('broadcaster.quickStream.generateTitle')}</Text>
           <Text style={styles.generateDesc}>
-            Un lien RTMP unique est créé pour ton live. Colle-le dans DJI Mimo pour streamer directement vers SHUT.
+            {t('broadcaster.quickStream.generateDesc')}
           </Text>
           <Pressable
             onPress={handleGenerate}
@@ -139,25 +184,25 @@ export function QuickStreamScreen() {
           >
             <Ionicons name="flash-outline" size={18} color={colors.white} />
             <Text style={styles.generateButtonText}>
-              {loading ? 'Génération en cours...' : 'Générer mes identifiants'}
+              {loading ? t('broadcaster.quickStream.generating') : t('broadcaster.quickStream.generateButton')}
             </Text>
           </Pressable>
         </View>
       ) : (
         <>
           {/* Credentials */}
-          <Text style={styles.sectionLabel}>Identifiants de diffusion</Text>
+          <Text style={styles.sectionLabel}>{t('broadcaster.quickStream.credentialsSection')}</Text>
 
           {/* Full URL (for DJI Mimo) */}
           <View style={styles.credentialCard}>
             <View style={styles.credentialHeader}>
               <View style={styles.credentialLabelRow}>
                 <Ionicons name="videocam-outline" size={14} color={colors.accentLight} />
-                <Text style={styles.credentialLabel}>URL complète (DJI Mimo)</Text>
+                <Text style={styles.credentialLabel}>{t('broadcaster.quickStream.fullUrlLabel')}</Text>
               </View>
               <Pressable onPress={handleCopyFull} style={styles.copyBtn}>
-                <Ionicons name="copy-outline" size={14} color={colors.accentLight} />
-                <Text style={styles.copyBtnText}>Copier</Text>
+                <Ionicons name={copiedField === 'full' ? 'checkmark' : 'copy-outline'} size={14} color={colors.accentLight} />
+                <Text style={styles.copyBtnText}>{copiedField === 'full' ? t('broadcaster.quickStream.copied') : t('broadcaster.quickStream.copy')}</Text>
               </Pressable>
             </View>
             <Text style={styles.credentialValue} selectable>
@@ -170,11 +215,11 @@ export function QuickStreamScreen() {
             <View style={styles.credentialHeader}>
               <View style={styles.credentialLabelRow}>
                 <Ionicons name="link-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.credentialLabel}>URL RTMP (OBS / encodeur)</Text>
+                <Text style={styles.credentialLabel}>{t('broadcaster.quickStream.rtmpUrlLabel')}</Text>
               </View>
               <Pressable onPress={handleCopyUrl} style={styles.copyBtn}>
-                <Ionicons name="copy-outline" size={14} color={colors.accentLight} />
-                <Text style={styles.copyBtnText}>Copier</Text>
+                <Ionicons name={copiedField === 'url' ? 'checkmark' : 'copy-outline'} size={14} color={colors.accentLight} />
+                <Text style={styles.copyBtnText}>{copiedField === 'url' ? t('broadcaster.quickStream.copied') : t('broadcaster.quickStream.copy')}</Text>
               </Pressable>
             </View>
             <Text style={styles.credentialValue} selectable>
@@ -187,7 +232,7 @@ export function QuickStreamScreen() {
             <View style={styles.credentialHeader}>
               <View style={styles.credentialLabelRow}>
                 <Ionicons name="key-outline" size={14} color={colors.textMuted} />
-                <Text style={styles.credentialLabel}>Clé de stream</Text>
+                <Text style={styles.credentialLabel}>{t('broadcaster.quickStream.streamKeyLabel')}</Text>
               </View>
               <View style={styles.credentialActions}>
                 <Pressable onPress={() => setShowKey((v) => !v)} style={styles.iconBtn}>
@@ -198,8 +243,8 @@ export function QuickStreamScreen() {
                   />
                 </Pressable>
                 <Pressable onPress={handleCopyKey} style={styles.copyBtn}>
-                  <Ionicons name="copy-outline" size={14} color={colors.accentLight} />
-                  <Text style={styles.copyBtnText}>Copier</Text>
+                  <Ionicons name={copiedField === 'key' ? 'checkmark' : 'copy-outline'} size={14} color={colors.accentLight} />
+                  <Text style={styles.copyBtnText}>{copiedField === 'key' ? t('broadcaster.quickStream.copied') : t('broadcaster.quickStream.copy')}</Text>
                 </Pressable>
               </View>
             </View>
@@ -210,23 +255,23 @@ export function QuickStreamScreen() {
         </>
       )}
 
-      {/* DJI Mimo guide */}
+      {/* Camera-specific guide */}
       <View style={styles.guideCard}>
         <View style={styles.guideHeader}>
           <Ionicons name="videocam-outline" size={18} color={colors.accentLight} />
-          <Text style={styles.guideTitle}>Configuration DJI Mimo</Text>
+          <Text style={styles.guideTitle}>{guide.title}</Text>
         </View>
         <Text style={styles.guideSubtitle}>
-          Suis ces étapes une fois tes identifiants générés.
+          {t('broadcaster.quickStream.guideFollowSteps')}
         </Text>
 
-        {MIMO_STEPS.map((step, i) => (
+        {guide.steps.map((step, i) => (
           <View key={i} style={styles.guideStep}>
             <View style={styles.guideStepLeft}>
               <View style={styles.guideStepNumber}>
                 <Text style={styles.guideStepNumberText}>{i + 1}</Text>
               </View>
-              {i < MIMO_STEPS.length - 1 && <View style={styles.guideStepLine} />}
+              {i < guide.steps.length - 1 && <View style={styles.guideStepLine} />}
             </View>
             <View style={styles.guideStepContent}>
               <View style={styles.guideStepTitleRow}>
@@ -243,34 +288,66 @@ export function QuickStreamScreen() {
       <View style={styles.audioReminderCard}>
         <Ionicons name="musical-notes-outline" size={16} color={colors.warning} />
         <Text style={styles.audioReminderText}>
-          Rappel audio : la sortie de ta table de mix doit être branchée sur l'entrée mic de l'Osmo AVANT de démarrer Mimo.
+          {t('broadcaster.quickStream.audioReminder')}
         </Text>
       </View>
+
+      {/* Phone camera CTA */}
+      {hasCredentials && (
+        <Pressable
+          onPress={() => handleStartLive()}
+          style={styles.phoneCameraButton}
+        >
+          <View style={styles.phoneCameraButtonLeft}>
+            <View style={styles.phoneCameraIcon}>
+              <Ionicons name="phone-portrait-outline" size={20} color={colors.accent} />
+            </View>
+            <View>
+              <Text style={styles.phoneCameraTitle}>{t('broadcaster.quickStream.phoneCameraTitle')}</Text>
+              <Text style={styles.phoneCameraDesc}>{t('broadcaster.quickStream.phoneCameraDesc')}</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
+      )}
 
       {/* CTA */}
       {hasCredentials && (
         <Pressable
-          onPress={() => navigation.navigate('LiveControl', { eventId })}
+          onPress={() => handleStartLive('external')}
           style={styles.goLiveButton}
         >
           <Ionicons name="radio-outline" size={20} color={colors.white} />
-          <Text style={styles.goLiveButtonText}>Voir le dashboard live →</Text>
+          <Text style={styles.goLiveButtonText}>{t('broadcaster.quickStream.goLive')}</Text>
         </Pressable>
       )}
 
-      {/* Regenerate */}
+      {/* Regenerate key (edge case: if key gets compromised) */}
       {hasCredentials && (
         <Pressable
-          onPress={async () => {
-            await removeStoredData('@shut_quick_stream');
-            setEventId(null);
-            setRtmpUrl(null);
-            setStreamKey(null);
+          onPress={() => {
+            Alert.alert(
+              t('broadcaster.quickStream.regenerateTitle', { defaultValue: 'Régénérer la clé ?' }),
+              t('broadcaster.quickStream.regenerateWarning', { defaultValue: 'Tu devras reconfigurer ta caméra/OBS avec la nouvelle clé.' }),
+              [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                  text: t('broadcaster.quickStream.regenerateConfirm', { defaultValue: 'Régénérer' }),
+                  style: 'destructive',
+                  onPress: async () => {
+                    setStreamKey(null);
+                    setRtmpUrl(null);
+                    // Force creation of a new Mux stream by clearing user's saved stream
+                    await streamingService.clearPermanentStream(user?.id ?? '');
+                  },
+                },
+              ],
+            );
           }}
           style={styles.regenerateButton}
         >
           <Ionicons name="refresh-outline" size={15} color={colors.textMuted} />
-          <Text style={styles.regenerateText}>Réinitialiser (générer de nouveaux identifiants)</Text>
+          <Text style={styles.regenerateText}>{t('broadcaster.quickStream.regenerate')}</Text>
         </Pressable>
       )}
     </ScrollView>
@@ -547,5 +624,43 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontFamily: fonts.body.regular,
     fontSize: fontSize.sm,
+  },
+
+  // ── Phone camera button ────────────────────────────────────────────────────
+  phoneCameraButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: `${colors.accent}30`,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  phoneCameraButtonLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
+  },
+  phoneCameraIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.sm,
+    backgroundColor: `${colors.accent}18`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  phoneCameraTitle: {
+    color: colors.textPrimary,
+    fontFamily: fonts.body.semiBold,
+    fontSize: fontSize.sm,
+    marginBottom: 2,
+  },
+  phoneCameraDesc: {
+    color: colors.textMuted,
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
   },
 });

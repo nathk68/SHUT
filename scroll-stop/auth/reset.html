@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SHUT — Reset Password</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Archivo:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #7c3aed;
+      --accent-hover: #6d28d9;
+      --accent-rgb: 124, 58, 237;
+      --bg: #08080f;
+      --bg-card: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.08);
+      --text-primary: #f0eff4;
+      --text-secondary: rgba(240, 239, 244, 0.55);
+      --text-muted: rgba(240, 239, 244, 0.3);
+      --error: #ef4444;
+      --success: #22c55e;
+    }
+
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Archivo', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    /* Header gradient */
+    .header {
+      background: linear-gradient(
+        135deg, #7c3aed 0%, #a855f7 50%, #7c3aed 100%
+      );
+      padding: 40px 32px;
+      text-align: center;
+    }
+
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 6px;
+      margin-bottom: 6px;
+    }
+
+    .header-sub {
+      font-size: 12px;
+      color: rgba(255,255,255,0.8);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* Body */
+    .body {
+      padding: 32px;
+    }
+
+    .title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    /* Form */
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-family: 'Archivo', sans-serif;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.15);
+    }
+
+    .input.error {
+      border-color: var(--error);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.5px;
+      margin-top: 8px;
+    }
+
+    .btn:hover { background: var(--accent-hover); }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Messages */
+    .msg {
+      text-align: center;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .msg.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+      display: block;
+    }
+
+    .msg.success {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      color: #86efac;
+      display: block;
+    }
+
+    /* States */
+    .state { display: none; }
+    .state.active { display: block; }
+
+    /* Success icon */
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(34, 197, 94, 0.12);
+      border: 2px solid rgba(34, 197, 94, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .success-icon svg {
+      width: 28px;
+      height: 28px;
+      color: var(--success);
+    }
+
+    /* Error icon */
+    .error-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.12);
+      border: 2px solid rgba(239, 68, 68, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .error-icon svg {
+      width: 28px;
+      height: 28px;
+      color: var(--error);
+    }
+
+    .link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .link:hover { text-decoration: underline; }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 20px 32px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Password strength */
+    .strength-bar {
+      height: 3px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.06);
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .strength-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s, background 0.3s;
+      width: 0%;
+    }
+
+    .strength-text {
+      font-size: 11px;
+      margin-top: 4px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="logo">SHUT</div>
+        <div class="header-sub" id="headerSub">Password Reset</div>
+      </div>
+
+      <div class="body">
+        <!-- STATE: Loading / verifying code -->
+        <div class="state active" id="stateLoading">
+          <div style="text-align:center;padding:20px 0;">
+            <div class="spinner" style="width:32px;height:32px;border-width:3px;margin:0 auto 16px;display:block;"></div>
+            <p class="subtitle" style="margin-bottom:0;" id="loadingText">
+              Verification in progress...
+            </p>
+          </div>
+        </div>
+
+        <!-- STATE: Form (enter new password) -->
+        <div class="state" id="stateForm">
+          <p class="title" id="formTitle">Choose a new password</p>
+          <p class="subtitle" id="formSubtitle">
+            Enter your new password below.
+          </p>
+
+          <div id="formMsg" class="msg"></div>
+
+          <form id="resetForm" onsubmit="return false;">
+            <div class="field">
+              <label class="label" for="password" id="labelPassword">
+                New password
+              </label>
+              <input
+                class="input"
+                type="password"
+                id="password"
+                autocomplete="new-password"
+                minlength="6"
+                required
+              >
+              <div class="strength-bar">
+                <div class="strength-fill" id="strengthFill"></div>
+              </div>
+              <div class="strength-text" id="strengthText"></div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="confirmPassword" id="labelConfirm">
+                Confirm password
+              </label>
+              <input
+                class="input"
+                type="password"
+                id="confirmPassword"
+                autocomplete="new-password"
+                minlength="6"
+                required
+              >
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+              Reset password
+            </button>
+          </form>
+        </div>
+
+        <!-- STATE: Success -->
+        <div class="state" id="stateSuccess">
+          <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <p class="title" id="successTitle">Password updated!</p>
+          <p class="subtitle" id="successSubtitle">
+            Your password has been changed successfully.
+            You can now log in with your new password in the SHUT app.
+          </p>
+        </div>
+
+        <!-- STATE: Invalid / expired link -->
+        <div class="state" id="stateError">
+          <div class="error-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </div>
+          <p class="title" id="errorTitle">Invalid link</p>
+          <p class="subtitle" id="errorSubtitle">
+            This reset link is invalid or has expired.
+            Please request a new one from the SHUT app.
+          </p>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>&copy; 2026 SHUT. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK (compat for simplicity in static HTML) -->
+  <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"
+    integrity="sha384-OtI3kstYMydkAdp/yrBVGmSDq2xeretNyPJtjXCLVSQxNO5iJ0wEHz5mg0nbIpI8"
+    crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"
+    integrity="sha384-uBw+tS9ATVaMS+KAwue2kiLsDqsM4RMbxKQ0phGiaDeEkE4CiC7ClOIZCkvS2KaF"
+    crossorigin="anonymous"></script>
+  <script>
+    // Firebase config
+    firebase.initializeApp({
+      apiKey: "AIzaSyBERbBRO7wL5l-7GjHGOYd10_98iwsql7A",
+      authDomain: "shut-app-c0067.firebaseapp.com",
+      projectId: "shut-app-c0067",
+    });
+
+    const auth = firebase.auth();
+
+    // ── i18n ──────────────────────────────────
+    const strings = {
+      fr: {
+        headerSub: "Réinitialisation du mot de passe",
+        loadingText: "Vérification en cours...",
+        formTitle: "Choisis un nouveau mot de passe",
+        formSubtitle: "Entre ton nouveau mot de passe ci-dessous.",
+        labelPassword: "Nouveau mot de passe",
+        labelConfirm: "Confirmer le mot de passe",
+        submitBtn: "Réinitialiser le mot de passe",
+        submitting: "Réinitialisation...",
+        successTitle: "Mot de passe mis à jour !",
+        successSubtitle:
+          "Ton mot de passe a été modifié avec succès. " +
+          "Tu peux maintenant te connecter avec ton nouveau " +
+          "mot de passe dans l'app SHUT.",
+        errorTitle: "Lien invalide",
+        errorSubtitle:
+          "Ce lien de réinitialisation est invalide ou a expiré. " +
+          "Demande-en un nouveau depuis l'app SHUT.",
+        errMismatch: "Les mots de passe ne correspondent pas.",
+        errMin: "Le mot de passe doit contenir au moins 6 caractères.",
+        errGeneric: "Une erreur est survenue. Réessaie.",
+        errExpired: "Ce lien a expiré. Demande un nouveau lien.",
+        errInvalid: "Ce lien est invalide.",
+        strengthWeak: "Faible",
+        strengthMedium: "Moyen",
+        strengthStrong: "Fort",
+      },
+      en: {
+        headerSub: "Password Reset",
+        loadingText: "Verification in progress...",
+        formTitle: "Choose a new password",
+        formSubtitle: "Enter your new password below.",
+        labelPassword: "New password",
+        labelConfirm: "Confirm password",
+        submitBtn: "Reset password",
+        submitting: "Resetting...",
+        successTitle: "Password updated!",
+        successSubtitle:
+          "Your password has been changed successfully. " +
+          "You can now log in with your new password " +
+          "in the SHUT app.",
+        errorTitle: "Invalid link",
+        errorSubtitle:
+          "This reset link is invalid or has expired. " +
+          "Please request a new one from the SHUT app.",
+        errMismatch: "Passwords do not match.",
+        errMin: "Password must be at least 6 characters.",
+        errGeneric: "Something went wrong. Please try again.",
+        errExpired: "This link has expired. Request a new one.",
+        errInvalid: "This link is invalid.",
+        strengthWeak: "Weak",
+        strengthMedium: "Medium",
+        strengthStrong: "Strong",
+      },
+    };
+
+    // Detect browser language
+    const userLang = (navigator.language || "fr").startsWith("fr")
+      ? "fr" : "en";
+    const t = strings[userLang];
+
+    // Apply translations to static elements
+    function applyTranslations() {
+      const ids = [
+        "headerSub", "loadingText", "formTitle",
+        "formSubtitle", "labelPassword", "labelConfirm",
+        "submitBtn", "successTitle", "successSubtitle",
+        "errorTitle", "errorSubtitle",
+      ];
+      ids.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && t[id]) el.textContent = t[id];
+      });
+    }
+    applyTranslations();
+
+    // ── State management ─────────────────────
+    function showState(stateId) {
+      document.querySelectorAll(".state").forEach(function(el) {
+        el.classList.remove("active");
+      });
+      document.getElementById(stateId).classList.add("active");
+    }
+
+    // ── Password strength ────────────────────
+    var passwordInput = document.getElementById("password");
+    var strengthFill = document.getElementById("strengthFill");
+    var strengthText = document.getElementById("strengthText");
+
+    passwordInput.addEventListener("input", function() {
+      var pw = this.value;
+      var score = 0;
+      if (pw.length >= 6) score++;
+      if (pw.length >= 10) score++;
+      if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+      if (/\d/.test(pw)) score++;
+      if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+      var pct, color, label;
+      if (score <= 1) {
+        pct = "25%"; color = "#ef4444"; label = t.strengthWeak;
+      } else if (score <= 3) {
+        pct = "60%"; color = "#f59e0b"; label = t.strengthMedium;
+      } else {
+        pct = "100%"; color = "#22c55e"; label = t.strengthStrong;
+      }
+
+      strengthFill.style.width = pw.length === 0 ? "0%" : pct;
+      strengthFill.style.background = color;
+      strengthText.textContent = pw.length === 0 ? "" : label;
+      strengthText.style.color = color;
+    });
+
+    // ── Parse URL params ─────────────────────
+    var params = new URLSearchParams(window.location.search);
+    var mode = params.get("mode");
+    var oobCode = params.get("oobCode");
+
+    // ── Verify code on load ──────────────────
+    if (mode !== "resetPassword" || !oobCode) {
+      showState("stateError");
+    } else {
+      auth.verifyPasswordResetCode(oobCode)
+        .then(function(email) {
+          // Code is valid, show the form
+          showState("stateForm");
+        })
+        .catch(function(err) {
+          // Code is invalid or expired
+          if (err.code === "auth/expired-action-code") {
+            document.getElementById("errorSubtitle")
+              .textContent = t.errExpired;
+          }
+          showState("stateError");
+        });
+    }
+
+    // ── Form submission ──────────────────────
+    var form = document.getElementById("resetForm");
+    var submitBtn = document.getElementById("submitBtn");
+    var formMsg = document.getElementById("formMsg");
+    var confirmInput = document.getElementById("confirmPassword");
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      formMsg.className = "msg";
+      formMsg.style.display = "none";
+
+      var pw = passwordInput.value;
+      var confirm = confirmInput.value;
+
+      // Validate
+      if (pw.length < 6) {
+        formMsg.textContent = t.errMin;
+        formMsg.className = "msg error";
+        return;
+      }
+      if (pw !== confirm) {
+        formMsg.textContent = t.errMismatch;
+        formMsg.className = "msg error";
+        confirmInput.classList.add("error");
+        return;
+      }
+      confirmInput.classList.remove("error");
+
+      // Disable button, show spinner
+      submitBtn.disabled = true;
+      submitBtn.innerHTML =
+        '<span class="spinner"></span>' + t.submitting;
+
+      auth.confirmPasswordReset(oobCode, pw)
+        .then(function() {
+          showState("stateSuccess");
+        })
+        .catch(function(err) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = t.submitBtn;
+
+          var msg = t.errGeneric;
+          if (err.code === "auth/expired-action-code") {
+            msg = t.errExpired;
+          } else if (err.code === "auth/invalid-action-code") {
+            msg = t.errInvalid;
+          } else if (err.code === "auth/weak-password") {
+            msg = t.errMin;
+          }
+          formMsg.textContent = msg;
+          formMsg.className = "msg error";
+        });
+    });
+  </script>
+</body>
+</html>

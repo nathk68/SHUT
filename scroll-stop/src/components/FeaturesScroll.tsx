@@ -1,0 +1,343 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { gsap, ScrollTrigger, SplitText } from "@/lib/gsap";
+
+const features = [
+  {
+    num: "01",
+    title: "Live Streaming",
+    desc: "Diffusez vos sets en direct depuis n'importe quel lieu. Connectez vos platines, lancez le stream, et partagez votre musique avec le monde.",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#974dfb" strokeWidth="2" strokeLinecap="round">
+        <polygon points="23 7 16 12 23 17 23 7" />
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+      </svg>
+    ),
+    visual: "live",
+  },
+  {
+    num: "02",
+    title: "Explore par Pays",
+    desc: "Decouvrez les scenes live du monde entier. Parcourez les pays partenaires et trouvez les DJs de chaque ville.",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#974dfb" strokeWidth="2" strokeLinecap="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      </svg>
+    ),
+    visual: "globe",
+  },
+  {
+    num: "03",
+    title: "Regarde tes DJs",
+    desc: "Suivez vos DJs preferes et recevez des notifications quand ils passent en live. Ne ratez plus aucun set.",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#974dfb" strokeWidth="2" strokeLinecap="round">
+        <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+        <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+      </svg>
+    ),
+    visual: "djs",
+  },
+  {
+    num: "04",
+    title: "Chat & Reactions",
+    desc: "Interagissez en temps reel pendant le set. Chat live, reactions, et compteur de viewers — votre audience fait partie du show.",
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#974dfb" strokeWidth="2" strokeLinecap="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      </svg>
+    ),
+    visual: "chat",
+  },
+];
+
+function FeatureVisual({ type }: { type: string }) {
+  if (type === "live") {
+    return (
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: "rgba(239,68,68,0.15)" }}>
+          <span className="w-2 h-2 rounded-full bg-red-500" style={{ animation: "pulse-dot 2s ease-in-out infinite" }} />
+          <span className="text-red-400 text-xs font-bold">LIVE</span>
+        </div>
+        <div className="flex items-end gap-[3px] h-8">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="w-[3px] rounded-full"
+              style={{
+                background: "var(--color-accent)",
+                animation: `wave 1s ease-in-out ${i * 0.15}s infinite`,
+                height: "8px",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "globe") {
+    return (
+      <div className="relative w-24 h-24">
+        {[
+          { x: 30, y: 20 }, { x: 60, y: 35 }, { x: 45, y: 55 },
+          { x: 70, y: 60 }, { x: 20, y: 70 }, { x: 80, y: 25 },
+        ].map((pos, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 rounded-full"
+            style={{
+              left: pos.x,
+              top: pos.y,
+              background: "var(--color-accent)",
+              opacity: [0.5, 0.8, 0.6, 0.9, 0.7, 1.0][i],
+              animation: i === 1 ? "pulse-dot 2s ease-in-out infinite" : undefined,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "djs") {
+    return (
+      <div className="flex gap-3">
+        {["T", "K", "D", "M"].map((letter, i) => (
+          <div
+            key={i}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold"
+            style={{
+              background: "rgba(151, 77, 251, 0.2)",
+              border: "2px solid var(--color-accent)",
+              boxShadow: "0 0 15px rgba(151, 77, 251, 0.3)",
+              animation: `float 3s ease-in-out ${i * 0.4}s infinite`,
+            }}
+          >
+            {letter}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // chat
+  return (
+    <div className="relative h-20 w-40 overflow-hidden">
+      {["Super set!", "Fire!", "Drop it!"].map((msg, i) => (
+        <div
+          key={i}
+          className="absolute text-xs px-3 py-1 rounded-full whitespace-nowrap"
+          style={{
+            background: "rgba(151, 77, 251, 0.15)",
+            border: "1px solid rgba(151, 77, 251, 0.2)",
+            color: "var(--color-accent-light)",
+            left: i * 30 + 10,
+            animation: `chatFloat 3s ease-in-out ${i * 0.8}s infinite`,
+          }}
+        >
+          {msg}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function FeaturesScroll() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (!sectionRef.current || !titleRef.current) return;
+
+    const isMobile = window.innerWidth < 768;
+
+    const ctx = gsap.context(() => {
+      // Header animations
+      const split = SplitText.create(titleRef.current!, { type: "lines" });
+      gsap.from(split.lines, {
+        yPercent: 100,
+        opacity: 0,
+        stagger: 0.12,
+        duration: 0.7,
+        ease: "power4.out",
+        scrollTrigger: {
+          trigger: titleRef.current,
+          start: "top 85%",
+        },
+      });
+
+      // Tag line animation
+      gsap.from(".features-line", {
+        width: 0,
+        duration: 0.8,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: ".features-tag",
+          start: "top 85%",
+        },
+      });
+
+      const cards = gsap.utils.toArray<HTMLElement>(".feature-card");
+
+      if (!isMobile) {
+        // All cards start off-screen to the right
+        gsap.set(cards, { xPercent: 150, autoAlpha: 0 });
+
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top top",
+            end: () => `+=${cards.length * 600}`,
+            pin: true,
+            scrub: 0.6,
+            onUpdate: (self) => {
+              const idx = Math.min(
+                cards.length - 1,
+                Math.floor(self.progress * cards.length)
+              );
+              setActiveIndex(idx);
+            },
+          },
+        });
+
+        // Each card slides into its natural flex position and stays
+        cards.forEach((card) => {
+          tl.to(card, {
+            xPercent: 0,
+            autoAlpha: 1,
+            duration: 1,
+            ease: "power3.out",
+          });
+          // Brief pause before next card
+          tl.to({}, { duration: 0.3 });
+        });
+      } else {
+        // Mobile: stagger reveal
+        cards.forEach((card) => {
+          gsap.from(card, {
+            opacity: 0,
+            y: 40,
+            duration: 0.6,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: card,
+              start: "top 85%",
+            },
+          });
+        });
+      }
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  const isMobileSSR = false; // SSR-safe, real check in useEffect
+
+  return (
+    <section id="features" ref={sectionRef} className="relative z-[1]">
+      {/* Section header */}
+      <div className="text-center max-w-[600px] mx-auto px-6 pt-20 pb-8 md:pt-24 md:pb-10">
+        <p
+          className="features-tag font-[family-name:var(--font-jetbrains-mono)] text-xs uppercase mb-3"
+          style={{ color: "var(--color-accent-light)", letterSpacing: "3px" }}
+        >
+          Features
+        </p>
+        <div
+          className="features-line h-[2px] w-[60px] mx-auto mb-4 rounded-full"
+          style={{ background: "var(--color-accent)" }}
+        />
+        <h2
+          ref={titleRef}
+          className="font-[family-name:var(--font-space-grotesk)] font-bold mb-3"
+          style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", letterSpacing: "-0.5px" }}
+        >
+          Tout ce qu&apos;il faut pour le live
+        </h2>
+        <p style={{ color: "var(--color-text-secondary)" }} className="text-base leading-relaxed">
+          Une plateforme complete pensee par et pour les DJs.
+        </p>
+      </div>
+
+      {/* Cards container */}
+      <div className="overflow-hidden px-6">
+        <div
+          ref={trackRef}
+          className="flex flex-wrap gap-4 md:flex-nowrap md:gap-4 max-w-[1200px] mx-auto"
+        >
+          {features.map((feature, i) => (
+            <div
+              key={i}
+              className="feature-card glassmorphism p-5 md:p-6 flex flex-col gap-3 w-full md:flex-1 md:min-w-0"
+              style={{
+                borderRadius: "20px",
+                height: "min(420px, calc(100vh - 260px))",
+                transition: "border-color 0.3s ease",
+                overflow: "hidden",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor =
+                  "rgba(151, 77, 251, 0.3)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor =
+                  "var(--color-border)";
+              }}
+            >
+              {/* Card number */}
+              <span
+                className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-5xl font-bold leading-none"
+                style={{ color: "rgba(151, 77, 251, 0.08)" }}
+              >
+                {feature.num}
+              </span>
+
+              {/* Icon */}
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center"
+                style={{ background: "rgba(151, 77, 251, 0.1)" }}
+              >
+                {feature.icon}
+              </div>
+
+              {/* Text */}
+              <h3 className="font-[family-name:var(--font-space-grotesk)] text-xl font-semibold">
+                {feature.title}
+              </h3>
+              <p
+                className="text-sm leading-relaxed"
+                style={{ color: "var(--color-text-secondary)" }}
+              >
+                {feature.desc}
+              </p>
+
+              {/* Visual */}
+              <div className="mt-auto pt-2">
+                <FeatureVisual type={feature.visual} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Progress dots (desktop only) */}
+      <div className="hidden md:flex justify-center gap-2 mt-6">
+        {features.map((_, i) => (
+          <div
+            key={i}
+            className="w-2 h-2 rounded-full transition-all duration-300"
+            style={{
+              background: i === activeIndex ? "var(--color-accent)" : "var(--color-border)",
+              transform: i === activeIndex ? "scale(1.3)" : "scale(1)",
+            }}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}

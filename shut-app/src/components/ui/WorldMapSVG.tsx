@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Stop, Path, Rect } from 'react-native-svg';
 import { feature } from 'topojson-client';
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
 
@@ -11,18 +11,15 @@ const world = require('world-atlas/countries-110m.json');
 const PARTNER_IDS: Record<string, string> = {
   '756': 'CH', // Switzerland
   '250': 'FR', // France
-  '276': 'DE', // Germany
-  '056': 'BE', // Belgium
 };
 
 const VIEWBOX_W = 960;
-// Crop Antarctica: at scale 153, lat -60° ≈ y 358 → clip at 375
-const VIEWBOX_H = 375;
+const VIEWBOX_H = 700;
 
-// Natural Earth 1 projection — better aesthetics than Mercator
+// Zoomed on France + Switzerland
 const projection = geoNaturalEarth1()
-  .scale(153)
-  .translate([VIEWBOX_W / 2, 235]); // slightly above center to compensate crop
+  .scale(1800)
+  .translate([VIEWBOX_W / 2 + 60, VIEWBOX_H / 2 + 1450]);
 
 const pathGen = geoPath(projection);
 
@@ -42,6 +39,8 @@ const COLOR_PARTNER = '#974dfb';
 const COLOR_SELECTED = '#c080ff';
 const COLOR_DEFAULT = '#1c1b2e';
 const COLOR_STROKE = '#08080f';
+const FADE_COLOR = '#08080f';
+const FADE_SIZE = 150;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -91,6 +90,30 @@ export function WorldMapSVG({ width, height, selectedCode, onCountryPress }: Pro
           />
         );
       })}
+
+      {/* Edge fade overlays */}
+      <Defs>
+        <LinearGradient id="fadeLeft" x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor={FADE_COLOR} stopOpacity="1" />
+          <Stop offset="1" stopColor={FADE_COLOR} stopOpacity="0" />
+        </LinearGradient>
+        <LinearGradient id="fadeRight" x1="1" y1="0" x2="0" y2="0">
+          <Stop offset="0" stopColor={FADE_COLOR} stopOpacity="1" />
+          <Stop offset="1" stopColor={FADE_COLOR} stopOpacity="0" />
+        </LinearGradient>
+        <LinearGradient id="fadeTop" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={FADE_COLOR} stopOpacity="1" />
+          <Stop offset="1" stopColor={FADE_COLOR} stopOpacity="0" />
+        </LinearGradient>
+        <LinearGradient id="fadeBottom" x1="0" y1="1" x2="0" y2="0">
+          <Stop offset="0" stopColor={FADE_COLOR} stopOpacity="1" />
+          <Stop offset="1" stopColor={FADE_COLOR} stopOpacity="0" />
+        </LinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width={FADE_SIZE} height={VIEWBOX_H} fill="url(#fadeLeft)" />
+      <Rect x={VIEWBOX_W - FADE_SIZE} y="0" width={FADE_SIZE} height={VIEWBOX_H} fill="url(#fadeRight)" />
+      <Rect x="0" y="0" width={VIEWBOX_W} height={FADE_SIZE} fill="url(#fadeTop)" />
+      <Rect x="0" y={VIEWBOX_H - FADE_SIZE} width={VIEWBOX_W} height={FADE_SIZE} fill="url(#fadeBottom)" />
     </Svg>
   );
 }

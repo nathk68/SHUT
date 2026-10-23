@@ -16,5 +16,9 @@ export interface IStreamingService {
   startStream(eventId: string, cameraId: string): Promise<StreamState>;
   stopStream(eventId: string): Promise<void>;
   // Ad-hoc stream (DJ tab — no pre-existing event required)
-  startQuickStream(userId: string): Promise<QuickStreamCredentials>;
+  startQuickStream(userId: string, options?: { record?: boolean }): Promise<QuickStreamCredentials>;
+  // Ensure permanent stream key exists (create if needed, no event)
+  ensurePermanentStream(): Promise<{ streamKey: string; rtmpUrl: string }>;
+  // Clear saved Mux stream so next createLiveStream generates a fresh one
+  clearPermanentStream(userId: string): Promise<void>;
 }

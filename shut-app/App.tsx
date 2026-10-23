@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import {
   useFonts,
   SpaceGrotesk_400Regular,
@@ -18,11 +19,14 @@ import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
 } from '@expo-google-fonts/jetbrains-mono';
+import './src/i18n';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { RoleProvider } from './src/contexts/RoleContext';
+import { PreferencesProvider } from './src/contexts/PreferencesContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
 SplashScreen.preventAutoHideAsync();
+ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -48,11 +52,13 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <RoleProvider>
-            <RootNavigator />
-          </RoleProvider>
-        </AuthProvider>
+        <PreferencesProvider>
+          <AuthProvider>
+            <RoleProvider>
+              <RootNavigator />
+            </RoleProvider>
+          </AuthProvider>
+        </PreferencesProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

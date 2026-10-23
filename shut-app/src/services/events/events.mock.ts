@@ -87,4 +87,12 @@ export class MockEventsService implements IEventsService {
   async incrementViewerCount(_id: string, _delta: 1 | -1): Promise<void> {
     // mock: no-op
   }
+
+  onLiveEvents(_callback: (events: LiveEvent[]) => void): () => void {
+    return () => {};
+  }
+
+  onEventChange(_id: string, _callback: (event: LiveEvent | null) => void): () => void {
+    return () => {};
+  }
 }

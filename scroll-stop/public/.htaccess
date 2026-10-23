@@ -1,0 +1,25 @@
+RewriteEngine On
+
+# Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# Serve .well-known files directly
+RewriteRule ^\.well-known/ - [L]
+
+# Deep links: /live/ANYTHING -> /live.html
+RewriteRule ^live/.+$ /live.html [L]
+
+# Deep links: /profile/ANYTHING -> /profile.html
+RewriteRule ^profile/.+$ /profile.html [L]
+
+# Deep links: /replay/ANYTHING -> /replay.html
+RewriteRule ^replay/.+$ /replay.html [L]
+
+# If the file/directory exists, serve it directly
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# SPA fallback: everything else -> index.html
+RewriteRule ^ /index.html [L]

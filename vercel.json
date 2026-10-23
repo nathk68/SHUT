@@ -4,6 +4,20 @@
     { "src": "scroll-stop/**/*", "use": "@vercel/static" }
   ],
   "routes": [
+    {
+      "src": "/.well-known/apple-app-site-association",
+      "dest": "/scroll-stop/.well-known/apple-app-site-association",
+      "headers": { "Content-Type": "application/json" }
+    },
+    {
+      "src": "/.well-known/assetlinks.json",
+      "dest": "/scroll-stop/.well-known/assetlinks.json",
+      "headers": { "Content-Type": "application/json" }
+    },
+    { "src": "/live/(.*)", "dest": "/scroll-stop/app-redirect.html" },
+    { "src": "/replay/(.*)", "dest": "/scroll-stop/app-redirect.html" },
+    { "src": "/profile/(.*)", "dest": "/scroll-stop/app-redirect.html" },
+    { "src": "/auth/reset", "dest": "/scroll-stop/auth/reset.html" },
     { "src": "/(.*)", "dest": "/scroll-stop/$1" }
   ]
 }

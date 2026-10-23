@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
@@ -35,6 +36,7 @@ export function CreateEventScreen() {
   const navigation = useNavigation<Navigation>();
   const route = useRoute<Route>();
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
   const editingId = route.params?.eventId;
 
   const [title, setTitle] = useState('');
@@ -48,7 +50,7 @@ export function CreateEventScreen() {
     const d = new Date();
     d.setDate(d.getDate() + 1);
     d.setHours(22, 0, 0, 0);
-    return d.toLocaleDateString('fr-FR', {
+    return d.toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -56,7 +58,7 @@ export function CreateEventScreen() {
       hour: '2-digit',
       minute: '2-digit',
     });
-  }, []);
+  }, [i18n.language]);
 
   useEffect(() => {
     const festivalId = user?.festivalId ?? '';
@@ -69,11 +71,11 @@ export function CreateEventScreen() {
 
   const handleSubmit = useCallback(async () => {
     if (!title.trim()) {
-      Alert.alert('Erreur', 'Le titre est requis.');
+      Alert.alert(t('common.error'), t('broadcaster.createEvent.titleRequired'));
       return;
     }
     if (!djName.trim()) {
-      Alert.alert('Erreur', 'Le nom du DJ est requis.');
+      Alert.alert(t('common.error'), t('broadcaster.createEvent.djNameRequired'));
       return;
     }
 
@@ -103,16 +105,16 @@ export function CreateEventScreen() {
       });
 
       Alert.alert(
-        'Event cree avec succes',
+        t('broadcaster.createEvent.successTitle'),
         editingId
-          ? 'Votre event a ete mis a jour.'
-          : 'Votre live a ete programme avec succes.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }],
+          ? t('broadcaster.createEvent.successEditMessage')
+          : t('broadcaster.createEvent.successCreateMessage'),
+        [{ text: t('common.ok'), onPress: () => navigation.goBack() }],
       );
     } catch (error) {
-      Alert.alert('Erreur', 'Impossible de creer l\'event.');
+      Alert.alert(t('common.error'), t('broadcaster.createEvent.cannotCreate'));
     }
-  }, [title, djName, description, selectedCamera, user, editingId, navigation]);
+  }, [t, title, djName, description, selectedCamera, user, editingId, navigation]);
 
   return (
     <ScreenContainer edges={['top']}>
@@ -125,7 +127,7 @@ export function CreateEventScreen() {
           color={colors.textPrimary}
         />
         <Text style={styles.headerTitle}>
-          {editingId ? 'Modifier le live' : 'Nouveau live'}
+          {editingId ? t('broadcaster.createEvent.editTitle') : t('broadcaster.createEvent.newTitle')}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -250,7 +252,7 @@ export function CreateEventScreen() {
 
         {/* Submit button */}
         <Button
-          title={editingId ? 'Mettre a jour' : 'Programmer le live'}
+          title={editingId ? t('broadcaster.createEvent.update') : t('broadcaster.createEvent.schedule')}
           onPress={handleSubmit}
           size="lg"
           style={styles.submitButton}

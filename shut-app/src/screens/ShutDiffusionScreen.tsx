@@ -1,22 +1,21 @@
-import React, { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { SearchableDropdown } from '../components/ui/SearchableDropdown';
+import { LocationSelector, LocationValue } from '../components/ui/LocationSelector';
 import { WorldMapSVG } from '../components/ui/WorldMapSVG';
-import {
-  COUNTRIES,
-  CITIES,
-  DJ_PROFILES,
-  DJProfile,
-  getRegionsForCountry,
-  getCitiesForRegion,
-  getCitiesForCountry,
-  getDJsForCity,
-  getDJsForRegion,
-  getDJsForCountry,
-} from '../services/_mock-data/countries';
+import { COUNTRIES } from '../services/_mock-data/countries';
+import { userService } from '../services';
+import { User } from '../types/user';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
+import type { ExploreStackParamList } from '../navigation/MainTabs';
+import { GlobalSearchOverlay } from '../components/search/GlobalSearchOverlay';
+import { NotificationBell } from '../components/ui/NotificationBell';
+
+type Nav = NativeStackNavigationProp<ExploreStackParamList>;
 
 // ─── Genre badge colors ────────────────────────────────────────────────────────
 
@@ -28,34 +27,60 @@ const GENRE_COLORS: Record<string, string> = {
   Other: colors.textMuted,
 };
 
+// ─── DJ filtering helpers (real users) ────────────────────────────────────────
+
+function getDJCountry(dj: User): string | undefined {
+  return dj.representedCountryCode;
+}
+
+function getDJCity(dj: User): string | undefined {
+  return dj.representedCityName;
+}
+
+function getDJsForCountry(djs: User[], countryCode: string): User[] {
+  return djs.filter((dj) => getDJCountry(dj) === countryCode);
+}
+
+function getDJsForCity(djs: User[], cityId: string): User[] {
+  const cityName = cityId.slice(cityId.lastIndexOf('__') + 2);
+  return djs.filter((dj) => getDJCity(dj) === cityName);
+}
+
 // ─── DJ profile card ──────────────────────────────────────────────────────────
 
-function DJCard({ dj }: { dj: DJProfile }) {
-  const city = CITIES.find((c) => c.id === dj.cityId);
-  const country = COUNTRIES.find((c) => c.code === dj.countryCode);
-  const initials = dj.name
+function DJCard({ dj, onPress }: { dj: User; onPress: () => void }) {
+  const country = COUNTRIES.find((c) => c.code === dj.representedCountryCode);
+  const name = dj.artistName || dj.displayName;
+  const initials = name
     .split(' ')
     .map((w) => w[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
-  const genreColor = GENRE_COLORS[dj.genre] ?? colors.textMuted;
+  const mainGenre = dj.genres?.[0] ?? '';
+  const genreColor = GENRE_COLORS[mainGenre] ?? colors.textMuted;
 
   return (
-    <View style={cardStyles.card}>
-      <View style={[cardStyles.avatar, { backgroundColor: genreColor + '33' }]}>
-        <Text style={[cardStyles.avatarText, { color: genreColor }]}>{initials}</Text>
-      </View>
+    <Pressable onPress={onPress} style={({ pressed }) => [cardStyles.card, pressed && cardStyles.cardPressed]}>
+      {dj.avatarUrl ? (
+        <Image source={{ uri: dj.avatarUrl }} style={cardStyles.avatar} />
+      ) : (
+        <View style={[cardStyles.avatar, { backgroundColor: genreColor + '33' }]}>
+          <Text style={[cardStyles.avatarText, { color: genreColor }]}>{initials}</Text>
+        </View>
+      )}
       <View style={cardStyles.info}>
-        <Text style={cardStyles.name}>{dj.name}</Text>
+        <Text style={cardStyles.name}>{name}</Text>
         <Text style={cardStyles.location}>
-          {country?.flag} {city?.name ?? '—'}
+          {country?.flag} {dj.representedCityName}
         </Text>
       </View>
-      <View style={[cardStyles.genreBadge, { borderColor: genreColor }]}>
-        <Text style={[cardStyles.genreText, { color: genreColor }]}>{dj.genre}</Text>
-      </View>
-    </View>
+      {mainGenre ? (
+        <View style={[cardStyles.genreBadge, { borderColor: genreColor }]}>
+          <Text style={[cardStyles.genreText, { color: genreColor }]}>{mainGenre}</Text>
+        </View>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -69,6 +94,10 @@ const cardStyles = StyleSheet.create({
     gap: spacing.md,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
+  },
+  cardPressed: {
+    backgroundColor: 'rgba(124,58,237,0.06)',
+    borderColor: 'rgba(124,58,237,0.2)',
   },
   avatar: {
     width: 44,
@@ -110,78 +139,71 @@ const cardStyles = StyleSheet.create({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export function ShutDiffusionScreen() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<Nav>();
+  const { t } = useTranslation();
   const { width: screenWidth } = useWindowDimensions();
 
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Real DJ data from Firestore
+  const [allDJs, setAllDJs] = useState<User[]>([]);
+  const [loadingDJs, setLoadingDJs] = useState(true);
+
+  useEffect(() => {
+    userService
+      .getDJs()
+      .then(setAllDJs)
+      .catch((e) => console.warn('[Explorer] getDJs error:', e))
+      .finally(() => setLoadingDJs(false));
+  }, []);
+
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [cityLocation, setCityLocation] = useState<LocationValue>({});
   const [selectedDJ, setSelectedDJ] = useState<string | null>(null);
   const [showDJResults, setShowDJResults] = useState(false);
 
-  const countryOptions = COUNTRIES.map((c) => ({ id: c.code, label: c.name, prefix: c.flag }));
-
-  const regionOptions = selectedCountry
-    ? getRegionsForCountry(selectedCountry).map((r) => ({ id: r.id, label: r.name }))
-    : [];
-
-  const cityOptions = (() => {
-    if (selectedRegion) return getCitiesForRegion(selectedRegion).map((c) => ({ id: c.id, label: c.name }));
-    if (selectedCountry) return getCitiesForCountry(selectedCountry).map((c) => ({ id: c.id, label: c.name }));
-    return [];
-  })();
-
   const djOptions = (() => {
-    let djs = DJ_PROFILES;
-    if (selectedCity) djs = getDJsForCity(selectedCity);
-    else if (selectedRegion) djs = getDJsForRegion(selectedRegion);
-    else if (selectedCountry) djs = getDJsForCountry(selectedCountry);
+    let djs = allDJs;
+    if (cityLocation.cityId) djs = getDJsForCity(allDJs, cityLocation.cityId);
+    else if (selectedCountry) djs = getDJsForCountry(allDJs, selectedCountry);
     return [
-      { id: 'all', label: 'Tous les DJs' },
-      ...djs.map((dj) => ({ id: dj.id, label: dj.name })),
+      { id: 'all', label: t('explore.allDJs') },
+      ...djs.map((dj) => ({ id: dj.id, label: dj.artistName || dj.displayName })),
     ];
   })();
 
   function handleCountrySelect(code: string) {
     setSelectedCountry(code);
-    setSelectedRegion(null);
-    setSelectedCity(null);
+    setCityLocation({});
     setSelectedDJ(null);
     setShowDJResults(false);
   }
 
-  function handleRegionSelect(regionId: string) {
-    setSelectedRegion(regionId);
-    setSelectedCity(null);
+  function handleCityChange(loc: LocationValue) {
+    setCityLocation(loc);
+    if (loc.countryCode) setSelectedCountry(loc.countryCode);
     setSelectedDJ(null);
     setShowDJResults(false);
   }
 
-  function handleCitySelect(cityId: string) {
-    setSelectedCity(cityId);
-    setSelectedDJ(null);
-    setShowDJResults(false);
-  }
-
-  function getFilteredDJs(): DJProfile[] {
+  function getFilteredDJs(): User[] {
     if (selectedDJ && selectedDJ !== 'all') {
-      const found = DJ_PROFILES.find((dj) => dj.id === selectedDJ);
+      const found = allDJs.find((dj) => dj.id === selectedDJ);
       return found ? [found] : [];
     }
-    if (selectedCity) return getDJsForCity(selectedCity);
-    if (selectedRegion) return getDJsForRegion(selectedRegion);
-    if (selectedCountry) return getDJsForCountry(selectedCountry);
-    return DJ_PROFILES;
+    if (cityLocation.cityId) return getDJsForCity(allDJs, cityLocation.cityId);
+    if (selectedCountry) return getDJsForCountry(allDJs, selectedCountry);
+    return allDJs;
   }
 
   function handleViewLives() {
+    const country = cityLocation.countryCode || selectedCountry;
     setShowDJResults(false);
-    if (selectedCountry) {
-      navigation.navigate('Live', { countryCode: selectedCountry });
+    if (country) {
+      navigation.getParent()?.navigate('Live', { countryCode: country });
     } else {
-      navigation.navigate('Live');
+      navigation.getParent()?.navigate('Live');
     }
   }
 
@@ -191,19 +213,28 @@ export function ShutDiffusionScreen() {
 
   const filteredDJs = showDJResults ? getFilteredDJs() : [];
 
-  // Full screen width (container uses negative margins to break out of content padding)
+  // Map ratio matches the cropped viewBox (VIEW_W=110, VIEW_H=80)
   const mapWidth = screenWidth;
-  const mapHeight = Math.round(mapWidth * (375 / 960));
+  const mapHeight = Math.round(mapWidth * (80 / 110));
 
   return (
+    <>
     <ScrollView ref={scrollViewRef} style={styles.container} contentContainerStyle={styles.content}>
       {/* Header */}
-      <Text style={styles.title}>
-        {'SHUT '}
-        <Text style={styles.titleAccent}>DIFFUSION</Text>
-      </Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>
+          {'SHUT '}
+          <Text style={styles.titleAccent}>DIFFUSION</Text>
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <Pressable onPress={() => setSearchVisible(true)} hitSlop={8}>
+            <Ionicons name="search-outline" size={22} color={colors.textSecondary} />
+          </Pressable>
+          <NotificationBell />
+        </View>
+      </View>
       <Text style={styles.subtitle}>
-        Découvrez les pays partenaires et leurs scènes live.
+        {t('explore.subtitle')}
       </Text>
 
       {/* World map — full width, no border, same background as page */}
@@ -219,47 +250,29 @@ export function ShutDiffusionScreen() {
         <View style={styles.legend}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: colors.accent }]} />
-            <Text style={styles.legendText}>Pays partenaires</Text>
+            <Text style={styles.legendText}>{t('explore.partnerCountries')}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: '#1c1b2e', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }]} />
-            <Text style={styles.legendText}>À venir</Text>
+            <Text style={styles.legendText}>{t('explore.comingSoon')}</Text>
           </View>
         </View>
       </View>
 
       {/* Filters */}
       <View style={styles.filters}>
-        <SearchableDropdown
-          options={countryOptions}
-          label="Choisir un pays"
-          value={selectedCountry ?? undefined}
-          onSelect={handleCountrySelect}
-          leftIcon="globe-outline"
+        <LocationSelector
+          value={cityLocation}
+          onChange={handleCityChange}
+          label={t('explore.searchCity')}
+          placeholder={t('explore.searchCityPlaceholder')}
+          restrictToCountries={['FR', 'CH']}
         />
 
         <SearchableDropdown
-          key={selectedCountry ?? 'no-country'}
-          options={regionOptions}
-          label="Choisir une région"
-          onSelect={handleRegionSelect}
-          disabled={!selectedCountry}
-          leftIcon="map-outline"
-        />
-
-        <SearchableDropdown
-          key={(selectedRegion ?? selectedCountry ?? '') + '-city'}
-          options={cityOptions}
-          label="Choisir une ville"
-          onSelect={handleCitySelect}
-          disabled={!selectedCountry}
-          leftIcon="location-outline"
-        />
-
-        <SearchableDropdown
-          key={(selectedCity ?? selectedRegion ?? '') + '-dj'}
           options={djOptions}
-          label="Choisir un DJ"
+          label={t('explore.chooseDJ')}
+          value={selectedDJ ?? undefined}
           onSelect={setSelectedDJ}
           disabled={false}
           leftIcon="person-outline"
@@ -273,7 +286,7 @@ export function ShutDiffusionScreen() {
           style={({ pressed }) => [styles.button, styles.buttonOutline, { opacity: pressed ? 0.7 : 1 }]}
         >
           <Ionicons name="videocam-outline" size={16} color={colors.accent} />
-          <Text style={[styles.buttonText, styles.buttonTextOutline]}>Voir les lives</Text>
+          <Text style={[styles.buttonText, styles.buttonTextOutline]}>{t('explore.viewLives')}</Text>
         </Pressable>
 
         <Pressable
@@ -281,7 +294,7 @@ export function ShutDiffusionScreen() {
           style={({ pressed }) => [styles.button, styles.buttonFilled, { opacity: pressed ? 0.7 : 1 }]}
         >
           <Ionicons name="people-outline" size={16} color={colors.white} />
-          <Text style={styles.buttonText}>Rechercher des DJs</Text>
+          <Text style={styles.buttonText}>{t('explore.searchDJs')}</Text>
         </Pressable>
       </View>
 
@@ -293,21 +306,34 @@ export function ShutDiffusionScreen() {
             scrollViewRef.current?.scrollTo({ y: e.nativeEvent.layout.y, animated: true })
           }
         >
-          <Text style={styles.djResultsTitle}>
-            {filteredDJs.length} DJ{filteredDJs.length !== 1 ? 's' : ''} trouvé{filteredDJs.length !== 1 ? 's' : ''}
-          </Text>
-          {filteredDJs.length === 0 ? (
-            <Text style={styles.djResultsEmpty}>Aucun DJ trouvé pour cette sélection.</Text>
+          {loadingDJs ? (
+            <ActivityIndicator size="large" color={colors.accent} style={{ paddingVertical: spacing.xl }} />
           ) : (
-            <View style={styles.djList}>
-              {filteredDJs.map((dj) => (
-                <DJCard key={dj.id} dj={dj} />
-              ))}
-            </View>
+            <>
+              <Text style={styles.djResultsTitle}>
+                {t('explore.djsFound', { count: filteredDJs.length })}
+              </Text>
+              {filteredDJs.length === 0 ? (
+                <Text style={styles.djResultsEmpty}>{t('explore.noDJsFound')}</Text>
+              ) : (
+                <View style={styles.djList}>
+                  {filteredDJs.map((dj) => (
+                    <DJCard
+                      key={dj.id}
+                      dj={dj}
+                      onPress={() => navigation.navigate('PublicProfile', { userId: dj.id })}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
           )}
         </View>
       )}
     </ScrollView>
+
+    <GlobalSearchOverlay visible={searchVisible} onClose={() => setSearchVisible(false)} />
+    </>
   );
 }
 
@@ -321,12 +347,17 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
     paddingBottom: spacing.xxl,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
   title: {
     color: colors.textPrimary,
     fontFamily: fonts.heading.bold,
     fontSize: fontSize.xxl,
     letterSpacing: 2,
-    marginBottom: spacing.xs,
   },
   titleAccent: {
     color: colors.accent,

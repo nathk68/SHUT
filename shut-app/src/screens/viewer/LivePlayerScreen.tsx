@@ -1,15 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Dimensions,
-  FlatList,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,312 +12,320 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
-import { REACTION_EMOJIS, ReactionType } from '../../config/constants';
-import { chatService, eventsService } from '../../services';
-import { useAuth } from '../../contexts/AuthContext';
+import { LiveActionBar } from '../../components/live/LiveActionBar';
+import { ReportModal } from '../../components/report/ReportModal';
+import { RotateDeviceOverlay } from '../../components/player/RotateDeviceOverlay';
+import { useVideoOrientation } from '../../hooks/useVideoOrientation';
+import { eventsService, userService } from '../../services';
 import type { HomeStackParamList } from '../../navigation/ViewerTabs';
-
-interface ChatMessage {
-  id: string;
-  userName: string;
-  text: string;
-}
-
-// ---------------------------------------------------------------------------
-// Floating reaction overlay
-// ---------------------------------------------------------------------------
-
-// Set of all reaction emoji values for quick lookup
-const REACTION_EMOJI_SET = new Set(Object.values(REACTION_EMOJIS));
-
-function FloatingEmoji({ emoji, onDone }: { emoji: string; onDone: () => void }) {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
-  const randomX = useRef(Math.random() * (Dimensions.get('window').width - 60) + 20).current;
-  // Stable ref so animation completion always calls the latest onDone without restarting
-  const onDoneRef = useRef(onDone);
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(translateY, {
-        toValue: -250,
-        duration: 1800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 1800,
-        useNativeDriver: true,
-      }),
-    ]).start(() => onDoneRef.current());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <Animated.Text
-      style={[
-        styles.floatingEmoji,
-        {
-          left: randomX,
-          transform: [{ translateY }],
-          opacity,
-        },
-      ]}
-    >
-      {emoji}
-    </Animated.Text>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'LivePlayer'>;
 
 export function LivePlayerScreen({ navigation, route }: Props) {
   const { eventId } = route.params;
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; emoji: string }[]>([]);
   const [viewCount, setViewCount] = useState(0);
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null);
-  const chatRef = useRef<FlatList>(null);
-  // Track IDs of messages sent by this user to avoid duplicates from the listener
-  const sentIdsRef = useRef<Set<string>>(new Set());
+  const [djName, setDjName] = useState('');
+  const [djAvatarUrl, setDjAvatarUrl] = useState<string | null>(null);
+  const [djUserId, setDjUserId] = useState<string | null>(null);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [reportVisible, setReportVisible] = useState(false);
 
+  // ── Video player: create once with null source, then use replaceAsync.
+  //    This ensures the AVPlayerViewController's video layer is connected
+  //    BEFORE the source is loaded (avoiding the audio-only race condition
+  //    that occurs when the player is recreated via source change).
   const videoPlayer = useVideoPlayer(null, (player) => {
     player.loop = false;
     player.muted = false;
   });
 
-  // Fetch initial messages + subscribe to new ones
-  useEffect(() => {
-    chatService.getMessages(eventId).then((msgs) => {
-      setMessages(msgs.map((m) => ({ id: m.id, userName: m.userName, text: m.text })));
-    });
-    const unsub = chatService.onNewMessage(eventId, (msg) => {
-      // Skip messages we already added optimistically
-      if (sentIdsRef.current.has(msg.id)) return;
-      if (REACTION_EMOJI_SET.has(msg.text)) {
-        // Incoming reaction from another viewer → trigger floating animation
-        const id = msg.id + Math.random();
-        setFloatingEmojis((prev) => [...prev, { id, emoji: msg.text }]);
-      } else {
-        setMessages((prev) => [...prev, { id: msg.id, userName: msg.userName, text: msg.text }]);
-      }
-    });
-    return unsub;
-  }, [eventId]);
+  const { isLandscape, showRotateOverlay, lockPortrait, orientationReady } = useVideoOrientation(videoPlayer);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [showUI, setShowUI] = useState(true);
 
-  // Fetch event data (viewer count + playback URL) + track presence
+  const videoLoadedRef = useRef(false);
+  const userFetchedRef = useRef(false);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Firestore listener + stream loading
   useEffect(() => {
-    eventsService.getEventById(eventId).then((e) => {
-      if (e) {
-        setViewCount(e.viewerCount);
-        if (e.playbackUrl) {
-          setPlaybackUrl(e.playbackUrl);
-          videoPlayer.replaceAsync({ uri: e.playbackUrl }).then(() => videoPlayer.play());
-        }
+    videoLoadedRef.current = false;
+    userFetchedRef.current = false;
+
+    const MAX_RETRIES = 24;
+    let retryCount = 0;
+
+    // Fetch & log the HLS manifest to verify video tracks exist
+    function checkManifest(url: string) {
+      fetch(url)
+        .then((r) => r.text())
+        .then((text) => {
+          const hasVideo = /RESOLUTION=/.test(text) || /VIDEO/.test(text);
+          console.log('[LivePlayer] HLS manifest has video:', hasVideo);
+          console.log('[LivePlayer] manifest:\n', text.substring(0, 1000));
+        })
+        .catch((err) => console.warn('[LivePlayer] Manifest fetch failed:', err));
+    }
+
+    function loadStream(url: string) {
+      console.log(`[LivePlayer] replaceAsync (attempt ${retryCount + 1})…`);
+      videoPlayer.replaceAsync({ uri: url, contentType: 'hls' as const })
+        .then(() => {
+          console.log('[LivePlayer] replaceAsync resolved — calling play()');
+          videoPlayer.play();
+          setPlaybackUrl(url);
+        })
+        .catch((err) => {
+          console.warn('[LivePlayer] replaceAsync failed:', err);
+          retryCount++;
+          if (retryCount < MAX_RETRIES) {
+            retryTimerRef.current = setTimeout(() => loadStream(url), 5000);
+          }
+        });
+    }
+
+    const unsubEvent = eventsService.onEventChange(eventId, (e) => {
+      if (!e) return;
+
+      setViewCount(e.viewerCount ?? 0);
+      setIsReconnecting(e.status === 'reconnecting');
+
+      if (e.status === 'ended') {
+        lockPortrait().then(() => navigation.goBack());
+        return;
+      }
+
+      if (e.djName) setDjName(e.djName);
+
+      // Load video as soon as playbackUrl becomes available
+      if (e.playbackUrl && !videoLoadedRef.current) {
+        videoLoadedRef.current = true;
+        console.log('[LivePlayer] playbackUrl received:', e.playbackUrl);
+        checkManifest(e.playbackUrl);
+        loadStream(e.playbackUrl);
+      }
+
+      // Fetch DJ avatar + displayName from user profile (once)
+      const userId = e.userId;
+      if (userId) setDjUserId(userId);
+      if (userId && !userFetchedRef.current) {
+        userFetchedRef.current = true;
+        console.log('[LivePlayer] Fetching DJ profile for userId:', userId);
+        userService.getUserById(userId).then((u) => {
+          console.log('[LivePlayer] DJ profile:', u?.artistName, u?.displayName, u?.avatarUrl ? '(has avatar)' : '(no avatar)');
+          if (u?.avatarUrl) setDjAvatarUrl(u.avatarUrl);
+          const name = u?.artistName || u?.username || u?.displayName;
+          if (name) setDjName((prev) => prev || name);
+        }).catch((err) => {
+          console.warn('[LivePlayer] Failed to fetch DJ profile:', err);
+        });
       }
     });
-    eventsService.incrementViewerCount(eventId, 1).catch(() => {});
+
+    // Listen for video track info (diagnostic)
+    const sourceLoadSub = videoPlayer.addListener('sourceLoad', (payload) => {
+      console.log('[LivePlayer] sourceLoad — videoTracks:', payload.availableVideoTracks.length, 'audioTracks:', payload.availableAudioTracks.length);
+      if (payload.availableVideoTracks.length > 0) {
+        const t = payload.availableVideoTracks[0];
+        console.log('[LivePlayer] first video track:', t.size.width, 'x', t.size.height);
+      } else {
+        console.warn('[LivePlayer] ⚠️ NO VIDEO TRACKS in HLS stream — Mux may be dropping video');
+      }
+    });
+
+    eventsService.incrementViewerCount(eventId, 1).then(() => {
+      setViewCount((c) => Math.max(c, 1));
+    }).catch(() => {});
+
     return () => {
+      retryTimerRef.current && clearTimeout(retryTimerRef.current);
+      sourceLoadSub.remove();
+      unsubEvent();
       eventsService.incrementViewerCount(eventId, -1).catch(() => {});
     };
-  }, [eventId, videoPlayer]);
-
-  // Auto-scroll chat to bottom on new messages
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      chatRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-    return () => clearTimeout(timeout);
-  }, [messages]);
-
-  // Send message: clears input immediately, adds optimistically, deduplicates from listener
-  const handleSend = useCallback(async () => {
-    const trimmed = inputText.trim();
-    if (!trimmed) return;
-    setInputText('');
-    Keyboard.dismiss();
-    const userId = user?.id ?? 'anonymous';
-    const userName = user?.displayName ?? 'Moi';
-    try {
-      const sent = await chatService.sendMessage(eventId, userId, userName, trimmed);
-      sentIdsRef.current.add(sent.id);
-      setMessages((prev) => [...prev, { id: sent.id, userName: sent.userName, text: sent.text }]);
-    } catch { /* ignore */ }
-  }, [inputText, user, eventId]);
-
-  // Send reaction: broadcast via chat, show locally immediately
-  const handleReaction = useCallback((type: ReactionType) => {
-    const emoji = REACTION_EMOJIS[type];
-    const id = String(Date.now()) + Math.random();
-    setFloatingEmojis((prev) => [...prev, { id, emoji }]);
-    // Broadcast to all viewers via chat (fire-and-forget)
-    const userId = user?.id ?? 'anonymous';
-    const userName = user?.displayName ?? 'Moi';
-    chatService.sendMessage(eventId, userId, userName, emoji).then((sent) => {
-      sentIdsRef.current.add(sent.id); // don't show as incoming reaction for sender
-    }).catch(() => {});
-  }, [user, eventId]);
-
-  const removeFloatingEmoji = useCallback((id: string) => {
-    setFloatingEmojis((prev) => prev.filter((e) => e.id !== id));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId, navigation]);
 
   const handleClose = useCallback(() => {
-    navigation.goBack();
-  }, [navigation]);
-
-  const renderMessage = useCallback(
-    ({ item }: { item: ChatMessage }) => (
-      <View style={styles.messageRow}>
-        <Text style={styles.messageName}>{item.userName}</Text>
-        <Text style={styles.messageText}>{item.text}</Text>
-      </View>
-    ),
-    [],
-  );
-
-  const reactionKeys = Object.keys(REACTION_EMOJIS) as ReactionType[];
+    if (isLandscape) {
+      lockPortrait().then(() => navigation.goBack());
+    } else {
+      navigation.goBack();
+    }
+  }, [navigation, isLandscape, lockPortrait]);
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {/* Video area */}
-      {playbackUrl ? (
-        <VideoView
-          player={videoPlayer}
-          style={styles.videoArea}
-          contentFit="cover"
-          nativeControls={false}
-        />
-      ) : (
+      {/* Video player — always mounted so the rendering surface is ready
+           BEFORE replaceAsync loads the stream. Conditional mounting caused a
+           race: player.play() fired while VideoView hadn't mounted yet, so
+           audio played (no view needed) but video had no surface to render. */}
+      <VideoView
+        player={videoPlayer}
+        style={styles.video}
+        contentFit={isLandscape ? (isZoomed ? 'cover' : 'contain') : 'cover'}
+        nativeControls={false}
+        onFirstFrameRender={() => console.log('[LivePlayer] First video frame rendered!')}
+      />
+
+      {/* Gradient overlay while waiting for stream */}
+      {!playbackUrl && (
         <LinearGradient
           colors={[colors.gradientStart, colors.gradientEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.videoArea}
+          style={styles.waitingOverlay}
         >
           <Ionicons name="videocam-off-outline" size={48} color="rgba(255,255,255,0.3)" />
-          <Text style={styles.waitingLabel}>En attente du flux...</Text>
+          <Text style={styles.waitingLabel}>{t('live.waitingForStream')}</Text>
         </LinearGradient>
       )}
 
-      {/* Top overlay */}
-      <View style={[styles.topOverlay, { paddingTop: insets.top + spacing.sm }]}>
-        <Pressable
-          onPress={handleClose}
-          style={({ pressed }) => [styles.closeButton, { opacity: pressed ? 0.6 : 1 }]}
-        >
-          <Ionicons name="close" size={24} color={colors.white} />
-        </Pressable>
+      {/* Black overlay while detecting video orientation */}
+      {playbackUrl && !orientationReady && (
+        <View style={styles.orientationDetectOverlay} />
+      )}
 
-        <View style={styles.liveBadge}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveBadgeText}>LIVE</Text>
+      {/* Reconnecting overlay */}
+      {isReconnecting && (
+        <View style={styles.reconnectOverlay}>
+          <Ionicons name="wifi-outline" size={36} color="rgba(255,255,255,0.5)" />
+          <Text style={styles.reconnectTitle}>{t('live.unstableConnection')}</Text>
+          <Text style={styles.reconnectSub}>{t('live.broadcasterReconnecting')}</Text>
         </View>
+      )}
 
-        <View style={styles.viewerCount}>
-          <Ionicons name="eye" size={14} color={colors.textPrimary} />
-          <Text style={styles.viewerCountText}>{viewCount}</Text>
-        </View>
-      </View>
-
-      {/* Floating emoji overlay */}
-      {floatingEmojis.map((fe) => (
-        <FloatingEmoji
-          key={fe.id}
-          emoji={fe.emoji}
-          onDone={() => removeFloatingEmoji(fe.id)}
-        />
-      ))}
-
-      {/* Chat + reactions overlay at bottom */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.bottomOverlay}
-        keyboardVerticalOffset={0}
-      >
-        {/* Chat messages */}
-        <View style={styles.chatContainer}>
-          <LinearGradient
-            colors={['transparent', 'rgba(8,8,15,0.85)']}
-            style={styles.chatGradient}
-          >
-            <FlatList
-              ref={chatRef}
-              data={messages}
-              keyExtractor={(item) => item.id}
-              renderItem={renderMessage}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.chatContent}
-            />
-          </LinearGradient>
-        </View>
-
-        {/* Reaction buttons */}
-        <View style={styles.reactionsRow}>
-          {reactionKeys.map((key) => (
+      {/* UI overlay elements — hidden when showUI is false */}
+      {showUI && (
+        <>
+          {/* Top bar: close + LIVE badge + viewer count + report */}
+          <View style={[styles.topOverlay, {
+            paddingTop: isLandscape ? spacing.md : insets.top + spacing.sm,
+            paddingLeft: Math.max(insets.left, isLandscape ? spacing.lg : spacing.md),
+            paddingRight: Math.max(insets.right, isLandscape ? spacing.lg : spacing.md),
+          }]}>
             <Pressable
-              key={key}
-              onPress={() => handleReaction(key)}
-              style={({ pressed }) => [
-                styles.reactionButton,
-                { opacity: pressed ? 0.5 : 1, transform: [{ scale: pressed ? 1.3 : 1 }] },
-              ]}
+              onPress={handleClose}
+              style={({ pressed }) => [styles.closeButton, { opacity: pressed ? 0.6 : 1 }]}
             >
-              <Text style={styles.reactionEmoji}>{REACTION_EMOJIS[key]}</Text>
+              <Ionicons name="close" size={24} color={colors.white} />
             </Pressable>
-          ))}
-        </View>
 
-        {/* Message input */}
-        <View style={[styles.inputRow, { paddingBottom: insets.bottom || spacing.md }]}>
-          <TextInput
-            style={styles.textInput}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="Envoyer un message..."
-            placeholderTextColor={colors.textMuted}
-            returnKeyType="send"
-            onSubmitEditing={handleSend}
+            <View style={styles.liveBadge}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveBadgeText}>LIVE</Text>
+            </View>
+
+            <View style={styles.viewerCount}>
+              <Ionicons name="eye" size={14} color={colors.textPrimary} />
+              <Text style={styles.viewerCountText}>{viewCount}</Text>
+            </View>
+
+            <View style={{ flex: 1 }} />
+
+            <Pressable
+              style={({ pressed }) => [styles.uiToggleBtn, { opacity: pressed ? 0.6 : 1 }]}
+              onPress={() => setShowUI((v) => !v)}
+            >
+              <Ionicons name="eye-off-outline" size={16} color="rgba(255,255,255,0.5)" />
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [styles.reportBtn, { opacity: pressed ? 0.6 : 1 }]}
+              onPress={() => setReportVisible(true)}
+            >
+              <Ionicons name="flag-outline" size={18} color="rgba(255,255,255,0.7)" />
+            </Pressable>
+          </View>
+
+          {/* DJ name — bottom left */}
+          {djName ? (
+            <View style={[styles.djNameContainer, {
+              bottom: isLandscape ? spacing.lg : insets.bottom + spacing.xl,
+              left: Math.max(insets.left, isLandscape ? spacing.lg : spacing.md),
+            }]}>
+              <Text style={styles.djNameText} numberOfLines={1}>{djName}</Text>
+            </View>
+          ) : null}
+
+          {/* Right-side action bar — anchored at the bottom */}
+          <LiveActionBar
+            eventId={eventId}
+            djAvatarUrl={djAvatarUrl}
+            djName={djName}
+            bottomInset={insets.bottom}
+            rightInset={insets.right + (isLandscape ? 20 : 0)}
+            onAvatarPress={djUserId ? () => navigation.navigate('PublicProfile' as any, { userId: djUserId }) : undefined}
           />
-          <Pressable
-            onPress={handleSend}
-            style={({ pressed }) => [styles.sendButton, { opacity: pressed ? 0.6 : 1 }]}
-          >
-            <Ionicons name="send" size={18} color={colors.accentLight} />
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
+
+          {/* Zoom toggle — landscape only */}
+          {isLandscape && (
+            <View style={styles.zoomBtnContainer}>
+              <Pressable
+                style={({ pressed }) => [styles.zoomBtn, { opacity: pressed ? 0.6 : 1 }]}
+                onPress={() => setIsZoomed((z) => !z)}
+              >
+                <Ionicons name={isZoomed ? 'contract-outline' : 'expand-outline'} size={20} color={colors.white} />
+              </Pressable>
+            </View>
+          )}
+        </>
+      )}
+
+      {/* Show UI button — only visible when UI is hidden */}
+      {!showUI && (
+        <Pressable
+          style={[styles.showUiBtn, {
+            top: isLandscape ? spacing.md : insets.top + spacing.sm,
+            right: Math.max(insets.right, isLandscape ? spacing.lg : spacing.md),
+          }]}
+          onPress={() => setShowUI(true)}
+        >
+          <Ionicons name="eye-outline" size={16} color="rgba(255,255,255,0.5)" />
+        </Pressable>
+      )}
+
+      <ReportModal
+        visible={reportVisible}
+        onClose={() => setReportVisible(false)}
+        targetType="event"
+        targetId={eventId}
+      />
+
+      {showRotateOverlay && <RotateDeviceOverlay />}
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
   },
-
-  videoArea: {
-    ...StyleSheet.absoluteFillObject,
+  video: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  waitingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 2,
   },
   waitingLabel: {
     fontFamily: fonts.mono.regular,
@@ -332,8 +333,29 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.5)',
     marginTop: spacing.md,
   },
-
-  // Top overlay
+  reconnectOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    zIndex: 5,
+  },
+  reconnectTitle: {
+    fontFamily: fonts.heading.bold,
+    fontSize: fontSize.lg,
+    color: colors.white,
+    letterSpacing: 0.5,
+  },
+  reconnectSub: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.6)',
+  },
   topOverlay: {
     position: 'absolute',
     top: 0,
@@ -389,100 +411,70 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textPrimary,
   },
-
-  // Floating emojis
-  floatingEmoji: {
+  djNameContainer: {
     position: 'absolute',
-    bottom: 200,
-    fontSize: 32,
-    zIndex: 20,
-  },
-
-  // Bottom overlay
-  bottomOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    left: spacing.md,
+    right: 80,
     zIndex: 10,
   },
-
-  // Chat
-  chatContainer: {
-    height: 200,
+  djNameText: {
+    fontFamily: fonts.heading.bold,
+    fontSize: fontSize.lg,
+    color: colors.white,
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
-  chatGradient: {
-    flex: 1,
-    justifyContent: 'flex-end',
+  reportBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  chatContent: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.xl,
+  orientationDetectOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#000',
+    zIndex: 3,
   },
-  messageRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: spacing.sm,
-    alignItems: 'baseline',
+  zoomBtnContainer: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
   },
-  messageName: {
-    fontFamily: fonts.body.semiBold,
-    fontSize: fontSize.sm,
-    color: colors.accentLight,
+  zoomBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uiToggleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing.sm,
   },
-  messageText: {
-    fontFamily: fonts.body.regular,
-    fontSize: fontSize.sm,
-    color: colors.textPrimary,
-    flexShrink: 1,
-  },
-
-  // Reactions row
-  reactionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  reactionButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  showUiBtn: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  reactionEmoji: {
-    fontSize: 22,
-  },
-
-  // Input row
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    backgroundColor: 'rgba(8,8,15,0.9)',
-  },
-  textInput: {
-    flex: 1,
-    height: 40,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.md,
-    fontFamily: fonts.body.regular,
-    fontSize: fontSize.sm,
-    color: colors.textPrimary,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing.sm,
+    zIndex: 10,
   },
 });

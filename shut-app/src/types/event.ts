@@ -28,4 +28,6 @@ export interface LiveEvent {
   muxLiveStreamId?: string | null;
   muxStreamKey?: string | null;
   muxRtmpUrl?: string | null;
+  // Quick-stream events store the broadcaster's UID
+  userId?: string;
 }

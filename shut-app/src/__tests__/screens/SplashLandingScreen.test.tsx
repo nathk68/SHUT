@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render, fireEvent, screen } from '@testing-library/react-native';
+import { render, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { SplashLandingScreen } from '../../screens/SplashLandingScreen';
 
 const mockNavigate = jest.fn();
@@ -40,20 +40,20 @@ describe('SplashLandingScreen', () => {
 
   it('affiche le logo SHUT', () => {
     render(<SplashLandingScreen />);
-    expect(screen.getByText('SHUT')).toBeTruthy();
+    expect(screen.getByTestId('logo-shut')).toBeTruthy();
   });
 
   // ─── Navigation ───────────────────────────────────────────────────────────
 
-  it('navigue vers Login au clic sur Explorer', () => {
+  it('navigue vers OnboardingRole au clic sur Explorer', async () => {
     render(<SplashLandingScreen />);
     fireEvent.press(screen.getByText('Explorer'));
-    expect(mockNavigate).toHaveBeenCalledWith('Login');
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('OnboardingRole'));
   });
 
-  it('n\'appelle navigate qu\'une seule fois par clic', () => {
+  it('n\'appelle navigate qu\'une seule fois par clic', async () => {
     render(<SplashLandingScreen />);
     fireEvent.press(screen.getByText('Explorer'));
-    expect(mockNavigate).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledTimes(1));
   });
 });
