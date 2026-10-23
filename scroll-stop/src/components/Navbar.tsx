@@ -35,7 +35,7 @@ export default function Navbar() {
           className={`mx-auto flex items-center justify-between transition-all duration-500 ${
             scrolled
               ? "max-w-[820px] px-6 py-2.5 rounded-full border"
-              : "max-w-full px-8 py-3.5"
+              : "max-w-full px-8 md:px-16 lg:px-24 py-3.5"
           }`}
           style={{
             transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
