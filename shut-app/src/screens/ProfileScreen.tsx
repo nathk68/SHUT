@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import { ProfileHeader } from '../components/profile/ProfileHeader';
 import { GenreTagList } from '../components/profile/GenreTagList';
 import { ReplayList } from '../components/profile/ReplayList';
 import { colors, fonts, fontSize, spacing } from '../config/theme';
+import { buildShareUrl } from '../config/linking';
 
 type Nav = NativeStackNavigationProp<ParametresStackParamList, 'Profile'>;
 
@@ -58,6 +59,15 @@ export function ProfileScreen() {
     navigation.navigate('EditProfile');
   }, [navigation]);
 
+  const handleSharePress = useCallback(async () => {
+    if (!user) return;
+    const name = user.artistName || user.displayName;
+    const shareUrl = buildShareUrl('profile', user.id);
+    await Share.share({
+      message: `${t('profile.shareMessage', { name })}\n${shareUrl}`,
+    });
+  }, [user, t]);
+
   if (!user) return null;
 
   return (
@@ -81,6 +91,7 @@ export function ProfileScreen() {
           user={{ ...user, totalLikesCount: totalLikes, followersCount, followingCount }}
           isOwnProfile
           onEditPress={handleEditPress}
+          onSharePress={handleSharePress}
           onAvatarPick={handleAvatarPick}
           onFollowersTap={() => (navigation as any).navigate('FollowList', { userId: user.id, mode: 'followers' })}
           onFollowingTap={() => (navigation as any).navigate('FollowList', { userId: user.id, mode: 'following' })}

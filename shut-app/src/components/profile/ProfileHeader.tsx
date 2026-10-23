@@ -23,6 +23,7 @@ interface Props {
   isFollowing?: boolean;
   followLoading?: boolean;
   onEditPress?: () => void;
+  onSharePress?: () => void;
   onFollowPress?: () => void;
   onAvatarPick?: (uri: string) => void;
   onFollowersTap?: () => void;
@@ -30,7 +31,7 @@ interface Props {
   notifToggle?: React.ReactNode;
 }
 
-export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followLoading = false, onEditPress, onFollowPress, onAvatarPick, onFollowersTap, onFollowingTap, notifToggle }: Props) {
+export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followLoading = false, onEditPress, onSharePress, onFollowPress, onAvatarPick, onFollowersTap, onFollowingTap, notifToggle }: Props) {
   const { t } = useTranslation();
   const displayLabel = user.artistName ?? user.firstName ?? user.displayName;
   const hasSocials = user.socialLinks && Object.values(user.socialLinks).some(Boolean);
@@ -78,9 +79,14 @@ export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followL
       <View style={[styles.metaRow, !user.experience && styles.metaRowCenter]}>
         {user.experience ? <ExperienceTag level={user.experience} /> : null}
         {isOwnProfile ? (
-          <Pressable testID="edit-profile-button" style={styles.editButton} onPress={onEditPress}>
-            <Text style={styles.editButtonText}>{t('profile.editProfile')}</Text>
-          </Pressable>
+          <>
+            <Pressable testID="edit-profile-button" style={styles.editButton} onPress={onEditPress}>
+              <Text style={styles.editButtonText}>{t('profile.editProfile')}</Text>
+            </Pressable>
+            <Pressable style={styles.shareIconButton} onPress={onSharePress}>
+              <Ionicons name="share-social-outline" size={18} color={colors.textPrimary} />
+            </Pressable>
+          </>
         ) : (
           <>
             <FollowButton isFollowing={isFollowing} onPress={onFollowPress ?? (() => {})} loading={followLoading} />
@@ -127,5 +133,14 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   editButtonText: { color: colors.textPrimary, fontFamily: fonts.body.medium, fontSize: fontSize.sm },
+  shareIconButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(240,239,244,0.3)',
+    borderRadius: 100,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   socials: { alignSelf: 'stretch', paddingHorizontal: spacing.lg, alignItems: 'center' },
 });
