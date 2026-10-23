@@ -117,7 +117,7 @@ const translations = {
   },
 } as const;
 
-type Translations = typeof translations.fr;
+type Translations = Record<keyof typeof translations.fr, string>;
 
 interface I18nContextType {
   locale: Locale;
