@@ -66,7 +66,7 @@ export default function Footer() {
 
       {/* Copyright */}
       <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-        &copy; 2026 SHUT. Tous droits reserves.
+        &copy; 2026 SHUT. Tous droits réservés.
       </p>
     </footer>
   );
