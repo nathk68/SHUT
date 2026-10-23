@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "@/lib/gsap";
 import { useI18n } from "@/lib/i18n";
+import Link from "next/link";
 
 export default function Footer() {
   const footerRef = useRef<HTMLElement>(null);
@@ -24,7 +25,12 @@ export default function Footer() {
     return () => ctx.revert();
   }, []);
 
-  const links = [t.footerPrivacy, t.footerTerms, t.footerContact];
+  const links = [
+    { label: t.footerPrivacy, href: "/politique-de-confidentialite" },
+    { label: t.footerTerms, href: "/conditions-utilisation" },
+    { label: "Mentions légales", href: "/mentions-legales" },
+    { label: t.footerContact, href: "mailto:selim@shutdiffusion.com" },
+  ];
 
   return (
     <footer
@@ -53,11 +59,11 @@ export default function Footer() {
       </div>
 
       {/* Links */}
-      <div className="flex justify-center gap-6 mb-6">
+      <div className="flex justify-center gap-6 mb-6 flex-wrap">
         {links.map((link) => (
-          <a
-            key={link}
-            href="#"
+          <Link
+            key={link.href}
+            href={link.href}
             className="text-sm transition-colors no-underline"
             style={{ color: "var(--color-text-secondary)" }}
             onMouseEnter={(e) => {
@@ -67,8 +73,8 @@ export default function Footer() {
               (e.currentTarget as HTMLElement).style.color = "var(--color-text-secondary)";
             }}
           >
-            {link}
-          </a>
+            {link.label}
+          </Link>
         ))}
       </div>
 

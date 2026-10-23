@@ -7,58 +7,58 @@ export type Locale = "fr" | "en";
 const translations = {
   fr: {
     // Navbar
-    navFeatures: "Fonctionnalites",
+    navFeatures: "Fonctionnalités",
     navPerformance: "Performance",
     navCta: "Commencer",
 
     // Hero
     heroBadge: "Live Streaming",
-    heroTitle: "LA PLANETE DES",
+    heroTitle: "LA PLANÈTE DES",
     heroTitleAccent: "DJs",
     heroSubtitle: "DJs. Villes. Cultures. Un seul endroit.",
-    heroCtaPrimary: "Telecharger SHUT",
-    heroCtaSecondary: "Decouvrir",
+    heroCtaPrimary: "Télécharger SHUT",
+    heroCtaSecondary: "Découvrir",
     heroScroll: "Scroll",
 
     // Features
-    featuresTag: "Fonctionnalites",
+    featuresTag: "Fonctionnalités",
     featuresTitle: "Tout ce qu'il faut pour le live",
-    featuresSubtitle: "Une plateforme complete pensee par et pour les DJs.",
+    featuresSubtitle: "Une plateforme complète pensée par et pour les DJs.",
     feature1Title: "Live Streaming",
     feature1Desc: "Diffusez vos sets en direct depuis n'importe quel lieu. Connectez vos platines, lancez le stream, et partagez votre musique avec le monde.",
     feature2Title: "Explore par Pays",
-    feature2Desc: "Decouvrez les scenes live du monde entier. Parcourez les pays partenaires et trouvez les DJs de chaque ville.",
+    feature2Desc: "Découvrez les scènes live du monde entier. Parcourez les pays partenaires et trouvez les DJs de chaque ville.",
     feature3Title: "Regarde tes DJs",
-    feature3Desc: "Suivez vos DJs preferes et recevez des notifications quand ils passent en live. Ne ratez plus aucun set.",
+    feature3Desc: "Suivez vos DJs préférés et recevez des notifications quand ils passent en live. Ne ratez plus aucun set.",
     feature4Title: "Chat & Reactions",
-    feature4Desc: "Interagissez en temps reel pendant le set. Chat live, reactions, et compteur de viewers — votre audience fait partie du show.",
+    feature4Desc: "Interagissez en temps réel pendant le set. Chat live, réactions, et compteur de viewers — votre audience fait partie du show.",
 
     // Phone mockup
     phoneBadge1: "Audio 320kbps",
     phoneBadge2: "720p Video",
     phoneBadge3: "RTMP natif",
     phoneBadge4: "Reconnexion auto",
-    phoneAvailability: "Disponible bientot sur iOS & Android",
+    phoneAvailability: "Disponible bientôt sur iOS & Android",
 
     // Stats
     statUptime: "Uptime garanti",
     statAudio: "Audio stream",
-    statVideo: "Qualite video",
+    statVideo: "Qualité vidéo",
     statProtocol: "Protocole",
     statProtocolValue: "RTMP natif",
 
     // CTA
-    ctaTag: "Pret ?",
+    ctaTag: "Prêt ?",
     ctaTitle: "Le live commence",
     ctaTitleAccent: "maintenant.",
-    ctaSubtitle: "Rejoignez les DJs qui ont choisi SHUT pour diffuser leurs sets en live. Audio haute qualite, zero compromis.",
+    ctaSubtitle: "Rejoignez les DJs qui ont choisi SHUT pour diffuser leurs sets en live. Audio haute qualité, zéro compromis.",
     ctaButton: "Lancer SHUT",
 
     // Footer
-    footerPrivacy: "Confidentialite",
+    footerPrivacy: "Confidentialité",
     footerTerms: "Conditions",
     footerContact: "Contact",
-    footerCopyright: "2026 SHUT. Tous droits reserves.",
+    footerCopyright: "2026 SHUT. Tous droits réservés.",
   },
   en: {
     // Navbar
