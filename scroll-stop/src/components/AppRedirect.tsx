@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 interface AppRedirectProps {
   type: "live" | "replay" | "profile";
@@ -31,14 +32,13 @@ export default function AppRedirect({ type }: AppRedirectProps) {
     >
       <div className="text-center max-w-[400px]">
         {/* Logo */}
-        <div
-          className="w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center font-[family-name:var(--font-space-grotesk)] font-bold text-3xl text-white"
-          style={{
-            background: "linear-gradient(135deg, var(--color-accent), var(--color-accent-light))",
-          }}
-        >
-          S
-        </div>
+        <Image
+          src="/images/logo.png"
+          alt="SHUT"
+          width={80}
+          height={80}
+          className="mx-auto mb-6"
+        />
 
         <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold mb-2">
           SHUT
@@ -48,37 +48,26 @@ export default function AppRedirect({ type }: AppRedirectProps) {
           {messages[type]}
         </p>
 
-        <div className="flex flex-col gap-3 items-center">
+        <div className="flex flex-col gap-4 items-center">
           {(platform === "ios" || platform === "desktop") && (
-            <a
-              href={iosUrl}
-              className="flex items-center gap-3 px-7 py-3.5 rounded-xl text-sm font-medium no-underline transition-colors"
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "var(--color-text-primary)",
-              }}
-            >
-              <svg width="20" height="24" viewBox="0 0 20 24" fill="currentColor">
-                <path d="M15.77 12.45c-.02-2.37 1.93-3.52 2.02-3.57-1.1-1.61-2.81-1.83-3.42-1.85-1.45-.15-2.85.86-3.59.86-.74 0-1.88-.85-3.1-.82-1.59.02-3.07.93-3.89 2.37-1.67 2.9-.43 7.18 1.19 9.53.8 1.15 1.74 2.44 2.98 2.4 1.2-.05 1.65-.77 3.1-.77 1.44 0 1.85.77 3.1.74 1.29-.02 2.1-1.17 2.88-2.32.92-1.33 1.29-2.63 1.31-2.7-.03-.01-2.51-.96-2.53-3.83z" />
-              </svg>
-              App Store
+            <a href={iosUrl}>
+              <Image
+                src="/images/badge-app-store.svg"
+                alt="Telecharger sur l'App Store"
+                width={180}
+                height={54}
+              />
             </a>
           )}
           {(platform === "android" || platform === "desktop") && (
-            <a
-              href={androidUrl}
-              className="flex items-center gap-3 px-7 py-3.5 rounded-xl text-sm font-medium no-underline transition-colors"
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "var(--color-text-primary)",
-              }}
-            >
-              <svg width="20" height="22" viewBox="0 0 20 22" fill="currentColor">
-                <path d="M1.21 0L11.05 10 1.21 20c-.38-.39-.21-1.26-.21-1.79V1.79C1 1.26.83.39 1.21 0zm.71-.41L13.06 5.5 3.5 10 1.92-.41zM13.06 14.5L1.92 20.41 3.5 10l9.56 4.5zm1.24-.73L19 11c.66.36.66 1.64 0 2l-4.7 2.77L10.5 12l3.8-3.23z" />
-              </svg>
-              Google Play
+            <a href={androidUrl}>
+              <Image
+                src="/images/badge-google-play.png"
+                alt="Disponible sur Google Play"
+                width={180}
+                height={54}
+                style={{ objectFit: "contain" }}
+              />
             </a>
           )}
         </div>
