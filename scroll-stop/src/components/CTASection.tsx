@@ -7,7 +7,7 @@ import { useI18n } from "@/lib/i18n";
 export default function CTASection() {
   const sectionRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -113,6 +113,7 @@ export default function CTASection() {
         </p>
 
         <h2
+          key={locale}
           ref={titleRef}
           className="font-[family-name:var(--font-space-grotesk)] font-bold mb-6 overflow-hidden"
           style={{

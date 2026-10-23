@@ -7,7 +7,7 @@ export type Locale = "fr" | "en";
 const translations = {
   fr: {
     // Navbar
-    navFeatures: "Features",
+    navFeatures: "Fonctionnalites",
     navPerformance: "Performance",
     navCta: "Commencer",
 
@@ -21,7 +21,7 @@ const translations = {
     heroScroll: "Scroll",
 
     // Features
-    featuresTag: "Features",
+    featuresTag: "Fonctionnalites",
     featuresTitle: "Tout ce qu'il faut pour le live",
     featuresSubtitle: "Une plateforme complete pensee par et pour les DJs.",
     feature1Title: "Live Streaming",
@@ -48,7 +48,7 @@ const translations = {
     statProtocolValue: "RTMP natif",
 
     // CTA
-    ctaTag: "Ready?",
+    ctaTag: "Pret ?",
     ctaTitle: "Le live commence",
     ctaTitleAccent: "maintenant.",
     ctaSubtitle: "Rejoignez les DJs qui ont choisi SHUT pour diffuser leurs sets en live. Audio haute qualite, zero compromis.",

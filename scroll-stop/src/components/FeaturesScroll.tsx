@@ -154,7 +154,7 @@ export default function FeaturesScroll() {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const features = useFeatures();
 
   useEffect(() => {
@@ -257,6 +257,7 @@ export default function FeaturesScroll() {
           style={{ background: "var(--color-accent)" }}
         />
         <h2
+          key={locale}
           ref={titleRef}
           className="font-[family-name:var(--font-space-grotesk)] font-bold mb-3"
           style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", letterSpacing: "-0.5px" }}

@@ -14,7 +14,7 @@ export default function HeroSection({ isLoading }: HeroSectionProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const hasAnimated = useRef(false);
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
   useLayoutEffect(() => {
     if (isLoading || hasAnimated.current) return;
@@ -152,6 +152,7 @@ export default function HeroSection({ isLoading }: HeroSectionProps) {
 
         {/* Title */}
         <h1
+          key={locale}
           ref={titleRef}
           className="font-[family-name:var(--font-space-grotesk)] font-bold leading-[1.08] tracking-tight mb-6"
           style={{ fontSize: "clamp(2.5rem, 6vw, 5rem)", letterSpacing: "-1px" }}
