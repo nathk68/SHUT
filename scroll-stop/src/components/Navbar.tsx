@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useTransition } from "@/lib/transition";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { locale, setLocale, t } = useI18n();
+  const { play } = useTransition();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,11 +20,25 @@ export default function Navbar() {
 
   const handleAnchorClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
-    const target = document.querySelector(href);
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth" });
-    }
     setMenuOpen(false);
+    play(() => {
+      if (href === "#hero") {
+        window.scrollTo({ top: 0, behavior: "instant" });
+      } else {
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({ behavior: "instant" });
+        }
+      }
+    });
+  };
+
+  const handleLangSwitch = () => {
+    const next = locale === "fr" ? "en" : "fr";
+    setMenuOpen(false);
+    play(() => {
+      setLocale(next);
+    });
   };
 
   return (
@@ -92,7 +108,7 @@ export default function Navbar() {
 
             {/* Language switcher */}
             <button
-              onClick={() => setLocale(locale === "fr" ? "en" : "fr")}
+              onClick={handleLangSwitch}
               className="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors"
               style={{
                 borderColor: "var(--color-border)",
@@ -169,14 +185,14 @@ export default function Navbar() {
 
           {/* Language switcher mobile */}
           <button
-            onClick={() => setLocale(locale === "fr" ? "en" : "fr")}
+            onClick={handleLangSwitch}
             className="text-lg font-medium px-4 py-2 rounded-full border"
             style={{
               borderColor: "var(--color-border)",
               color: "var(--color-text-secondary)",
             }}
           >
-            {locale === "fr" ? "Francais" : "English"}
+            {locale === "fr" ? "Français" : "English"}
           </button>
 
           <a
