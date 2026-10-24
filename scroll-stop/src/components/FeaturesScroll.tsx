@@ -163,13 +163,13 @@ export default function FeaturesScroll() {
     const isMobile = window.innerWidth < 768;
 
     const ctx = gsap.context(() => {
-      // Header animations
-      const split = SplitText.create(titleRef.current!, { type: "lines" });
-      gsap.from(split.lines, {
+      // Header: split into chars for dramatic reveal
+      const split = SplitText.create(titleRef.current!, { type: "chars,words" });
+      gsap.from(split.chars, {
         yPercent: 100,
         opacity: 0,
-        stagger: 0.12,
-        duration: 0.7,
+        stagger: 0.02,
+        duration: 0.8,
         ease: "power4.out",
         scrollTrigger: {
           trigger: titleRef.current,
@@ -178,21 +178,44 @@ export default function FeaturesScroll() {
       });
 
       // Tag line animation
+      gsap.from(".features-tag", {
+        opacity: 0,
+        y: 15,
+        duration: 0.6,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: ".features-tag",
+          start: "top 88%",
+        },
+      });
+
       gsap.from(".features-line", {
-        width: 0,
+        scaleX: 0,
         duration: 0.8,
-        ease: "power2.out",
+        ease: "power3.inOut",
         scrollTrigger: {
           trigger: ".features-tag",
           start: "top 85%",
         },
       });
 
+      // Subtitle
+      gsap.from(".features-subtitle", {
+        opacity: 0,
+        y: 20,
+        duration: 0.6,
+        ease: "power3.out",
+        scrollTrigger: {
+          trigger: ".features-subtitle",
+          start: "top 88%",
+        },
+      });
+
       const cards = gsap.utils.toArray<HTMLElement>(".feature-card");
 
       if (!isMobile) {
-        // All cards start off-screen to the right
-        gsap.set(cards, { xPercent: 150, autoAlpha: 0 });
+        // Cards start off-screen with rotation
+        gsap.set(cards, { xPercent: 150, autoAlpha: 0, rotateY: -8 });
 
         const tl = gsap.timeline({
           scrollTrigger: {
@@ -211,24 +234,25 @@ export default function FeaturesScroll() {
           },
         });
 
-        // Each card slides into its natural flex position and stays
+        // Each card slides in with rotation correction
         cards.forEach((card) => {
           tl.to(card, {
             xPercent: 0,
             autoAlpha: 1,
+            rotateY: 0,
             duration: 1,
             ease: "power3.out",
           });
-          // Brief pause before next card
           tl.to({}, { duration: 0.3 });
         });
       } else {
-        // Mobile: stagger reveal
+        // Mobile: stagger reveal with scale
         cards.forEach((card) => {
           gsap.from(card, {
             opacity: 0,
-            y: 40,
-            duration: 0.6,
+            y: 60,
+            scale: 0.95,
+            duration: 0.7,
             ease: "power3.out",
             scrollTrigger: {
               trigger: card,
@@ -243,7 +267,7 @@ export default function FeaturesScroll() {
   }, []);
 
   return (
-    <section id="features" ref={sectionRef} className="relative z-[1]">
+    <section id="features" ref={sectionRef} className="relative z-[1] overflow-hidden">
       {/* Section header */}
       <div className="text-center max-w-[600px] mx-auto px-6 pt-20 pb-8 md:pt-24 md:pb-10">
         <p
@@ -253,24 +277,24 @@ export default function FeaturesScroll() {
           {t.featuresTag}
         </p>
         <div
-          className="features-line h-[2px] w-[60px] mx-auto mb-4 rounded-full"
+          className="features-line h-[2px] w-[60px] mx-auto mb-4 rounded-full origin-center"
           style={{ background: "var(--color-accent)" }}
         />
         <h2
           key={locale}
           ref={titleRef}
-          className="font-[family-name:var(--font-space-grotesk)] font-bold mb-3"
+          className="font-[family-name:var(--font-syne)] font-bold mb-3 overflow-hidden"
           style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", letterSpacing: "-0.5px" }}
         >
           {t.featuresTitle}
         </h2>
-        <p style={{ color: "var(--color-text-secondary)" }} className="text-base leading-relaxed">
+        <p className="features-subtitle text-base leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
           {t.featuresSubtitle}
         </p>
       </div>
 
       {/* Cards container */}
-      <div className="overflow-hidden px-6">
+      <div className="overflow-hidden px-6" style={{ perspective: "1200px" }}>
         <div
           ref={trackRef}
           className="flex flex-wrap gap-4 md:flex-nowrap md:gap-4 max-w-[1200px] mx-auto"
@@ -282,21 +306,23 @@ export default function FeaturesScroll() {
               style={{
                 borderRadius: "20px",
                 height: "min(420px, calc(100vh - 260px))",
-                transition: "border-color 0.3s ease",
+                transition: "border-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
                 overflow: "hidden",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor =
-                  "rgba(102, 36, 131, 0.3)";
+                const el = e.currentTarget as HTMLElement;
+                el.style.borderColor = "rgba(102, 36, 131, 0.3)";
+                el.style.boxShadow = "0 8px 40px rgba(102, 36, 131, 0.15)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor =
-                  "var(--color-border)";
+                const el = e.currentTarget as HTMLElement;
+                el.style.borderColor = "var(--color-border)";
+                el.style.boxShadow = "none";
               }}
             >
               {/* Card number */}
               <span
-                className="font-[family-name:var(--font-space-grotesk)] text-4xl md:text-5xl font-bold leading-none"
+                className="font-[family-name:var(--font-syne)] text-4xl md:text-5xl font-bold leading-none"
                 style={{ color: "rgba(102, 36, 131, 0.08)" }}
               >
                 {feature.num}
@@ -311,7 +337,7 @@ export default function FeaturesScroll() {
               </div>
 
               {/* Text */}
-              <h3 className="font-[family-name:var(--font-space-grotesk)] text-xl font-semibold">
+              <h3 className="font-[family-name:var(--font-syne)] text-xl font-semibold">
                 {feature.title}
               </h3>
               <p
@@ -330,15 +356,16 @@ export default function FeaturesScroll() {
         </div>
       </div>
 
-      {/* Progress dots (desktop only) */}
-      <div className="hidden md:flex justify-center gap-2 mt-6">
+      {/* Progress indicators (desktop only) - elongated active dot */}
+      <div className="hidden md:flex justify-center gap-2 absolute bottom-8 left-0 right-0 z-10">
         {features.map((_, i) => (
           <div
             key={i}
-            className="w-2 h-2 rounded-full transition-all duration-300"
+            className="h-[3px] rounded-full"
             style={{
+              width: i === activeIndex ? "24px" : "8px",
               background: i === activeIndex ? "var(--color-accent)" : "var(--color-border)",
-              transform: i === activeIndex ? "scale(1.3)" : "scale(1)",
+              transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           />
         ))}

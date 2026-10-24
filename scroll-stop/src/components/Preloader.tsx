@@ -75,7 +75,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
           {"SHUT".split("").map((letter, i) => (
             <span
               key={i}
-              className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold tracking-[4px]"
+              className="font-[family-name:var(--font-syne)] text-2xl font-bold tracking-[4px]"
               style={{
                 color: "var(--color-accent)",
                 animation: `preloaderSlideUp 0.4s ease-out ${0.7 + i * 0.06}s both`,

@@ -53,7 +53,7 @@ export default function Footer() {
           />
           <circle cx="320.41" cy="260.42" r="29.86" fill="var(--color-accent)" />
         </svg>
-        <span className="font-[family-name:var(--font-space-grotesk)] font-bold text-lg tracking-[2px]">
+        <span className="font-[family-name:var(--font-syne)] font-bold text-lg tracking-[2px]">
           SHUT
         </span>
       </div>

@@ -10,6 +10,7 @@ import HeroSection from "@/components/HeroSection";
 import FeaturesScroll from "@/components/FeaturesScroll";
 import PhoneMockup from "@/components/PhoneMockup";
 import StatsSection from "@/components/StatsSection";
+import DJJourneySection from "@/components/DJJourneySection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import VinylTransition from "@/components/VinylTransition";
@@ -29,6 +30,7 @@ function PageContent({ isLoading }: { isLoading: boolean }) {
         <div className="relative z-10 -mt-[40vh]">
           <FeaturesScroll />
         </div>
+        <DJJourneySection />
         <PhoneMockup />
         <StatsSection />
         <CTASection />

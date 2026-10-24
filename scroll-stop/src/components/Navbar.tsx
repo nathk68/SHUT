@@ -84,7 +84,7 @@ export default function Navbar() {
               />
               <circle cx="320.41" cy="260.42" r="29.86" fill="var(--color-accent)" />
             </svg>
-            <span className="font-[family-name:var(--font-space-grotesk)] font-bold text-lg tracking-[2px]">
+            <span className="font-[family-name:var(--font-syne)] font-bold text-lg tracking-[2px]">
               SHUT
             </span>
           </a>
@@ -97,6 +97,13 @@ export default function Navbar() {
               className="text-[color:var(--color-text-secondary)] hover:text-white text-sm font-medium transition-colors no-underline"
             >
               {t.navFeatures}
+            </a>
+            <a
+              href="#journey"
+              onClick={(e) => handleAnchorClick(e, "#journey")}
+              className="text-[color:var(--color-text-secondary)] hover:text-white text-sm font-medium transition-colors no-underline"
+            >
+              {t.navJourney}
             </a>
             <a
               href="#stats"
@@ -171,14 +178,21 @@ export default function Navbar() {
           <a
             href="#features"
             onClick={(e) => handleAnchorClick(e, "#features")}
-            className="text-2xl font-[family-name:var(--font-space-grotesk)] font-semibold text-white no-underline"
+            className="text-2xl font-[family-name:var(--font-syne)] font-semibold text-white no-underline"
           >
             {t.navFeatures}
           </a>
           <a
+            href="#journey"
+            onClick={(e) => handleAnchorClick(e, "#journey")}
+            className="text-2xl font-[family-name:var(--font-syne)] font-semibold text-white no-underline"
+          >
+            {t.navJourney}
+          </a>
+          <a
             href="#stats"
             onClick={(e) => handleAnchorClick(e, "#stats")}
-            className="text-2xl font-[family-name:var(--font-space-grotesk)] font-semibold text-white no-underline"
+            className="text-2xl font-[family-name:var(--font-syne)] font-semibold text-white no-underline"
           >
             {t.navPerformance}
           </a>

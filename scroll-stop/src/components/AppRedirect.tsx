@@ -63,7 +63,7 @@ export default function AppRedirect({ type }: AppRedirectProps) {
           className="mx-auto mb-6"
         />
 
-        <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold mb-2">
+        <h1 className="font-[family-name:var(--font-syne)] text-2xl font-bold mb-2">
           SHUT
         </h1>
 

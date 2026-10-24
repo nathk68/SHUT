@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Archivo, JetBrains_Mono } from "next/font/google";
+import { Syne, Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const syne = Syne({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  variable: "--font-syne",
   display: "swap",
 });
 
@@ -44,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${archivo.variable} ${jetbrainsMono.variable}`}
+      className={`${syne.variable} ${archivo.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <body suppressHydrationWarning>{children}</body>

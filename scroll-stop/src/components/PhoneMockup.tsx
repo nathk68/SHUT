@@ -182,7 +182,7 @@ export default function PhoneMockup() {
         {/* Below phone */}
         <div className="phone-below text-center mt-16">
           <p
-            className="font-[family-name:var(--font-space-grotesk)] text-lg font-semibold mb-6"
+            className="font-[family-name:var(--font-syne)] text-lg font-semibold mb-6"
             style={{ color: "var(--color-text-secondary)" }}
           >
             {t.phoneAvailability}

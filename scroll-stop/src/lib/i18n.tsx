@@ -9,6 +9,7 @@ const translations = {
     // Navbar
     navFeatures: "Fonctionnalités",
     navPerformance: "Performance",
+    navJourney: "Parcours",
     navCta: "Commencer",
 
     // Hero
@@ -54,6 +55,20 @@ const translations = {
     ctaSubtitle: "Rejoignez les DJs qui ont choisi SHUT pour diffuser leurs sets en live. Audio haute qualité, zéro compromis.",
     ctaButton: "Lancer SHUT",
 
+    // DJ Journey
+    journeyTag: "L'aventure",
+    journeyTitle: "De la chambre au",
+    journeyTitleAccent: "mainstage.",
+    journeyStep1: "Le craft",
+    journeyStep1Sub: "Tout commence par les mains sur les platines. Le son, le groove, la technique.",
+    journeyStep2: "Les premières soirées",
+    journeyStep2Sub: "Les premiers sets devant un public. L'énergie monte, la connexion se crée.",
+    journeyStep3: "La maîtrise",
+    journeyStep3Sub: "Des heures de pratique. Le setup se perfectionne. Le son devient signature.",
+    journeyStep4: "Le grand show",
+    journeyStep4Sub: "Face à la foule. Les lumières, la basse, des milliers de personnes. SHUT vous y amène.",
+    journeyMarquee: "SHUT DIFFUSION",
+
     // Footer
     footerPrivacy: "Confidentialité",
     footerTerms: "Conditions",
@@ -64,6 +79,7 @@ const translations = {
     // Navbar
     navFeatures: "Features",
     navPerformance: "Performance",
+    navJourney: "Journey",
     navCta: "Get Started",
 
     // Hero
@@ -108,6 +124,20 @@ const translations = {
     ctaTitleAccent: "now.",
     ctaSubtitle: "Join the DJs who chose SHUT to broadcast their sets live. High-quality audio, zero compromise.",
     ctaButton: "Launch SHUT",
+
+    // DJ Journey
+    journeyTag: "The journey",
+    journeyTitle: "From bedroom to",
+    journeyTitleAccent: "mainstage.",
+    journeyStep1: "The craft",
+    journeyStep1Sub: "It all starts with hands on the decks. The sound, the groove, the technique.",
+    journeyStep2: "First gigs",
+    journeyStep2Sub: "The first sets in front of an audience. The energy builds, the connection is born.",
+    journeyStep3: "Mastery",
+    journeyStep3Sub: "Hours of practice. The setup gets refined. The sound becomes a signature.",
+    journeyStep4: "The big show",
+    journeyStep4Sub: "Facing the crowd. Lights, bass, thousands of people. SHUT takes you there.",
+    journeyMarquee: "SHUT DIFFUSION",
 
     // Footer
     footerPrivacy: "Privacy",

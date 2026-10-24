@@ -21,7 +21,7 @@ export default function MentionsLegales() {
         </Link>
 
         <h1
-          className="font-[family-name:var(--font-space-grotesk)] font-bold mb-8"
+          className="font-[family-name:var(--font-syne)] font-bold mb-8"
           style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
         >
           Mentions légales
