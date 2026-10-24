@@ -240,7 +240,7 @@ export default function GlobeCanvas({ controlRef, isLoading }: Props) {
 
       // Glow
       const glow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius * 1.5);
-      glow.addColorStop(0, "rgba(102, 36, 131, 0.06)");
+      glow.addColorStop(0, "rgba(102, 36, 131, 0.12)");
       glow.addColorStop(0.5, "rgba(102, 36, 131, 0.02)");
       glow.addColorStop(1, "transparent");
       ctx.fillStyle = glow;
@@ -261,7 +261,7 @@ export default function GlobeCanvas({ controlRef, isLoading }: Props) {
           else ctx.lineTo(p.x, p.y);
         }
         ctx.closePath();
-        ctx.fillStyle = `rgba(${ACCENT_RGB[0]}, ${ACCENT_RGB[1]}, ${ACCENT_RGB[2]}, 0.06)`;
+        ctx.fillStyle = `rgba(${ACCENT_RGB[0]}, ${ACCENT_RGB[1]}, ${ACCENT_RGB[2]}, 0.12)`;
         ctx.fill();
       }
 

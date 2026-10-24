@@ -29,7 +29,7 @@ export default function Footer() {
     { label: t.footerPrivacy, href: "/politique-de-confidentialite" },
     { label: t.footerTerms, href: "/conditions-utilisation" },
     { label: "Mentions légales", href: "/mentions-legales" },
-    { label: t.footerContact, href: "mailto:selim@shutdiffusion.com" },
+    { label: t.footerContact, href: "mailto:contact@shutdiffusion.com" },
   ];
 
   return (
