@@ -19,4 +19,6 @@ export interface IReplaysService {
   onReplayByEventId(eventId: string, callback: (replay: Replay | null) => void): () => void;
   /** Update replay metadata (title, genres, status, trim) */
   updateReplay(id: string, updates: Partial<Pick<Replay, 'title' | 'genres' | 'status' | 'publishedAt' | 'trimStart' | 'trimEnd' | 'location' | 'liveDate' | 'duration'>>): Promise<void>;
+  /** Delete a replay permanently */
+  deleteReplay(id: string): Promise<void>;
 }

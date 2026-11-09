@@ -7,6 +7,8 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../config/firebase.config';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import type { AdminStats, StatsPeriod, StatsDataPoint } from '../../types';
+import { useRole } from '../../contexts/RoleContext';
+import { CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AdminStackParamList } from '../../navigation/MainTabs';
 
@@ -105,6 +107,21 @@ const METRIC_COLORS: Record<string, string> = {
 export function AdminDashboardScreen({ navigation }: { navigation: Nav }) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { impersonateAs } = useRole();
+
+  const handleImpersonate = useCallback((role: 'viewer' | 'broadcaster') => {
+    impersonateAs(role);
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'AdminDashboard' }],
+      }),
+    );
+    // Navigate to the main explore tab after a tick so the tab navigator re-renders
+    setTimeout(() => {
+      (navigation as any).getParent()?.navigate('ShutDiffusion');
+    }, 50);
+  }, [impersonateAs, navigation]);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -269,6 +286,23 @@ export function AdminDashboardScreen({ navigation }: { navigation: Nav }) {
         <Pressable style={styles.actionRow} onPress={() => navigation.navigate('AdminCosts')}>
           <Ionicons name="card-outline" size={20} color="#f59e0b" />
           <Text style={styles.actionText}>{t('admin.dashboard.apiCosts')}</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
+        </Pressable>
+      </View>
+
+      {/* Test app as role */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('admin.dashboard.testApp')}</Text>
+
+        <Pressable style={styles.actionRow} onPress={() => handleImpersonate('viewer')}>
+          <Ionicons name="eye-outline" size={20} color="#3b82f6" />
+          <Text style={styles.actionText}>{t('admin.dashboard.viewAsViewer')}</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
+        </Pressable>
+
+        <Pressable style={styles.actionRow} onPress={() => handleImpersonate('broadcaster')}>
+          <Ionicons name="radio-outline" size={20} color="#22c55e" />
+          <Text style={styles.actionText}>{t('admin.dashboard.viewAsDJ')}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
         </Pressable>
       </View>

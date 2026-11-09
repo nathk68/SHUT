@@ -1,3 +1,19 @@
+diff --git a/node_modules/react-native-nodemediaclient/android/src/main/java/cn/nodemedia/react_native_nodemediaclient/RCTNodePublisherView.java b/node_modules/react-native-nodemediaclient/android/src/main/java/cn/nodemedia/react_native_nodemediaclient/RCTNodePublisherView.java
+index 9297be0..90a31e1 100644
+--- a/node_modules/react-native-nodemediaclient/android/src/main/java/cn/nodemedia/react_native_nodemediaclient/RCTNodePublisherView.java
++++ b/node_modules/react-native-nodemediaclient/android/src/main/java/cn/nodemedia/react_native_nodemediaclient/RCTNodePublisherView.java
+@@ -101,8 +101,10 @@ public class RCTNodePublisherView extends FrameLayout implements LifecycleEventL
+     }
+ 
+     public void setVideoOrientation(int videoOrientation) {
+-        // 兼容iOS定义
++        // Map iOS-compatible values to Android SDK constants.
++        // 0 = landscape (iOS convention), mapped to LANDSCAPE_LEFT on Android.
+         switch (videoOrientation) {
++            case 0 -> np.setVideoOrientation(NodePublisher.VIDEO_ORIENTATION_LANDSCAPE_LEFT);
+             case 1 -> np.setVideoOrientation(NodePublisher.VIDEO_ORIENTATION_PORTRAIT);
+             case 3 -> np.setVideoOrientation(NodePublisher.VIDEO_ORIENTATION_LANDSCAPE_RIGHT);
+             case 4 -> np.setVideoOrientation(NodePublisher.VIDEO_ORIENTATION_LANDSCAPE_LEFT);
 diff --git a/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m b/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m
 index c8b3efb..76187d2 100644
 --- a/node_modules/react-native-nodemediaclient/ios/RCTNodePublisherView.m

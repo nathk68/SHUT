@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -44,6 +44,33 @@ export function LivesScreen() {
     const unsubscribe = eventsService.onLiveEvents(setLives);
     return unsubscribe;
   }, []);
+
+  // Validate live streams — probe Mux manifest to detect and clean ghost events.
+  // Each event is only checked once per mount to avoid excessive requests.
+  const validatedRef = useRef(new Set<string>());
+  useEffect(() => {
+    if (!lives || lives.length === 0) return;
+
+    lives.forEach((live) => {
+      if (!live.playbackUrl || validatedRef.current.has(live.id)) return;
+      validatedRef.current.add(live.id);
+
+      fetch(live.playbackUrl)
+        .then((r) => r.text())
+        .then((text) => {
+          try {
+            const json = JSON.parse(text);
+            if (json?.error?.type === 'live_stream_inactive') {
+              console.warn('[LivesScreen] Ghost live detected, forcing ended:', live.id);
+              eventsService.setEventStatus(live.id, 'ended').catch(() => {});
+            }
+          } catch {
+            // Normal HLS manifest — stream is active
+          }
+        })
+        .catch(() => {});
+    });
+  }, [lives]);
 
   // Fetch DJ profiles — only fetch newly seen userIds
   useEffect(() => {

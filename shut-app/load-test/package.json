@@ -1,0 +1,17 @@
+{
+  "name": "shut-load-test",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules load-test.mjs",
+    "test:small": "VIEWERS=50 DJS=2 node --experimental-vm-modules load-test.mjs",
+    "test:medium": "VIEWERS=200 DJS=5 node --experimental-vm-modules load-test.mjs",
+    "test:large": "VIEWERS=500 DJS=10 node --experimental-vm-modules load-test.mjs",
+    "test:stress": "VIEWERS=1000 DJS=20 node --experimental-vm-modules load-test.mjs",
+    "simulate-hls": "bash simulate-hls.sh"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0"
+  }
+}

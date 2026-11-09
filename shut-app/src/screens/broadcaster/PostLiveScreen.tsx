@@ -269,9 +269,14 @@ export function PostLiveScreen() {
         [
           { text: t('common.cancel'), style: 'cancel' },
           {
-            text: t('common.delete'),
+            text: t('common.deleteDraft'),
             style: 'destructive',
-            onPress: () => navigation.popToTop(),
+            onPress: async () => {
+              try {
+                await replaysService.deleteReplay(replay.id);
+              } catch { /* ignore */ }
+              navigation.popToTop();
+            },
           },
           {
             text: t('broadcaster.postLive.saveDraft'),

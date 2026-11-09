@@ -15,7 +15,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.nathk68.shut-app",
-      "associatedDomains": ["applinks:shutdiffusion.com"]
+      "associatedDomains": [
+        "applinks:shutdiffusion.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -26,6 +28,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
+        "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
@@ -53,7 +56,10 @@
               "pathPrefix": "/profile"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -73,6 +79,12 @@
           "photosPermission": "SHUT utilise tes photos pour personnaliser ton profil."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c1729a7f-0341-457c-b178-cb18139b08bd"
+      }
+    },
+    "owner": "nathk68"
   }
 }

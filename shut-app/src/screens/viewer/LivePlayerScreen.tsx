@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -11,6 +12,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
@@ -27,6 +29,18 @@ export function LivePlayerScreen({ navigation, route }: Props) {
   const { eventId } = route.params;
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+
+  // Hide tab bar on Android (fullScreenModal doesn't cover it like on iOS)
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'android') {
+        navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+        return () => {
+          navigation.getParent()?.setOptions({ tabBarStyle: undefined });
+        };
+      }
+    }, [navigation]),
+  );
 
   const [viewCount, setViewCount] = useState(0);
   const [playbackUrl, setPlaybackUrl] = useState<string | null>(null);
@@ -60,20 +74,40 @@ export function LivePlayerScreen({ navigation, route }: Props) {
 
     const MAX_RETRIES = 24;
     let retryCount = 0;
+    let streamEndedDetected = false;
 
-    // Fetch & log the HLS manifest to verify video tracks exist
-    function checkManifest(url: string) {
-      fetch(url)
+    // Fetch the HLS manifest and detect if the stream is actually inactive.
+    // If Mux returns a live_stream_inactive error, force-end the Firestore
+    // event so the ghost live card disappears for all users.
+    function checkManifest(url: string): Promise<boolean> {
+      return fetch(url)
         .then((r) => r.text())
         .then((text) => {
+          try {
+            const json = JSON.parse(text);
+            if (json?.error?.type === 'live_stream_inactive') {
+              console.warn('[LivePlayer] Stream inactive — forcing event to ended');
+              streamEndedDetected = true;
+              eventsService.setEventStatus(eventId, 'ended').catch((err) =>
+                console.warn('[LivePlayer] Failed to force-end event:', err),
+              );
+              return false;
+            }
+          } catch {
+            // Not JSON — normal HLS manifest
+          }
           const hasVideo = /RESOLUTION=/.test(text) || /VIDEO/.test(text);
           console.log('[LivePlayer] HLS manifest has video:', hasVideo);
-          console.log('[LivePlayer] manifest:\n', text.substring(0, 1000));
+          return hasVideo;
         })
-        .catch((err) => console.warn('[LivePlayer] Manifest fetch failed:', err));
+        .catch((err) => {
+          console.warn('[LivePlayer] Manifest fetch failed:', err);
+          return false;
+        });
     }
 
     function loadStream(url: string) {
+      if (streamEndedDetected) return;
       console.log(`[LivePlayer] replaceAsync (attempt ${retryCount + 1})…`);
       videoPlayer.replaceAsync({ uri: url, contentType: 'hls' as const })
         .then(() => {
@@ -83,9 +117,20 @@ export function LivePlayerScreen({ navigation, route }: Props) {
         })
         .catch((err) => {
           console.warn('[LivePlayer] replaceAsync failed:', err);
+          if (streamEndedDetected) return;
           retryCount++;
           if (retryCount < MAX_RETRIES) {
-            retryTimerRef.current = setTimeout(() => loadStream(url), 5000);
+            // Re-check manifest on every 3rd retry to catch streams
+            // that went inactive during the retry loop
+            if (retryCount % 3 === 0) {
+              checkManifest(url).then((ok) => {
+                if (ok && !streamEndedDetected) {
+                  retryTimerRef.current = setTimeout(() => loadStream(url), 5000);
+                }
+              });
+            } else {
+              retryTimerRef.current = setTimeout(() => loadStream(url), 5000);
+            }
           }
         });
     }

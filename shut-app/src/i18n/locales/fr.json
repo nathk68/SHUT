@@ -30,6 +30,7 @@
     "birthDate": "Date de naissance",
     "published": "Publiée",
     "draft": "Brouillon",
+    "deleteDraft": "Supprimer le brouillon",
     "all": "Tous",
     "sort": {
       "recent": "Récent",
@@ -229,8 +230,8 @@
   },
 
   "splash": {
-    "title": "LA PLANÈTE DES DJ",
-    "titleAccent": "EN LIVE",
+    "title": "DJ",
+    "titleAccent": "LIVE",
     "tagline": "Des DJ. Des villes. Des cultures.\nUn seul endroit.",
     "explore": "Explorer"
   },
@@ -293,7 +294,10 @@
     "noFavorites": "Aucun favori",
     "addFavoritesHint": "Ajoute des rediffusions en favoris\npour les retrouver ici",
     "favoriteCount": "{{count}} favori",
-    "favoriteCount_plural": "{{count}} favoris"
+    "favoriteCount_plural": "{{count}} favoris",
+    "deleteDraftTitle": "Supprimer le brouillon",
+    "deleteDraftMessage": "Cette action est irréversible.",
+    "deleteDraftError": "Impossible de supprimer le brouillon."
   },
 
   "mesFavoris": {
@@ -582,6 +586,8 @@
       "statusConnecting": "CONNEXION…",
       "statusReconnecting": "RECONNEXION…",
       "statusOffline": "HORS LIGNE",
+      "portrait": "Portrait",
+      "landscape": "Paysage",
       "goLive": "Lancer le live",
       "connecting": "Connexion…",
       "waiting": "En attente..."
@@ -707,8 +713,12 @@
       "reviewApplications": "Examiner les candidatures",
       "reviewReports": "Examiner les signalements",
       "manageUsers": "Gerer les utilisateurs",
-      "apiCosts": "Couts API"
+      "apiCosts": "Couts API",
+      "testApp": "Tester l'application",
+      "viewAsViewer": "Voir en tant que Spectateur",
+      "viewAsDJ": "Voir en tant que DJ"
     },
+    "returnToAdmin": "Admin",
     "stats": {
       "totalUsers": "Utilisateurs",
       "broadcasters": "Diffuseurs",
@@ -788,7 +798,9 @@
         "all": "Tous"
       },
       "actionError": "Impossible de traiter ce signalement.",
-      "empty": "Aucun signalement"
+      "empty": "Aucun signalement",
+      "reporter": "Signaleur",
+      "reportedUser": "Signale"
     },
     "users": {
       "title": "Utilisateurs",
@@ -845,7 +857,10 @@
       "live_started": "{{name}} est en live !",
       "application_approved": "Ta candidature a ete acceptee !",
       "application_rejected": "Ta candidature a ete refusee",
-      "admin_announcement": "Annonce SHUT"
+      "admin_announcement": "Annonce SHUT",
+      "report_warning": "Tu as recu un avertissement de la moderation SHUT pour motif : {{reason}}. Merci de respecter les regles de la communaute.",
+      "report_content_removed": "Ton contenu ({{target}}) a ete supprime par la moderation SHUT pour motif : {{reason}}.",
+      "report_user_banned": "Ton compte a ete suspendu par la moderation SHUT pour motif : {{reason}}. Si tu penses qu'il s'agit d'une erreur, contacte-nous par email."
     },
     "applicationDetail": {
       "approvedTitle": "Félicitations !",
@@ -853,6 +868,11 @@
       "rejectedTitle": "Candidature refusée",
       "rejectedMessage": "Malheureusement, ta candidature n'a pas été retenue. Si tu as des questions, n'hésite pas à nous contacter.",
       "contactUs": "Nous contacter"
+    },
+    "alertTitles": {
+      "warning": "Avertissement",
+      "content_removed": "Contenu supprime",
+      "banned": "Compte suspendu"
     },
     "timeAgo": {
       "now": "A l'instant",

@@ -30,6 +30,7 @@
     "birthDate": "Date of birth",
     "published": "Published",
     "draft": "Draft",
+    "deleteDraft": "Delete draft",
     "all": "All",
     "sort": {
       "recent": "Recent",
@@ -229,7 +230,7 @@
   },
 
   "splash": {
-    "title": "THE DJs PLANET",
+    "title": "DJ",
     "titleAccent": "LIVE",
     "tagline": "DJs. Cities. Cultures.\nOne place.",
     "explore": "Explore"
@@ -293,7 +294,10 @@
     "noFavorites": "No favorites",
     "addFavoritesHint": "Add replays to your favorites\nto find them here",
     "favoriteCount": "{{count}} favorite",
-    "favoriteCount_plural": "{{count}} favorites"
+    "favoriteCount_plural": "{{count}} favorites",
+    "deleteDraftTitle": "Delete draft",
+    "deleteDraftMessage": "This action is irreversible.",
+    "deleteDraftError": "Unable to delete the draft."
   },
 
   "mesFavoris": {
@@ -582,6 +586,8 @@
       "statusConnecting": "CONNECTING…",
       "statusReconnecting": "RECONNECTING…",
       "statusOffline": "OFFLINE",
+      "portrait": "Portrait",
+      "landscape": "Landscape",
       "goLive": "Go live",
       "connecting": "Connecting…",
       "waiting": "Waiting..."
@@ -707,8 +713,12 @@
       "reviewApplications": "Review applications",
       "reviewReports": "Review reports",
       "manageUsers": "Manage users",
-      "apiCosts": "API Costs"
+      "apiCosts": "API Costs",
+      "testApp": "Test the app",
+      "viewAsViewer": "View as Viewer",
+      "viewAsDJ": "View as DJ"
     },
+    "returnToAdmin": "Admin",
     "stats": {
       "totalUsers": "Users",
       "broadcasters": "Broadcasters",
@@ -788,7 +798,9 @@
         "all": "All"
       },
       "actionError": "Unable to process this report.",
-      "empty": "No reports"
+      "empty": "No reports",
+      "reporter": "Reporter",
+      "reportedUser": "Reported"
     },
     "users": {
       "title": "Users",
@@ -845,7 +857,10 @@
       "live_started": "{{name}} is live!",
       "application_approved": "Your application has been approved!",
       "application_rejected": "Your application has been declined",
-      "admin_announcement": "SHUT announcement"
+      "admin_announcement": "SHUT announcement",
+      "report_warning": "You have received a warning from SHUT moderators for: {{reason}}. Please respect the community guidelines.",
+      "report_content_removed": "Your content ({{target}}) has been removed by SHUT moderators for: {{reason}}.",
+      "report_user_banned": "Your account has been suspended by SHUT moderators for: {{reason}}. If you believe this is an error, contact us by email."
     },
     "applicationDetail": {
       "approvedTitle": "Congratulations!",
@@ -853,6 +868,11 @@
       "rejectedTitle": "Application declined",
       "rejectedMessage": "Unfortunately, your application was not accepted. If you have any questions, feel free to contact us.",
       "contactUs": "Contact us"
+    },
+    "alertTitles": {
+      "warning": "Warning",
+      "content_removed": "Content removed",
+      "banned": "Account suspended"
     },
     "timeAgo": {
       "now": "Just now",

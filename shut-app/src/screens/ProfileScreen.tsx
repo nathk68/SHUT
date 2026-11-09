@@ -34,9 +34,9 @@ export function ProfileScreen() {
     setFollowingCount(following.length);
     if (user.role === 'broadcaster') {
       const replays = await replaysService.getReplaysByUser(user.id);
-      const ids = replays.map((r) => r.id);
-      if (ids.length === 0) { setTotalLikes(0); return; }
-      const count = await likesService.getLikesCountForItems(ids);
+      const eventIds = replays.map((r) => r.eventId).filter(Boolean);
+      if (eventIds.length === 0) { setTotalLikes(0); return; }
+      const count = await likesService.getLikesCountForItems(eventIds);
       setTotalLikes(count);
     }
   }, [user?.id, user?.role]);

@@ -11,4 +11,5 @@ export class MockReplaysService implements IReplaysService {
   onReplayChange(_id: string, _cb: (r: Replay | null) => void): () => void { return () => {}; }
   onReplayByEventId(_eventId: string, _cb: (r: Replay | null) => void): () => void { return () => {}; }
   async updateReplay(_id: string, _updates: Partial<Replay>): Promise<void> {}
+  async deleteReplay(_id: string): Promise<void> {}
 }

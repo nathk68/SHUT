@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +27,9 @@ function getNotifIcon(type: AppNotification['type']): keyof typeof Ionicons.glyp
     case 'application_rejected': return 'close-circle';
     case 'admin_announcement': return 'megaphone';
     case 'new_application': return 'document-text';
+    case 'report_warning': return 'warning';
+    case 'report_content_removed': return 'trash';
+    case 'report_user_banned': return 'ban';
   }
 }
 
@@ -38,6 +41,9 @@ function getNotifColor(type: AppNotification['type']): string {
     case 'application_rejected': return colors.error;
     case 'admin_announcement': return '#FF9800';
     case 'new_application': return '#FF9800';
+    case 'report_warning': return '#f59e0b';
+    case 'report_content_removed': return colors.error;
+    case 'report_user_banned': return colors.error;
   }
 }
 
@@ -64,6 +70,15 @@ function NotificationItem({
         return item.message ?? t('notifications.types.admin_announcement');
       case 'new_application':
         return item.message ?? t('notifications.types.admin_announcement');
+      case 'report_warning':
+      case 'report_content_removed':
+      case 'report_user_banned': {
+        // message format from backend: "reason|targetType"
+        const [reason, targetType] = (item.message ?? '').split('|');
+        const reasonLabel = reason ? t(`report.reasons.${reason}`, { defaultValue: reason }) : '';
+        const targetLabel = targetType ? t(`admin.reports.targetTypes.${targetType}`, { defaultValue: '' }) : '';
+        return t(`notifications.types.${item.type}`, { reason: reasonLabel, target: targetLabel });
+      }
     }
   })();
 
@@ -123,10 +138,25 @@ export function NotificationFeedScreen() {
           });
         }
         break;
+      case 'report_warning':
+      case 'report_content_removed':
+      case 'report_user_banned': {
+        const [reason, targetType] = (notif.message ?? '').split('|');
+        const reasonLabel = reason ? t(`report.reasons.${reason}`, { defaultValue: reason }) : '';
+        const targetLabel = targetType ? t(`admin.reports.targetTypes.${targetType}`, { defaultValue: '' }) : '';
+        const fullMessage = t(`notifications.types.${notif.type}`, { reason: reasonLabel, target: targetLabel });
+        const titleMap: Record<string, string> = {
+          report_warning: t('notifications.alertTitles.warning'),
+          report_content_removed: t('notifications.alertTitles.content_removed'),
+          report_user_banned: t('notifications.alertTitles.banned'),
+        };
+        Alert.alert(titleMap[notif.type] ?? 'SHUT', fullMessage);
+        break;
+      }
       default:
         break;
     }
-  }, [markAsRead, navigation]);
+  }, [markAsRead, navigation, t]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>

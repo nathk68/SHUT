@@ -1,5 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Linking,
   Pressable,
@@ -35,7 +36,8 @@ const AUDIO_PARAM = { codecid: 86018, profile: 1, samplerate: 44100, channels: 2
 // Mux requires standard profiles (Baseline/Main/High, all 4:2:0) for live
 // RTMP ingest — profile 122 (High 4:2:2) caused Mux to drop the video track
 // entirely, resulting in audio-only playback for viewers.
-const VIDEO_PARAM = { codecid: 27, profile: 0, width: 720, height: 1280, fps: 30, bitrate: 1500000 };
+const VIDEO_PARAM_PORTRAIT  = { codecid: 27, profile: 0, width: 720, height: 1280, fps: 30, bitrate: 1500000 };
+const VIDEO_PARAM_LANDSCAPE = { codecid: 27, profile: 0, width: 1280, height: 720, fps: 30, bitrate: 1500000 };
 
 // Reconnection constants
 const RECONNECT_INTERVAL_MS = 10_000; // retry every 10 s
@@ -83,6 +85,8 @@ export function PhoneCameraScreen() {
   const [phase, setPhase] = useState<Phase>('preview');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFront, setIsFront] = useState(true);
+  const [streamLandscape, setStreamLandscape] = useState(false);
+  const [showInitOverlay, setShowInitOverlay] = useState(false);
   const [duration, setDuration] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Guards against camera-init events (2000/2001) being mistaken for RTMP events.
@@ -187,6 +191,40 @@ export function PhoneCameraScreen() {
     })();
   }, [isExternal]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Orientation: lock based on selected format ─────────────────────────────
+  // Preview: allow both landscape directions so DJ can pick comfortably.
+  // Once live starts: strict single-direction lock (no 180° flip).
+  useEffect(() => {
+    if (isExternal) return;
+    if (phase === 'preview') {
+      ScreenOrientation.lockAsync(
+        streamLandscape
+          ? ScreenOrientation.OrientationLock.LANDSCAPE
+          : ScreenOrientation.OrientationLock.PORTRAIT_UP,
+      );
+    } else {
+      ScreenOrientation.lockAsync(
+        streamLandscape
+          ? ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
+          : ScreenOrientation.OrientationLock.PORTRAIT_UP,
+      );
+    }
+  }, [phase, isExternal, streamLandscape]);
+
+  // ── Init overlay: covers NodePublisher's native debug text ────────────────
+  // Show during handoff/connecting, then keep for 1.5 s after going live
+  // so the native camera preview has time to render actual frames.
+  useEffect(() => {
+    if (phase === 'handoff' || phase === 'connecting') {
+      setShowInitOverlay(true);
+    } else if (phase === 'live') {
+      const t = setTimeout(() => setShowInitOverlay(false), 1500);
+      return () => clearTimeout(t);
+    } else {
+      setShowInitOverlay(false);
+    }
+  }, [phase]);
+
   // ── Camera handoff state machine ─────────────────────────────────────────────
   // When going live: preview → handoff (CameraView unmounts) → connecting
   // (NodePublisher mounts) → live (stream connected).
@@ -241,7 +279,7 @@ export function PhoneCameraScreen() {
       return;
     }
 
-    if (code === 2004 || code === 2006) {
+    if (code === 2004 || code === 2005 || code === 2006) {
       // Network disconnect or timeout — attempt reconnection for up to 5 min.
       timerRef.current && clearInterval(timerRef.current);
       timerRef.current = null;
@@ -271,7 +309,7 @@ export function PhoneCameraScreen() {
       return;
     }
 
-    // Any other code (2005, negative) = unrecoverable error.
+    // Any other code (negative) = unrecoverable error.
     hasStartedRef.current = false;
     reconnectTimerRef.current && clearTimeout(reconnectTimerRef.current);
     reconnectStartRef.current = null;
@@ -293,9 +331,10 @@ export function PhoneCameraScreen() {
       Alert.alert(t('broadcaster.phoneCamera.buildRequired'), t('broadcaster.phoneCamera.buildRequiredMessage'));
       return;
     }
-    setPhase('handoff'); // triggers the handoff state machine above
+    // Orientation is already locked by the format selector — just start handoff.
+    setPhase('handoff');
     setDuration(0);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStop = useCallback(() => {
     Alert.alert(t('broadcaster.phoneCamera.stopLiveTitle'), t('broadcaster.phoneCamera.stopLiveMessage'), [
@@ -433,18 +472,31 @@ export function PhoneCameraScreen() {
       {/* (nothing rendered — root View's black background shows) */}
 
       {/* ── PHONE MODE: STREAMING PHASE — NodePublisher handles camera + RTMP */}
+      {/* Wrapped in a View with opacity:0 while showInitOverlay is true so the
+          native NodePublisher view (which can punch through RN overlays on iOS)
+          stays fully invisible until the camera preview has real frames. */}
       {!isExternal && (phase === 'connecting' || phase === 'live' || phase === 'reconnecting') && NodePublisher && (
-        <NodePublisher
-          ref={nodeRef}
-          style={StyleSheet.absoluteFill}
-          frontCamera={isFront}
-          videoOrientation={1}
-          audioParam={AUDIO_PARAM}
-          videoParam={VIDEO_PARAM}
-          HWAccelEnable={true}
-          url={fullUrl}
-          onEvent={handleStatus}
-        />
+        <View style={[StyleSheet.absoluteFill, showInitOverlay && { opacity: 0 }]}>
+          <NodePublisher
+            ref={nodeRef}
+            style={StyleSheet.absoluteFill}
+            frontCamera={isFront}
+            videoOrientation={streamLandscape ? 0 : 1}
+            audioParam={AUDIO_PARAM}
+            videoParam={streamLandscape ? VIDEO_PARAM_LANDSCAPE : VIDEO_PARAM_PORTRAIT}
+            HWAccelEnable={true}
+            url={fullUrl}
+            onEvent={handleStatus}
+          />
+        </View>
+      )}
+
+      {/* ── PHONE MODE: Init overlay — connecting spinner */}
+      {!isExternal && showInitOverlay && (
+        <View style={styles.connectingOverlay}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={styles.connectingText}>{t('broadcaster.phoneCamera.connecting')}</Text>
+        </View>
       )}
 
       {/* ── TOP BAR ─────────────────────────────────────────────────────────── */}
@@ -516,6 +568,30 @@ export function PhoneCameraScreen() {
         >
           <Ionicons name={isFullscreen ? 'contract-outline' : 'expand-outline'} size={22} color="#fff" />
         </Pressable>
+      )}
+
+      {/* ── FORMAT SELECTOR (preview only, phone mode) ────────────────────── */}
+      {!isExternal && phase === 'preview' && (
+        <View style={[styles.formatRow, { bottom: insets.bottom + spacing.lg + 80 }]}>
+          <Pressable
+            onPress={() => setStreamLandscape(false)}
+            style={[styles.formatBtn, !streamLandscape && styles.formatBtnActive]}
+          >
+            <Ionicons name="phone-portrait-outline" size={18} color={!streamLandscape ? '#fff' : 'rgba(255,255,255,0.5)'} />
+            <Text style={[styles.formatBtnText, !streamLandscape && styles.formatBtnTextActive]}>
+              {t('broadcaster.phoneCamera.portrait')}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setStreamLandscape(true)}
+            style={[styles.formatBtn, streamLandscape && styles.formatBtnActive]}
+          >
+            <Ionicons name="phone-landscape-outline" size={18} color={streamLandscape ? '#fff' : 'rgba(255,255,255,0.5)'} />
+            <Text style={[styles.formatBtnText, streamLandscape && styles.formatBtnTextActive]}>
+              {t('broadcaster.phoneCamera.landscape')}
+            </Text>
+          </Pressable>
+        </View>
       )}
 
       {/* ── BOTTOM BAR ──────────────────────────────────────────────────────── */}
@@ -805,5 +881,60 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: fonts.heading.bold,
     fontSize: fontSize.sm,
+  },
+
+  // ── Format selector ────────────────────────────────────────────────────
+  formatRow: {
+    position: 'absolute' as const,
+    left: 0,
+    right: 0,
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    gap: spacing.sm,
+    zIndex: 20,
+  },
+  formatBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  formatBtnActive: {
+    backgroundColor: 'rgba(124,58,237,0.35)',
+    borderColor: 'rgba(124,58,237,0.6)',
+  },
+  formatBtnText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontFamily: fonts.heading.bold,
+    fontSize: fontSize.xs,
+    letterSpacing: 0.5,
+  },
+  formatBtnTextActive: {
+    color: '#fff',
+  },
+
+  // ── Connecting overlay ──────────────────────────────────────────────────
+  connectingOverlay: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: spacing.md,
+    zIndex: 5,
+  },
+  connectingText: {
+    color: '#fff',
+    fontFamily: fonts.heading.bold,
+    fontSize: fontSize.md,
+    letterSpacing: 0.5,
   },
 });

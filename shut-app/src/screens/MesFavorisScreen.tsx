@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { FavorisStackParamList } from '../navigation/MainTabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,35 +43,35 @@ export function MesFavorisScreen() {
 
   const favoriteIdsKey = Array.from(favoriteIds).sort().join(',');
 
-  useEffect(() => {
-    if (favoriteIds.size === 0) {
-      setReplays([]);
-      return;
-    }
-    setLoadingReplays(true);
-    const ids = Array.from(favoriteIds);
-    Promise.all(ids.map(async (id) => {
-      // Try as replayId first, then as eventId (favorites from live use eventId)
-      const byId = await replaysService.getReplayById(id);
-      if (byId) return byId;
-      return replaysService.getReplayByEventId(id);
-    }))
-      .then(async (results) => {
-        const found = results.filter(Boolean) as Replay[];
-        // Deduplicate by replay id
-        const seen = new Set<string>();
-        const unique = found.filter((r) => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
-        setReplays(unique);
-        const userIds = [...new Set(found.map((r) => r.userId))];
-        const users = await Promise.all(userIds.map((uid) => userService.getUserById(uid)));
-        const map: Record<string, User> = {};
-        users.forEach((u) => { if (u) map[u.id] = u; });
-        setDjMap(map);
-      })
-      .catch(() => setReplays([]))
-      .finally(() => setLoadingReplays(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [favoriteIdsKey]);
+  useFocusEffect(
+    useCallback(() => {
+      if (favoriteIds.size === 0) {
+        setReplays([]);
+        return;
+      }
+      setLoadingReplays(true);
+      const ids = Array.from(favoriteIds);
+      Promise.all(ids.map(async (id) => {
+        const byId = await replaysService.getReplayById(id);
+        if (byId) return byId;
+        return replaysService.getReplayByEventId(id);
+      }))
+        .then(async (results) => {
+          const found = results.filter(Boolean) as Replay[];
+          const seen = new Set<string>();
+          const unique = found.filter((r) => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+          setReplays(unique);
+          const userIds = [...new Set(unique.map((r) => r.userId))];
+          const users = await Promise.all(userIds.map((uid) => userService.getUserById(uid)));
+          const map: Record<string, User> = {};
+          users.forEach((u) => { if (u) map[u.id] = u; });
+          setDjMap(map);
+        })
+        .catch(() => setReplays([]))
+        .finally(() => setLoadingReplays(false));
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [favoriteIdsKey]),
+  );
 
   const sortedReplays = useMemo(() => {
     const arr = [...replays];

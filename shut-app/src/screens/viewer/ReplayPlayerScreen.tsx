@@ -12,7 +12,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -65,6 +65,18 @@ export function ReplayPlayerScreen() {
   const insets = useSafeAreaInsets();
   const { user: currentUser } = useAuth();
   const { isFavorite, isLiked, toggleFavorite, toggleLike } = useFavorites();
+
+  // Hide tab bar on Android (fullScreenModal doesn't cover it like on iOS)
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS === 'android') {
+        navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+        return () => {
+          navigation.getParent()?.setOptions({ tabBarStyle: undefined });
+        };
+      }
+    }, [navigation]),
+  );
 
   // Deep link resolution: when opened via URL we only have replayId
   const [resolvedUrl, setResolvedUrl] = useState(paramPlaybackUrl ?? '');
@@ -290,8 +302,7 @@ export function ReplayPlayerScreen() {
           text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
-            // For now, archive it (actual deletion would need a Cloud Function)
-            await replaysService.updateReplay(replayId, { status: 'draft', publishedAt: null });
+            await replaysService.deleteReplay(replayId);
             navigation.goBack();
           },
         },

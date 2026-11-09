@@ -6,6 +6,9 @@ interface RoleContextType {
   currentRole: UserRole;
   switchRole: () => void;
   setRole: (role: UserRole) => void;
+  isImpersonating: boolean;
+  impersonateAs: (role: 'viewer' | 'broadcaster') => void;
+  exitImpersonation: () => void;
 }
 
 const RoleContext = createContext<RoleContextType | null>(null);
@@ -13,13 +16,16 @@ const RoleContext = createContext<RoleContextType | null>(null);
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [currentRole, setCurrentRole] = useState<UserRole>('viewer');
+  const [isImpersonating, setIsImpersonating] = useState(false);
 
   // Always derive role from Firestore user profile when user identity changes
   useEffect(() => {
     if (user?.role) {
       setCurrentRole(user.role);
+      setIsImpersonating(false);
     } else if (!user) {
       setCurrentRole('viewer');
+      setIsImpersonating(false);
     }
   }, [user?.id]);
 
@@ -32,8 +38,18 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     setRole(newRole);
   }, [currentRole, setRole]);
 
+  const impersonateAs = useCallback((role: 'viewer' | 'broadcaster') => {
+    setCurrentRole(role);
+    setIsImpersonating(true);
+  }, []);
+
+  const exitImpersonation = useCallback(() => {
+    setCurrentRole('admin');
+    setIsImpersonating(false);
+  }, []);
+
   return (
-    <RoleContext.Provider value={{ currentRole, switchRole, setRole }}>
+    <RoleContext.Provider value={{ currentRole, switchRole, setRole, isImpersonating, impersonateAs, exitImpersonation }}>
       {children}
     </RoleContext.Provider>
   );

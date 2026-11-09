@@ -1,5 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { deleteDoc, doc } from 'firebase/firestore';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 import { deleteObject, ref as storageRef } from 'firebase/storage';
 import { deleteUser, getAuth } from 'firebase/auth';
 import { db, storage } from '../config/firebase.config';
@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isGuest: false,
   });
   const [isBlocked, setIsBlocked] = useState(false);
+  const unsubBlockedRef = useRef<(() => void) | null>(null);
 
   // Restore auth state on mount
   useEffect(() => {
@@ -52,6 +53,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })();
   }, []);
+
+  // Real-time listener: kick user out immediately if blocked flag changes
+  useEffect(() => {
+    // Clean up previous listener
+    unsubBlockedRef.current?.();
+    unsubBlockedRef.current = null;
+
+    if (!state.user?.id) return;
+
+    const unsub = onSnapshot(doc(db, 'users', state.user.id), (snap) => {
+      if (snap.exists() && snap.data()?.blocked === true) {
+        setIsBlocked(true);
+        setState({ user: null, isAuthenticated: false, isLoading: false, isGuest: false });
+        authService.logout().catch(() => {});
+      }
+    });
+    unsubBlockedRef.current = unsub;
+
+    return () => { unsub(); };
+  }, [state.user?.id]);
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await authService.login(email, password);
@@ -90,6 +111,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = useCallback(async () => {
     const user = await authService.getCurrentUser();
     if (user) {
+      if (user.blocked) {
+        setIsBlocked(true);
+        setState({ user: null, isAuthenticated: false, isLoading: false, isGuest: false });
+        return;
+      }
       setState(prev => ({ ...prev, user }));
     }
   }, []);

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { replaysService } from '../../services';
 import type { Replay } from '../../types';
 import { useTranslation } from 'react-i18next';
@@ -21,12 +22,14 @@ export function ReplayList({ userId, onPress }: Props) {
   const { t, i18n } = useTranslation();
   const [replays, setReplays] = useState<Replay[] | null>(null);
 
-  useEffect(() => {
-    replaysService
-      .getPublishedReplaysByUser(userId)
-      .then(setReplays)
-      .catch(() => setReplays([]));
-  }, [userId]);
+  useFocusEffect(
+    useCallback(() => {
+      replaysService
+        .getPublishedReplaysByUser(userId)
+        .then(setReplays)
+        .catch(() => setReplays([]));
+    }, [userId]),
+  );
 
   if (!replays) return null;
 

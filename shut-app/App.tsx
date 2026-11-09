@@ -19,6 +19,9 @@ import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
 } from '@expo-google-fonts/jetbrains-mono';
+import {
+  BebasNeue_400Regular,
+} from '@expo-google-fonts/bebas-neue';
 import './src/i18n';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { RoleProvider } from './src/contexts/RoleContext';
@@ -39,6 +42,7 @@ export default function App() {
     'Archivo-SemiBold': Archivo_600SemiBold,
     'JetBrainsMono-Regular': JetBrainsMono_400Regular,
     'JetBrainsMono-Medium': JetBrainsMono_500Medium,
+    'BebasNeue-Regular': BebasNeue_400Regular,
   });
 
   const onLayoutRootView = useCallback(async () => {

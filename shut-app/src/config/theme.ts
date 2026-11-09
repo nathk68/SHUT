@@ -48,6 +48,9 @@ export const fonts = {
     regular: 'JetBrainsMono-Regular',
     medium: 'JetBrainsMono-Medium',
   },
+  display: {
+    regular: 'BebasNeue-Regular',
+  },
 };
 
 export const spacing = {

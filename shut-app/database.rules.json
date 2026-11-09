@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "chat": {
+      "$eventId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    },
+    "_health": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

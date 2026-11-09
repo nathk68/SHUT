@@ -4,7 +4,10 @@ export type NotificationType =
   | 'application_approved'
   | 'application_rejected'
   | 'admin_announcement'
-  | 'new_application';
+  | 'new_application'
+  | 'report_warning'
+  | 'report_content_removed'
+  | 'report_user_banned';
 
 export interface AppNotification {
   id: string;

@@ -1,15 +1,15 @@
-import React from 'react';
-import { StyleSheet } from 'react-native';
+import React, { useCallback } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, fontSize } from '../config/theme';
 import { useAuth } from '../contexts/AuthContext';
 import { useRole } from '../contexts/RoleContext';
 import { ShutDiffusionScreen } from '../screens/ShutDiffusionScreen';
 import { LivesScreen } from '../screens/LivesScreen';
-import { GoLiveScreen } from '../screens/GoLiveScreen';
 import { LivePlayerScreen } from '../screens/viewer/LivePlayerScreen';
 import { AudioCheckScreen } from '../screens/broadcaster/AudioCheckScreen';
 import { QuickStreamScreen } from '../screens/broadcaster/QuickStreamScreen';
@@ -40,6 +40,7 @@ import { AdminCostsScreen } from '../screens/admin/AdminCostsScreen';
 import { NotificationFeedScreen } from '../screens/NotificationFeedScreen';
 import { ApplicationResultScreen } from '../screens/ApplicationResultScreen';
 import { ReapplyDJScreen } from '../screens/ReapplyDJScreen';
+import { AdminReturnFAB } from '../components/admin/AdminReturnFAB';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
 
@@ -59,6 +60,9 @@ export type AdminStackParamList = {
   AdminReports: undefined;
   AdminUsers: undefined;
   AdminCosts: undefined;
+  PublicProfile: { userId: string };
+  LivePlayer: { eventId: string };
+  ReplayPlayer: { playbackUrl: string; title: string; trimStart?: number; trimEnd?: number; replayId?: string; djUserId?: string; eventId?: string };
 };
 
 export type ExploreStackParamList = {
@@ -83,7 +87,6 @@ export type LiveStackParamList = {
 };
 
 export type GoLiveStackParamList = {
-  GoLiveMain: undefined;
   AudioCheck: undefined;
   QuickStream: { cameraId?: string };
   PhoneCamera: { rtmpUrl: string; streamKey: string; eventId?: string; mode?: 'phone' | 'external' };
@@ -190,7 +193,6 @@ function LiveStackScreen() {
 function GoLiveStackScreen() {
   return (
     <GoLiveStack.Navigator screenOptions={{ headerShown: false }}>
-      <GoLiveStack.Screen name="GoLiveMain" component={GoLiveScreen} />
       <GoLiveStack.Screen name="AudioCheck" component={AudioCheckScreen} />
       <GoLiveStack.Screen name="QuickStream" component={QuickStreamScreen} />
       <GoLiveStack.Screen
@@ -297,6 +299,17 @@ function AdminStackScreen() {
       <AdminStack.Screen name="AdminReports" component={AdminReportsScreen} />
       <AdminStack.Screen name="AdminUsers" component={AdminUsersScreen} />
       <AdminStack.Screen name="AdminCosts" component={AdminCostsScreen} />
+      <AdminStack.Screen name="PublicProfile" component={PublicProfileScreen} />
+      <AdminStack.Screen
+        name="LivePlayer"
+        component={LivePlayerScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
+      <AdminStack.Screen
+        name="ReplayPlayer"
+        component={ReplayPlayerScreen}
+        options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+      />
     </AdminStack.Navigator>
   );
 }
@@ -306,18 +319,29 @@ function AdminStackScreen() {
 export function MainTabs() {
   const { t } = useTranslation();
   const { isAuthenticated, isGuest, user } = useAuth();
-  const { currentRole } = useRole();
+  const { currentRole, isImpersonating, exitImpersonation } = useRole();
+  const insets = useSafeAreaInsets();
   const isDJ = isAuthenticated && currentRole === 'broadcaster';
   const isAdmin = isAuthenticated && user?.role === 'admin';
+  const showAdminTab = isAdmin && !isImpersonating;
+
+  const handleReturnToAdmin = useCallback(() => {
+    exitImpersonation();
+  }, [exitImpersonation]);
 
   const liveClubLabel = isDJ ? t('navigation.mySets') : t('navigation.myFavorites');
   const LiveClubComponent = isDJ ? LiveClubStackScreen : FavorisStackScreen;
 
+  // Fixed tab bar content height + bottom safe area for consistent sizing across tabs
+  const TAB_BAR_CONTENT_HEIGHT = 56;
+  const tabBarHeight = TAB_BAR_CONTENT_HEIGHT + (Platform.OS === 'android' ? Math.max(insets.bottom, 8) : insets.bottom);
+
   return (
+    <View style={{ flex: 1 }}>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { height: tabBarHeight, paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 8) : insets.bottom }],
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.tabLabel,
@@ -369,7 +393,7 @@ export function MainTabs() {
         component={LiveClubComponent}
         options={{ tabBarLabel: liveClubLabel }}
       />
-      {isAdmin && (
+      {showAdminTab && (
         <Tab.Screen
           name="Admin"
           component={AdminStackScreen}
@@ -388,6 +412,8 @@ export function MainTabs() {
         options={{ tabBarLabel: t('navigation.profile') }}
       />
     </Tab.Navigator>
+    {isImpersonating && <AdminReturnFAB onPress={handleReturnToAdmin} />}
+    </View>
   );
 }
 
@@ -396,7 +422,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundElevated,
     borderTopColor: 'rgba(255,255,255,0.06)',
     borderTopWidth: 1,
-    height: 85,
     paddingTop: 8,
   },
   tabLabel: {

@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { colors, fonts, fontSize, spacing } from '../../config/theme';
+import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 
@@ -16,7 +15,7 @@ type Props = {
 
 export function LoginScreen({ navigation }: Props) {
   const { t } = useTranslation();
-  const { login, enterGuestMode, resetPassword } = useAuth();
+  const { login, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -73,8 +72,11 @@ export function LoginScreen({ navigation }: Props) {
           </Pressable>
 
           <View style={styles.header}>
-            <Text style={styles.logo}>SHUT</Text>
-            <Text style={styles.tagline}>{t('auth.tagline')}</Text>
+            <Image
+              source={require('../../../assets/icon-nobg.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
 
           <View style={styles.form}>
@@ -103,33 +105,22 @@ export function LoginScreen({ navigation }: Props) {
                 {resetLoading ? t('auth.forgotPasswordSending') : t('auth.forgotPassword')}
               </Text>
             </Pressable>
-            <Button
-              title={t('auth.login')}
+            <Pressable
               onPress={handleLogin}
-              loading={loading}
-              size="lg"
-              style={styles.loginButton}
-            />
-          </View>
-
-          <View style={styles.footer}>
-            <Pressable onPress={enterGuestMode}>
-              <Text style={styles.guestLink}>{t('auth.guestMode')}</Text>
+              disabled={loading}
+              style={({ pressed }) => [
+                styles.loginButton,
+                { opacity: pressed ? 0.8 : loading ? 0.5 : 1 },
+              ]}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.white} size="small" />
+              ) : (
+                <Text style={styles.loginButtonText}>{t('auth.login')}</Text>
+              )}
             </Pressable>
-
-            <View style={styles.registerRow}>
-              <Text style={styles.registerText}>{t('auth.noAccount')}</Text>
-              <Pressable onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.registerLink}>{t('auth.register')}</Text>
-              </Pressable>
-            </View>
-
-            {/* <View style={styles.demoInfo}>
-              <Text style={styles.demoTitle}>{t('auth.demoAccounts')}</Text>
-              <Text style={styles.demoText}>Viewer : viewer@shut.app / demo123</Text>
-              <Text style={styles.demoText}>Festival : festival@shut.app / demo123</Text>
-            </View> */}
           </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </ScreenContainer>
@@ -153,17 +144,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xxl,
   },
-  logo: {
-    fontFamily: fonts.heading.bold,
-    fontSize: 48,
-    color: colors.textPrimary,
-    letterSpacing: 4,
-  },
-  tagline: {
-    fontFamily: fonts.body.regular,
-    fontSize: fontSize.md,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
+  logoImage: {
+    width: 120,
+    height: 120,
   },
   form: {
     marginBottom: spacing.xl,
@@ -179,52 +162,17 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   loginButton: {
-    marginTop: spacing.sm,
-  },
-  footer: {
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  guestLink: {
-    fontFamily: fonts.body.medium,
-    fontSize: fontSize.md,
-    color: colors.accentLight,
-  },
-  registerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  registerText: {
-    fontFamily: fonts.body.regular,
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-  },
-  registerLink: {
-    fontFamily: fonts.body.semiBold,
-    fontSize: fontSize.sm,
-    color: colors.accentLight,
-  },
-  demoInfo: {
     marginTop: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.backgroundCard,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.accent,
+    borderRadius: borderRadius.full,
+    paddingVertical: 14,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  demoTitle: {
-    fontFamily: fonts.mono.medium,
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: spacing.xs,
-  },
-  demoText: {
-    fontFamily: fonts.mono.regular,
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    marginTop: 2,
+  loginButtonText: {
+    color: colors.white,
+    fontFamily: fonts.heading.semiBold,
+    fontSize: fontSize.md,
+    letterSpacing: 0.5,
   },
 });

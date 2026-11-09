@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   updateDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -110,5 +111,9 @@ export class FirebaseReplaysService implements IReplaysService {
     updates: Partial<Pick<Replay, 'title' | 'genres' | 'status' | 'publishedAt' | 'trimStart' | 'trimEnd' | 'location' | 'liveDate' | 'duration'>>,
   ): Promise<void> {
     await updateDoc(doc(db, COLLECTION, id), updates);
+  }
+
+  async deleteReplay(id: string): Promise<void> {
+    await deleteDoc(doc(db, COLLECTION, id));
   }
 }

@@ -49,10 +49,15 @@ export const createLiveStream = onCall(
       .doc(`users/${uid}`);
     const userDoc = await userRef.get();
     const userData = userDoc.data();
-    if (userData?.role !== "broadcaster") {
+    if (userData?.blocked === true) {
+      throw new HttpsError(
+        "permission-denied", "Account suspended"
+      );
+    }
+    if (userData?.role !== "broadcaster" && userData?.role !== "admin") {
       throw new HttpsError(
         "permission-denied",
-        "Broadcaster role required"
+        "Broadcaster or Admin role required"
       );
     }
 
@@ -180,11 +185,7 @@ export const getLiveStreamStatus = onCall(
 export const endLiveStream = onCall(
   {secrets: [muxTokenId, muxTokenSecret]},
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError(
-        "unauthenticated", "Login required"
-      );
-    }
+    await requireNotBlocked(request);
     const {eventId} = request.data;
     const fdb = admin.firestore();
 
@@ -902,6 +903,30 @@ async function requireAdmin(
   return uid;
 }
 
+/**
+ * Assert the caller is not blocked. Throws if blocked.
+ * @param {object} request Cloud Function request.
+ * @return {string} The caller's uid.
+ */
+async function requireNotBlocked(
+  request: { auth?: { uid: string } }
+): Promise<string> {
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated", "Login required"
+    );
+  }
+  const uid = request.auth.uid;
+  const snap = await admin.firestore()
+    .doc(`users/${uid}`).get();
+  if (snap.data()?.blocked === true) {
+    throw new HttpsError(
+      "permission-denied", "Account suspended"
+    );
+  }
+  return uid;
+}
+
 // ── Application decision email ────────────────
 
 /**
@@ -1182,12 +1207,7 @@ export const reviewApplication = onCall(
  */
 export const reapplyDJ = onCall(
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError(
-        "unauthenticated", "Login required"
-      );
-    }
-    const uid = request.auth.uid;
+    const uid = await requireNotBlocked(request);
 
     const fdb = admin.firestore();
 
@@ -1453,6 +1473,7 @@ export const getStatsTimeSeries = onCall(
 export const reviewReport = onCall(
   async (request) => {
     const adminUid = await requireAdmin(request);
+    const fdb = admin.firestore();
 
     const {reportId, action} = request.data as {
       reportId: string;
@@ -1467,8 +1488,7 @@ export const reviewReport = onCall(
       );
     }
 
-    const reportRef = admin.firestore()
-      .doc(`reports/${reportId}`);
+    const reportRef = fdb.doc(`reports/${reportId}`);
     const reportSnap = await reportRef.get();
     if (!reportSnap.exists) {
       throw new HttpsError(
@@ -1476,6 +1496,7 @@ export const reviewReport = onCall(
       );
     }
 
+    const reportData = reportSnap.data()!;
     const status = action === "dismissed" ?
       "dismissed" : "reviewed";
 
@@ -1486,6 +1507,58 @@ export const reviewReport = onCall(
       reviewedAt: new Date().toISOString(),
       reviewedBy: adminUid,
     });
+
+    // ── Notify the reported user ──
+    if (action !== "dismissed") {
+      // Resolve the user to notify
+      let targetUserId: string | null = null;
+      const {targetType, targetId} = reportData;
+
+      if (targetType === "user") {
+        targetUserId = targetId;
+      } else if (targetType === "event") {
+        const evSnap = await fdb
+          .doc(`events/${targetId}`).get();
+        targetUserId = evSnap.data()?.userId ?? null;
+      } else if (targetType === "replay") {
+        const rpSnap = await fdb
+          .doc(`replays/${targetId}`).get();
+        const rpData = rpSnap.data();
+        targetUserId =
+          rpData?.userId ?? rpData?.djUserId ?? null;
+      }
+
+      if (targetUserId) {
+        const notifTypeMap: Record<string, string> = {
+          warning: "report_warning",
+          content_removed: "report_content_removed",
+          user_banned: "report_user_banned",
+        };
+
+        // Build structured message with reason + target type
+        // Format: "reason|targetType" so the front can parse and translate
+        const reason = reportData.reason ?? "other";
+        const tType = targetType ?? "user";
+        const message = `${reason}|${tType}`;
+
+        await createNotification({
+          userId: targetUserId,
+          type: notifTypeMap[action] ?? "report_warning",
+          message,
+        });
+
+        // Block user if banned — disable Auth account + Firestore flag
+        if (action === "user_banned") {
+          await admin.auth().updateUser(
+            targetUserId, {disabled: true}
+          );
+          await fdb.doc(`users/${targetUserId}`).update({
+            blocked: true,
+            blockedAt: new Date().toISOString(),
+          });
+        }
+      }
+    }
 
     return {success: true};
   }
@@ -1808,6 +1881,15 @@ function pushBody(
     return data.message ?? "New announcement from SHUT";
   case "new_application":
     return data.message ?? "New DJ application received";
+  case "report_warning":
+    return "You have received a warning from SHUT " +
+      "moderators. Please review our guidelines.";
+  case "report_content_removed":
+    return "Your content has been removed for " +
+      "violating our community guidelines.";
+  case "report_user_banned":
+    return "Your account has been suspended for " +
+      "violating our community guidelines.";
   default:
     return "You have a new notification";
   }
@@ -2203,5 +2285,79 @@ export const onNewDAApplication = onDocumentCreated(
     if (!data) return;
     const appId = event.params.appId;
     await notifyAdminsNewApplication(data, "da", appId);
+  }
+);
+
+// ── Scheduled: clean up ghost live events ─────
+// Runs every 5 minutes. For each event still marked
+// as live/reconnecting, checks the actual Mux stream
+// status. If Mux says idle/disabled, force-ends the
+// Firestore event. This is the server-side safety net
+// in case the idle webhook was missed or delayed.
+export const cleanupStaleLives = onSchedule(
+  {
+    schedule: "every 5 minutes",
+    timeZone: "Europe/Paris",
+    secrets: [muxTokenId, muxTokenSecret],
+  },
+  async () => {
+    const fdb = admin.firestore();
+    const mux = getMux();
+    const ts = admin.firestore
+      .FieldValue.serverTimestamp();
+
+    const snap = await fdb
+      .collection("events")
+      .where("status", "in",
+        ["live", "reconnecting"])
+      .get();
+
+    if (snap.empty) return;
+
+    for (const eventDoc of snap.docs) {
+      const ev = eventDoc.data();
+      const muxId = ev.muxLiveStreamId;
+      if (!muxId) {
+        // No Mux stream ID — stale event, end it
+        await eventDoc.ref.update({
+          status: "ended",
+          actualEndTime: ts,
+        });
+        console.log(
+          "Cleanup: ended event without muxId:",
+          eventDoc.id
+        );
+        continue;
+      }
+
+      try {
+        const stream =
+          await mux.video.liveStreams.retrieve(muxId);
+        const muxStatus = stream.status;
+
+        if (muxStatus === "idle" ||
+            muxStatus === "disabled") {
+          await eventDoc.ref.update({
+            status: "ended",
+            actualEndTime: ts,
+          });
+          console.log(
+            "Cleanup: ended ghost event:",
+            eventDoc.id,
+            "mux status:", muxStatus
+          );
+        }
+      } catch (err) {
+        // Mux stream deleted or API error — end it
+        await eventDoc.ref.update({
+          status: "ended",
+          actualEndTime: ts,
+        });
+        console.warn(
+          "Cleanup: ended event (Mux error):",
+          eventDoc.id, err
+        );
+      }
+    }
   }
 );

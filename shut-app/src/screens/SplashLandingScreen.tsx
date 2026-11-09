@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,9 +11,12 @@ import { setStoredData } from '../utils/storage';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'SplashLanding'>;
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 export function SplashLandingScreen() {
   const navigation = useNavigation<Nav>();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const handleExplore = useCallback(async () => {
     await setStoredData('@shut_has_seen_splash', true);
@@ -21,16 +25,8 @@ export function SplashLandingScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Logo top */}
-      <Image
-        source={require('../../assets/icon-nobg.png')}
-        style={styles.logo}
-        resizeMode="contain"
-        testID="logo-shut"
-      />
-
-      {/* Image plein bord */}
-      <View style={styles.imageContainer}>
+      {/* Planet image — positioned as background layer */}
+      <View style={styles.planetWrapper}>
         <Image
           source={require('../../assets/Planet_connected.jpeg')}
           style={styles.planetImage}
@@ -46,15 +42,34 @@ export function SplashLandingScreen() {
         />
       </View>
 
-      {/* Hero text + CTA — légèrement par-dessus le bas de l'image */}
-      <View style={styles.bottom}>
+      {/* Content overlaid */}
+      <View
+        style={[
+          styles.content,
+          {
+            paddingTop: insets.top + spacing.md,
+            paddingBottom: insets.bottom + spacing.lg,
+          },
+        ]}
+      >
+        {/* Logo */}
+        <Image
+          source={require('../../assets/icon-nobg.png')}
+          style={styles.logo}
+          resizeMode="contain"
+          testID="logo-shut"
+        />
+
+        <View style={styles.spacer} />
+
+        {/* Hero text */}
         <View style={styles.hero}>
           <Text style={styles.title}>{t('splash.title')}</Text>
           <Text style={styles.titleAccent}>{t('splash.titleAccent')}</Text>
-          <Text style={styles.tagline}>
-            {t('splash.tagline')}
-          </Text>
+          <Text style={styles.tagline}>{t('splash.tagline')}</Text>
         </View>
+
+        {/* CTA */}
         <Pressable style={styles.button} onPress={handleExplore}>
           <Text style={styles.buttonText}>{t('splash.explore')}</Text>
         </Pressable>
@@ -67,21 +82,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.xxl,
-    // Pas de paddingHorizontal ici — géré par logoRow et bottom
   },
-  logo: {
-    width: 144,
-    height: 144,
-    top: 42,
-  },
-  imageContainer: {
-    width: '100%',
-    aspectRatio: 1090 / 960,
-    overflow: 'hidden',
+  planetWrapper: {
+    position: 'absolute',
+    top: SCREEN_HEIGHT * 0.12,
+    left: 0,
+    right: 0,
+    height: SCREEN_HEIGHT * 0.45,
   },
   planetImage: {
     width: '100%',
@@ -92,43 +99,55 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 100,
+    height: 120,
   },
   imageFade: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 200,
+    height: 180,
   },
-  bottom: {
-    width: '100%',
+  content: {
+    flex: 1,
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    gap: spacing.xl,
-    marginTop: -100,
+  },
+  logo: {
+    width: SCREEN_HEIGHT * 0.14,
+    height: SCREEN_HEIGHT * 0.14,
+    maxWidth: 140,
+    maxHeight: 140,
+    marginTop: spacing.sm,
+  },
+  spacer: {
+    flex: 1,
   },
   hero: {
     alignItems: 'center',
-    gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
   title: {
     color: colors.textPrimary,
-    fontFamily: fonts.mono.medium,
-    fontSize: fontSize.hero,
+    fontFamily: fonts.display.regular,
+    fontSize: 80,
     textAlign: 'center',
+    letterSpacing: 8,
   },
   titleAccent: {
     color: colors.accent,
-    fontFamily: fonts.mono.medium,
-    fontSize: fontSize.hero,
+    fontFamily: fonts.display.regular,
+    fontSize: 52,
     textAlign: 'center',
+    letterSpacing: 6,
+    marginTop: -4,
   },
   tagline: {
     color: colors.textSecondary,
     fontFamily: fonts.body.regular,
     fontSize: fontSize.md,
     textAlign: 'center',
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
     lineHeight: 22,
   },
   button: {

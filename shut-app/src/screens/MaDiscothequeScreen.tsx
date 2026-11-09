@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Image,
   Pressable,
@@ -104,27 +105,57 @@ export function MaDiscothequeScreen() {
   // ── Load favorites ──
   const favoriteIdsKey = Array.from(favoriteIds).sort().join(',');
 
-  useEffect(() => {
-    if (favoriteIds.size === 0) {
-      setFavReplays([]);
-      return;
-    }
-    setLoadingFavs(true);
-    const ids = Array.from(favoriteIds);
-    Promise.all(ids.map((id) => replaysService.getReplayById(id)))
-      .then(async (results) => {
-        const found = results.filter(Boolean) as Replay[];
-        setFavReplays(found);
-        const userIds = [...new Set(found.map((r) => r.userId))];
-        const users = await Promise.all(userIds.map((uid) => userService.getUserById(uid)));
-        const map: Record<string, User> = {};
-        users.forEach((u) => { if (u) map[u.id] = u; });
-        setFavDjMap(map);
-      })
-      .catch(() => setFavReplays([]))
-      .finally(() => setLoadingFavs(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [favoriteIdsKey]);
+  useFocusEffect(
+    useCallback(() => {
+      if (favoriteIds.size === 0) {
+        setFavReplays([]);
+        return;
+      }
+      setLoadingFavs(true);
+      const ids = Array.from(favoriteIds);
+      Promise.all(ids.map(async (id) => {
+        const byId = await replaysService.getReplayById(id);
+        if (byId) return byId;
+        return replaysService.getReplayByEventId(id);
+      }))
+        .then(async (results) => {
+          const found = results.filter(Boolean) as Replay[];
+          const seen = new Set<string>();
+          const unique = found.filter((r) => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+          setFavReplays(unique);
+          const userIds = [...new Set(unique.map((r) => r.userId))];
+          const users = await Promise.all(userIds.map((uid) => userService.getUserById(uid)));
+          const map: Record<string, User> = {};
+          users.forEach((u) => { if (u) map[u.id] = u; });
+          setFavDjMap(map);
+        })
+        .catch(() => setFavReplays([]))
+        .finally(() => setLoadingFavs(false));
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [favoriteIdsKey]),
+  );
+
+  const handleDeleteDraft = useCallback((replay: Replay) => {
+    Alert.alert(
+      t('discotheque.deleteDraftTitle'),
+      t('discotheque.deleteDraftMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.deleteDraft'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await replaysService.deleteReplay(replay.id);
+              loadReplays();
+            } catch {
+              Alert.alert(t('common.error'), t('discotheque.deleteDraftError'));
+            }
+          },
+        },
+      ],
+    );
+  }, [t, loadReplays]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -313,6 +344,17 @@ export function MaDiscothequeScreen() {
                   </Text>
                 </View>
               </View>
+
+              {/* Delete draft button */}
+              {replay.status === 'draft' && (
+                <Pressable
+                  onPress={(e) => { e.stopPropagation(); handleDeleteDraft(replay); }}
+                  hitSlop={8}
+                  style={styles.deleteDraftBtn}
+                >
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                </Pressable>
+              )}
             </Pressable>
           ))}
         </View>
@@ -732,5 +774,11 @@ const styles = StyleSheet.create({
   playIcon: {
     marginRight: spacing.md,
     opacity: 0.8,
+  },
+  deleteDraftBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

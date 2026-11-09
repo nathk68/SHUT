@@ -58,9 +58,9 @@ export function PublicProfileScreen() {
         // Compute total likes for broadcasters
         if (user?.role === 'broadcaster') {
           replaysService.getReplaysByUser(user.id).then((replays) => {
-            const ids = replays.map((r) => r.id);
-            if (ids.length === 0 || cancelled) return;
-            likesService.getLikesCountForItems(ids).then((count) => {
+            const eventIds = replays.map((r) => r.eventId).filter(Boolean);
+            if (eventIds.length === 0 || cancelled) return;
+            likesService.getLikesCountForItems(eventIds).then((count) => {
               if (!cancelled) setTotalLikes(count);
             });
           });
