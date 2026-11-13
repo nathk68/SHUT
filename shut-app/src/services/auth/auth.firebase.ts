@@ -29,6 +29,10 @@ export class FirebaseAuthService implements IAuthService {
       }
       return { success: true, user };
     } catch (error: any) {
+      // Firebase disables the account when admin bans → treat as blocked
+      if (error.code === 'auth/user-disabled') {
+        return { success: false, error: '__BLOCKED__' };
+      }
       const errorMessages: Record<string, string> = {
         'auth/user-not-found': 'Aucun compte avec cet email',
         'auth/wrong-password': 'Mot de passe incorrect',
@@ -55,6 +59,7 @@ export class FirebaseAuthService implements IAuthService {
         role,
         festivalId: null,
         language: i18n.language || 'fr',
+        blocked: false,
         createdAt: new Date().toISOString(),
       };
 

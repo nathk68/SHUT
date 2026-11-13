@@ -46,6 +46,7 @@ export interface User {
   // Admin
   blocked?: boolean;
   blockedAt?: string | null;
+  banReason?: string | null;
 }
 
 export interface AuthState {

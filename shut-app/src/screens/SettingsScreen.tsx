@@ -69,6 +69,7 @@ export function SettingsScreen() {
   const displayName = user?.artistName ?? user?.firstName ?? user?.displayName ?? '';
 
   const showReapply = user?.applicationRole === 'dj' && user?.role === 'viewer';
+  const showBecomeDJ = user?.role === 'viewer' && !user?.applicationRole;
 
   const handleToggleRecord = useCallback(
     (newValue: boolean) => {
@@ -195,7 +196,7 @@ export function SettingsScreen() {
 
       {/* Reapply DJ */}
       {showReapply && (
-        <Section title={t('settings.reapply.sectionTitle')}>
+        <Section title={t('settings.applyDJ.sectionTitle')}>
           <Pressable
             style={[styles.row, styles.rowLast]}
             onPress={() => navigation.navigate('ReapplyDJ')}
@@ -204,8 +205,8 @@ export function SettingsScreen() {
               <Ionicons name="refresh-outline" size={16} color="#f59e0b" />
             </View>
             <View style={styles.recordLabelWrap}>
-              <Text style={styles.rowLabel}>{t('settings.reapply.button')}</Text>
-              <Text style={styles.recordDesc}>{t('settings.reapply.desc')}</Text>
+              <Text style={styles.rowLabel}>{t('settings.becomeDJ.button')}</Text>
+              <Text style={styles.recordDesc}>{t('settings.becomeDJ.desc')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
           </Pressable>
@@ -277,6 +278,25 @@ export function SettingsScreen() {
           isLast
         />
       </Section>
+
+      {/* Become DJ */}
+      {showBecomeDJ && (
+        <Section title="DJ">
+          <Pressable
+            style={[styles.row, styles.rowLast]}
+            onPress={() => navigation.navigate('ReapplyDJ')}
+          >
+            <View style={[styles.rowIcon, { backgroundColor: 'rgba(124,58,237,0.12)' }]}>
+              <Ionicons name="musical-notes-outline" size={16} color={colors.accent} />
+            </View>
+            <View style={styles.recordLabelWrap}>
+              <Text style={styles.rowLabel}>{t('settings.becomeDJ.button')}</Text>
+              <Text style={styles.recordDesc}>{t('settings.becomeDJ.desc')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+          </Pressable>
+        </Section>
+      )}
 
       {/* Support */}
       <Section title={t('settings.support')}>

@@ -36,7 +36,7 @@ export function LoginScreen({ navigation }: Props) {
     setLoading(true);
     const result = await login(email.trim().toLowerCase(), password);
     setLoading(false);
-    if (!result.success) {
+    if (!result.success && result.error !== '__BLOCKED__') {
       Alert.alert(t('common.error'), result.error || t('validation.loginFailed'));
     }
   };

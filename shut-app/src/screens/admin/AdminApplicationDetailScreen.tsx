@@ -139,13 +139,16 @@ export function AdminApplicationDetailScreen({ navigation, route }: Props) {
         {app.worksLinks?.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('admin.applications.links')}</Text>
-            {app.worksLinks.map((link, i) => (
-              <Pressable key={i} style={styles.linkRow} onPress={() => Linking.openURL(link)}>
+            {app.worksLinks.map((link, i) => {
+              const url = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+              return (
+              <Pressable key={i} style={styles.linkRow} onPress={() => Linking.openURL(url)}>
                 <Ionicons name="link-outline" size={16} color={colors.accent} />
                 <Text style={styles.linkText} numberOfLines={1}>{link}</Text>
                 <Ionicons name="open-outline" size={14} color={colors.textMuted} />
               </Pressable>
-            ))}
+              );
+            })}
           </View>
         )}
 

@@ -127,9 +127,9 @@
       "artistNamePlaceholder": "e.g.: DJ Koze, Reinier Zonneveld...",
       "bioPresentation": "Tell us about yourself in a few words",
       "bioPlaceholder": "Tell us who you are, your style, your journey...",
-      "linksToSets": "Links to your sets",
+      "linksToSets": "Links to your sets (URL)",
       "addAtLeastOneLink": "Add at least one link",
-      "linksPlaceholder": "SoundCloud, Mixcloud, YouTube, RA...",
+      "linksPlaceholder": "https://soundcloud.com/your-profile",
       "addLink": "Add a link",
       "cityWhereYouLive": "City where you live",
       "selectYourCity": "Select your city",
@@ -390,12 +390,16 @@
     "logoutMessage": "You will be logged out of SHUT.",
     "deleteAccountReauthTitle": "Re-authentication required",
     "deleteAccountReauthMessage": "For security reasons, please log out and log back in before deleting your account.",
-    "reapply": {
+    "becomeDJ": {
+      "button": "Want to become a DJ?",
+      "desc": "Apply and join the SHUT DJ community!"
+    },
+    "applyDJ": {
       "sectionTitle": "DJ Application",
-      "button": "Reapply as DJ",
-      "desc": "Your previous application was declined. You can submit a new one (max 2 per day).",
-      "confirmTitle": "New application",
-      "confirmMessage": "Do you want to submit a new DJ application? Your current profile info will be used.",
+      "title": "DJ Application",
+      "info": "Fill out this form to apply as a DJ on SHUT. You'll be notified of the result.",
+      "confirmTitle": "Submit application",
+      "confirmMessage": "Do you want to submit your DJ application?",
       "success": "Your application has been submitted! You'll be notified of the result.",
       "rateLimited": "You've reached the limit of 2 applications per day. Try again tomorrow.",
       "error": "Unable to submit the application. Please try again later."
@@ -700,8 +704,9 @@
   },
 
   "blocked": {
-    "title": "Account blocked",
+    "title": "Account banned",
     "message": "Your account has been suspended by an administrator. If you believe this is an error, please contact us by email.",
+    "reasonLabel": "Reason:",
     "logout": "Log out"
   },
   "admin": {
@@ -807,15 +812,16 @@
       "searchPlaceholder": "Search a user...",
       "empty": "No users",
       "changeRole": "Change role",
-      "block": "Block",
-      "unblock": "Unblock",
-      "blocked": "Blocked",
+      "ban": "Ban",
+      "unban": "Unban",
+      "banned": "Banned",
       "roleChanged": "Role changed successfully",
-      "userBlocked": "User blocked",
-      "userUnblocked": "User unblocked",
+      "userBanned": "User banned",
+      "userUnbanned": "User unbanned",
       "actionError": "Unable to perform this action.",
-      "confirmBlock": "Are you sure you want to block this user?",
-      "confirmUnblock": "Are you sure you want to unblock this user?",
+      "confirmBan": "Are you sure you want to ban this user?",
+      "confirmUnban": "Are you sure you want to unban this user?",
+      "banReasonPlaceholder": "Ban reason (optional)",
       "selectRole": "Select a role",
       "roles": {
         "viewer": "Viewer",

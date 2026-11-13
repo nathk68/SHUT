@@ -127,9 +127,9 @@
       "artistNamePlaceholder": "ex: DJ Koze, Reinier Zonneveld...",
       "bioPresentation": "Parle-nous de toi en quelques mots",
       "bioPlaceholder": "Dis-nous qui tu es, ton style, ton parcours...",
-      "linksToSets": "Liens vers tes sets",
+      "linksToSets": "Liens vers tes sets (URL)",
       "addAtLeastOneLink": "Ajoute au moins un lien",
-      "linksPlaceholder": "SoundCloud, Mixcloud, YouTube, RA...",
+      "linksPlaceholder": "https://soundcloud.com/ton-profil",
       "addLink": "Ajouter un lien",
       "cityWhereYouLive": "Ville où tu habites",
       "selectYourCity": "Sélectionne ta ville",
@@ -390,12 +390,16 @@
     "logoutMessage": "Tu vas être déconnecté de SHUT.",
     "deleteAccountReauthTitle": "Reconnexion requise",
     "deleteAccountReauthMessage": "Pour des raisons de sécurité, déconnecte-toi puis reconnecte-toi avant de supprimer ton compte.",
-    "reapply": {
+    "becomeDJ": {
+      "button": "Vous souhaitez devenir DJ ?",
+      "desc": "Postulez et rejoignez la communauté de DJs SHUT !"
+    },
+    "applyDJ": {
       "sectionTitle": "Candidature DJ",
-      "button": "Refaire une candidature",
-      "desc": "Ta candidature précédente a été refusée. Tu peux en soumettre une nouvelle (max 2 par jour).",
-      "confirmTitle": "Nouvelle candidature",
-      "confirmMessage": "Souhaites-tu soumettre une nouvelle candidature DJ ? Tes informations de profil actuelles seront utilisées.",
+      "title": "Candidature DJ",
+      "info": "Remplis ce formulaire pour postuler en tant que DJ sur SHUT. Tu seras notifié du résultat.",
+      "confirmTitle": "Envoyer la candidature",
+      "confirmMessage": "Souhaites-tu soumettre ta candidature DJ ?",
       "success": "Ta candidature a été envoyée ! Tu seras notifié du résultat.",
       "rateLimited": "Tu as atteint la limite de 2 candidatures par jour. Réessaie demain.",
       "error": "Impossible d'envoyer la candidature. Réessaie plus tard."
@@ -700,8 +704,9 @@
   },
 
   "blocked": {
-    "title": "Compte bloqué",
+    "title": "Compte banni",
     "message": "Votre compte a été suspendu par un administrateur. Si vous pensez qu'il s'agit d'une erreur, veuillez nous contacter par email.",
+    "reasonLabel": "Motif :",
     "logout": "Se déconnecter"
   },
   "admin": {
@@ -807,15 +812,16 @@
       "searchPlaceholder": "Rechercher un utilisateur...",
       "empty": "Aucun utilisateur",
       "changeRole": "Changer le rôle",
-      "block": "Bloquer",
-      "unblock": "Débloquer",
-      "blocked": "Bloqué",
+      "ban": "Bannir",
+      "unban": "Débannir",
+      "banned": "Banni",
       "roleChanged": "Rôle modifié avec succès",
-      "userBlocked": "Utilisateur bloqué",
-      "userUnblocked": "Utilisateur débloqué",
+      "userBanned": "Utilisateur banni",
+      "userUnbanned": "Utilisateur débanni",
       "actionError": "Impossible d'effectuer cette action.",
-      "confirmBlock": "Êtes-vous sûr de vouloir bloquer cet utilisateur ?",
-      "confirmUnblock": "Êtes-vous sûr de vouloir débloquer cet utilisateur ?",
+      "confirmBan": "Êtes-vous sûr de vouloir bannir cet utilisateur ?",
+      "confirmUnban": "Êtes-vous sûr de vouloir débannir cet utilisateur ?",
+      "banReasonPlaceholder": "Motif du bannissement (optionnel)",
       "selectRole": "Sélectionner un rôle",
       "roles": {
         "viewer": "Spectateur",

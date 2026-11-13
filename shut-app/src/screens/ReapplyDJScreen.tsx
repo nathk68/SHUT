@@ -56,8 +56,8 @@ export function ReapplyDJScreen() {
     }
 
     Alert.alert(
-      t('settings.reapply.confirmTitle'),
-      t('settings.reapply.confirmMessage'),
+      t('settings.applyDJ.confirmTitle'),
+      t('settings.applyDJ.confirmMessage'),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -72,13 +72,13 @@ export function ReapplyDJScreen() {
                 experience: experience ?? null,
                 worksLinks: worksLinks.filter(l => l.trim()),
               });
-              Alert.alert(t('common.success'), t('settings.reapply.success'), [
+              Alert.alert(t('common.success'), t('settings.applyDJ.success'), [
                 { text: t('common.ok'), onPress: () => navigation.goBack() },
               ]);
             } catch (err: any) {
               const msg = err?.message?.includes('resource-exhausted')
-                ? t('settings.reapply.rateLimited')
-                : t('settings.reapply.error');
+                ? t('settings.applyDJ.rateLimited')
+                : t('settings.applyDJ.error');
               Alert.alert(t('common.error'), msg);
             } finally {
               setLoading(false);
@@ -99,7 +99,7 @@ export function ReapplyDJScreen() {
         <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{t('settings.reapply.button')}</Text>
+        <Text style={styles.headerTitle}>{t('settings.applyDJ.title')}</Text>
         <View style={{ width: 22 }} />
       </View>
 
@@ -111,7 +111,7 @@ export function ReapplyDJScreen() {
         {/* Info banner */}
         <View style={styles.infoBanner}>
           <Ionicons name="information-circle-outline" size={18} color={colors.accent} />
-          <Text style={styles.infoBannerText}>{t('settings.reapply.desc')}</Text>
+          <Text style={styles.infoBannerText}>{t('settings.applyDJ.info')}</Text>
         </View>
 
         {/* Bio */}
@@ -308,5 +308,5 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     paddingTop: spacing.sm,
   },
-  submitBtn: { width: '100%' },
+  submitBtn: { width: '100%', backgroundColor: colors.accent },
 });

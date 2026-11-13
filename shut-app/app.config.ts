@@ -1,0 +1,74 @@
+import { ExpoConfig, ConfigContext } from 'expo/config';
+
+export default ({ config }: ConfigContext): ExpoConfig => ({
+  ...config,
+  name: "shut-app",
+  slug: "shut-app",
+  version: "1.0.0",
+  orientation: "default",
+  icon: "./assets/icon.png",
+  userInterfaceStyle: "light",
+  splash: {
+    image: "./assets/splash-icon.png",
+    resizeMode: "contain",
+    backgroundColor: "#ffffff",
+  },
+  scheme: "shut",
+  ios: {
+    supportsTablet: true,
+    bundleIdentifier: "com.nathk68.shut-app",
+    associatedDomains: ["applinks:shutdiffusion.com"],
+  },
+  android: {
+    adaptiveIcon: {
+      backgroundColor: "#E6F4FE",
+      foregroundImage: "./assets/android-icon-foreground.png",
+      backgroundImage: "./assets/android-icon-background.png",
+      monochromeImage: "./assets/android-icon-monochrome.png",
+    },
+    predictiveBackGestureEnabled: false,
+    permissions: [
+      "android.permission.CAMERA",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.MODIFY_AUDIO_SETTINGS",
+      "android.permission.FOREGROUND_SERVICE",
+      "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+    ],
+    package: "com.nathk68.shutapp",
+    intentFilters: [
+      {
+        action: "VIEW",
+        autoVerify: true,
+        data: [
+          { scheme: "https", host: "shutdiffusion.com", pathPrefix: "/live" },
+          { scheme: "https", host: "shutdiffusion.com", pathPrefix: "/replay" },
+          { scheme: "https", host: "shutdiffusion.com", pathPrefix: "/profile" },
+        ],
+        category: ["BROWSABLE", "DEFAULT"],
+      },
+    ],
+  },
+  web: {
+    favicon: "./assets/favicon.png",
+  },
+  plugins: [
+    "expo-font",
+    "expo-video",
+    "expo-screen-orientation",
+    "expo-splash-screen",
+    "expo-status-bar",
+    "expo-audio",
+    [
+      "expo-image-picker",
+      {
+        photosPermission: "SHUT utilise tes photos pour personnaliser ton profil.",
+      },
+    ],
+  ],
+  extra: {
+    eas: {
+      projectId: "c1729a7f-0341-457c-b178-cb18139b08bd",
+    },
+  },
+  owner: "nathk68",
+});

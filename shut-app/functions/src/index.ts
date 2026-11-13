@@ -1211,18 +1211,33 @@ export const reapplyDJ = onCall(
 
     const fdb = admin.firestore();
 
-    // Check user has applicationRole dj
     const userSnap = await fdb
       .doc(`users/${uid}`).get();
     const userData = userSnap.data();
-    if (userData?.applicationRole !== "dj") {
+
+    // Must be a viewer (not already a DJ/admin)
+    if (userData?.role !== "viewer") {
       throw new HttpsError(
         "permission-denied",
-        "Only DJ applicants can reapply"
+        "Only viewers can apply as DJ"
       );
     }
 
-    // Check they have a rejected application
+    // Check for existing pending application
+    const pendingSnap = await fdb
+      .collection("dj_applications")
+      .where("userId", "==", uid)
+      .where("status", "==", "pending")
+      .limit(1)
+      .get();
+    if (!pendingSnap.empty) {
+      throw new HttpsError(
+        "already-exists",
+        "You already have a pending application"
+      );
+    }
+
+    // Get last rejected app if any (for fallback data)
     const appsSnap = await fdb
       .collection("dj_applications")
       .where("userId", "==", uid)
@@ -1230,12 +1245,6 @@ export const reapplyDJ = onCall(
       .orderBy("submittedAt", "desc")
       .limit(1)
       .get();
-    if (appsSnap.empty) {
-      throw new HttpsError(
-        "failed-precondition",
-        "No rejected application found"
-      );
-    }
 
     // Rate limit: 2 per day
     const rateLimitRef = fdb
@@ -1264,44 +1273,45 @@ export const reapplyDJ = onCall(
       });
     }
 
-    // Use client-provided data, fallback to profile
+    // Use client-provided data, fallback to profile/last app
     const input = request.data || {};
-    const lastApp = appsSnap.docs[0].data();
+    const lastApp = appsSnap.empty ?
+      null : appsSnap.docs[0].data();
 
     const bio = (typeof input.bio === "string" &&
       input.bio.trim()) ?
       input.bio.trim() :
-      (userData?.bio ?? lastApp.bio ?? "");
+      (userData?.bio ?? lastApp?.bio ?? "");
     const genres = (Array.isArray(input.genres) &&
       input.genres.length > 0) ?
       input.genres :
-      (userData?.genres ?? lastApp.genres ?? []);
+      (userData?.genres ?? lastApp?.genres ?? []);
     const experience = input.experience ??
-      userData?.experience ?? lastApp.experience ?? null;
+      userData?.experience ?? lastApp?.experience ?? null;
     const worksLinks = (Array.isArray(input.worksLinks) &&
       input.worksLinks.length > 0) ?
       input.worksLinks.filter(
         (l: string) => typeof l === "string" && l.trim()
       ) :
-      (lastApp.worksLinks ?? []);
+      (lastApp?.worksLinks ?? []);
 
     await fdb.collection("dj_applications").add({
       userId: uid,
       artistName: userData?.artistName ??
-        lastApp.artistName ?? "",
+        lastApp?.artistName ?? "",
       bio,
       genres,
       experience,
       worksLinks,
       cityName: userData?.cityName ??
-        lastApp.cityName ?? "",
+        lastApp?.cityName ?? "",
       countryCode: userData?.countryCode ??
-        lastApp.countryCode ?? "",
+        lastApp?.countryCode ?? "",
       cityId: userData?.cityId ??
-        lastApp.cityId ?? "",
+        lastApp?.cityId ?? "",
       status: "pending",
       submittedAt: new Date().toISOString(),
-      reapply: true,
+      reapply: !!lastApp,
     });
 
     return {success: true};
@@ -1597,8 +1607,8 @@ export const adminSetUserRole = onCall(
 export const adminBlockUser = onCall(
   async (request) => {
     await requireAdmin(request);
-    const {userId, blocked} = request.data as {
-      userId: string; blocked: boolean;
+    const {userId, blocked, reason} = request.data as {
+      userId: string; blocked: boolean; reason?: string;
     };
     if (!userId || typeof blocked !== "boolean") {
       throw new HttpsError(
@@ -1614,6 +1624,14 @@ export const adminBlockUser = onCall(
         "not-found", "User not found"
       );
     }
+    // Send push BEFORE disabling Auth (token still valid)
+    if (blocked) {
+      await createNotification({
+        userId,
+        type: "report_user_banned",
+        message: reason ?? "",
+      });
+    }
     await admin.auth().updateUser(
       userId, {disabled: blocked}
     );
@@ -1621,6 +1639,7 @@ export const adminBlockUser = onCall(
       blocked,
       blockedAt: blocked ?
         new Date().toISOString() : null,
+      banReason: blocked && reason ? reason : null,
     });
     return {success: true};
   }
@@ -1811,8 +1830,51 @@ export const getApiCosts = onCall(
 // ── Notification helper ───────────────────────
 
 /**
+ * Send a push notification via the Expo Push API.
+ * Expo push tokens (ExponentPushToken[...]) are NOT
+ * compatible with FCM — they must go through Expo's
+ * own endpoint.
+ * @param {string} token Expo push token.
+ * @param {object} message Push message payload.
+ */
+async function sendExpoPush(
+  token: string,
+  message: {
+    title: string;
+    body: string;
+    data?: Record<string, string>;
+  }
+) {
+  const payload = {
+    to: token,
+    sound: "default",
+    title: message.title,
+    body: message.body,
+    data: message.data ?? {},
+  };
+  console.log("Expo push: sending to", token);
+  const res = await fetch(
+    "https://exp.host/--/api/v2/push/send",
+    {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+  const resBody = await res.text();
+  if (!res.ok) {
+    console.warn("Expo push HTTP error:", res.status, resBody);
+  } else {
+    console.log("Expo push response:", resBody);
+  }
+}
+
+/**
  * Create a notification doc and optionally send
- * a push via FCM.
+ * a push via Expo Push API.
  * @param {object} data Notification payload.
  */
 async function createNotification(data: {
@@ -1833,18 +1895,16 @@ async function createNotification(data: {
   };
   await fdb.collection("notifications").add(notifDoc);
 
-  // Send push notification if user has a token
+  // Send push notification via Expo Push API
   const userSnap = await fdb
     .doc(`users/${data.userId}`).get();
   const token = userSnap.data()?.expoPushToken;
+  const lang = userSnap.data()?.language ?? "fr";
   if (token) {
     try {
-      await admin.messaging().send({
-        token,
-        notification: {
-          title: "SHUT",
-          body: pushBody(data.type, data),
-        },
+      await sendExpoPush(token, {
+        title: "SHUT",
+        body: pushBody(data.type, data, lang),
         data: {
           type: data.type,
           targetId: data.targetId ?? "",
@@ -1862,36 +1922,62 @@ async function createNotification(data: {
  * Build push notification body text.
  * @param {string} type Notification type.
  * @param {object} data Actor and message data.
+ * @param {string} lang User language (fr/en).
  * @return {string} Push body text.
  */
 function pushBody(
   type: string,
-  data: {actorName?: string; message?: string}
+  data: {actorName?: string; message?: string},
+  lang = "fr"
 ): string {
+  const fr = lang.startsWith("fr");
   switch (type) {
   case "new_follower":
-    return `${data.actorName ?? "Someone"} started following you`;
+    return fr ?
+      `${data.actorName ?? "Quelqu'un"} vous suit` :
+      `${data.actorName ?? "Someone"} started following you`;
   case "live_started":
-    return `${data.actorName ?? "A DJ"} is live!`;
+    return fr ?
+      `${data.actorName ?? "Un DJ"} est en live !` :
+      `${data.actorName ?? "A DJ"} is live!`;
   case "application_approved":
-    return "Your application has been approved!";
+    return fr ?
+      "Votre candidature a été acceptée !" :
+      "Your application has been approved!";
   case "application_rejected":
-    return "Your application has been declined";
+    return fr ?
+      "Votre candidature a été refusée" :
+      "Your application has been declined";
   case "admin_announcement":
-    return data.message ?? "New announcement from SHUT";
+    return data.message ?? (fr ?
+      "Nouvelle annonce de SHUT" :
+      "New announcement from SHUT");
   case "new_application":
-    return data.message ?? "New DJ application received";
+    return data.message ?? (fr ?
+      "Nouvelle candidature DJ reçue" :
+      "New DJ application received");
   case "report_warning":
-    return "You have received a warning from SHUT " +
-      "moderators. Please review our guidelines.";
+    return fr ?
+      "Vous avez reçu un avertissement. " +
+        "Veuillez consulter nos règles." :
+      "You have received a warning from SHUT " +
+        "moderators. Please review our guidelines.";
   case "report_content_removed":
-    return "Your content has been removed for " +
-      "violating our community guidelines.";
+    return fr ?
+      "Votre contenu a été supprimé pour " +
+        "non-respect de nos règles." :
+      "Your content has been removed for " +
+        "violating our community guidelines.";
   case "report_user_banned":
-    return "Your account has been suspended for " +
-      "violating our community guidelines.";
+    return fr ?
+      "Votre compte a été suspendu pour " +
+        "non-respect de nos règles." :
+      "Your account has been suspended for " +
+        "violating our community guidelines.";
   default:
-    return "You have a new notification";
+    return fr ?
+      "Vous avez une nouvelle notification" :
+      "You have a new notification";
   }
 }
 
@@ -2138,23 +2224,22 @@ export const checkMuxCostAlert = onSchedule(
     // Send push notification to admin users
     const admins = await fdb.collection("users")
       .where("role", "==", "admin").get();
-    const tokens: string[] = [];
+    const pushPromises: Promise<void>[] = [];
     admins.docs.forEach((d) => {
-      const fcm = d.data().fcmToken;
-      if (fcm) tokens.push(fcm);
+      const token = d.data().expoPushToken;
+      if (token) {
+        pushPromises.push(
+          sendExpoPush(token, {
+            title: "Alerte couts Mux",
+            body:
+              `Cout estime: $${costRounded} ` +
+              `(seuil: $${COST_THRESHOLD})`,
+            data: {type: "cost_alert"},
+          })
+        );
+      }
     });
-    if (tokens.length > 0) {
-      await admin.messaging().sendEachForMulticast({
-        tokens,
-        notification: {
-          title: "Alerte couts Mux",
-          body:
-            `Cout estime: $${costRounded} ` +
-            `(seuil: $${COST_THRESHOLD})`,
-        },
-        data: {type: "cost_alert"},
-      });
-    }
+    await Promise.all(pushPromises);
 
     // Record alert
     await alertRef.set({

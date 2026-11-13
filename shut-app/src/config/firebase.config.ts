@@ -10,18 +10,31 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ====================================================================
 // FIREBASE CONFIGURATION
-// Replace the values below with your Firebase project credentials
-// from https://console.firebase.google.com > Project Settings > General
+// EXPO_PUBLIC_FIREBASE_ENV=dev     → dev/test (shut-app-c0067)
+// EXPO_PUBLIC_FIREBASE_ENV=preprod → preprod (shut-app-preprod)
 // ====================================================================
-const firebaseConfig = {
+const firebaseEnv = process.env.EXPO_PUBLIC_FIREBASE_ENV ?? 'dev';
+const devConfig = {
   apiKey: "AIzaSyBX-g-1IlM3r-CELtcVVZi1zx7IHvAnjaE",
   authDomain: "shut-app-c0067.firebaseapp.com",
   projectId: "shut-app-c0067",
   storageBucket: "shut-app-c0067.firebasestorage.app",
   messagingSenderId: "995264496230",
   appId: "1:995264496230:web:f7d8bf8f153b4e4c4d23a7",
-  databaseURL: "https://shut-app-c0067-default-rtdb.europe-west1.firebasedatabase.app/"
+  databaseURL: "https://shut-app-c0067-default-rtdb.europe-west1.firebasedatabase.app/",
 };
+
+const preprodConfig = {
+  apiKey: "AIzaSyAG_UIIgkGR4LCTzG2z56h-k7n3PauMYjg",
+  authDomain: "shut-app-preprod.firebaseapp.com",
+  projectId: "shut-app-preprod",
+  storageBucket: "shut-app-preprod.firebasestorage.app",
+  messagingSenderId: "684167800997",
+  appId: "1:684167800997:web:ba2e5e6949b6254a93454c",
+  databaseURL: "https://shut-app-preprod-default-rtdb.europe-west1.firebasedatabase.app/",
+};
+
+const firebaseConfig = firebaseEnv === 'preprod' ? preprodConfig : devConfig;
 
 const app = initializeApp(firebaseConfig);
 

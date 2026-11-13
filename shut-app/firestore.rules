@@ -19,7 +19,8 @@ service cloud.firestore {
     }
     function isNotBlocked() {
       return isSignedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.blocked != true;
+        && (!exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.blocked != true);
     }
 
     // ── Users ───────────────────────────────────────────────

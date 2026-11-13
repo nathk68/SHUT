@@ -9,7 +9,7 @@ import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme'
 export function BlockedScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { logout } = useAuth();
+  const { logout, banReason } = useAuth();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -19,6 +19,12 @@ export function BlockedScreen() {
         </View>
         <Text style={styles.title}>{t('blocked.title')}</Text>
         <Text style={styles.message}>{t('blocked.message')}</Text>
+        {banReason ? (
+          <View style={styles.reasonBox}>
+            <Text style={styles.reasonLabel}>{t('blocked.reasonLabel')}</Text>
+            <Text style={styles.reasonText}>{banReason}</Text>
+          </View>
+        ) : null}
       </View>
       <Pressable style={styles.logoutBtn} onPress={logout}>
         <Ionicons name="log-out-outline" size={20} color={colors.textPrimary} />
@@ -60,6 +66,26 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
     textAlign: 'center',
+    lineHeight: 22,
+  },
+  reasonBox: {
+    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+    padding: spacing.md,
+    width: '100%',
+    gap: spacing.xs,
+  },
+  reasonLabel: {
+    fontFamily: fonts.body.semiBold,
+    fontSize: fontSize.sm,
+    color: '#ef4444',
+  },
+  reasonText: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
     lineHeight: 22,
   },
   logoutBtn: {

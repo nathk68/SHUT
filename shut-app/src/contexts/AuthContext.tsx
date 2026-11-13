@@ -23,6 +23,7 @@ interface AuthContextType extends AuthState {
   updateUser: (patch: UpdateProfilePayload) => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   isBlocked: boolean;
+  banReason: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -35,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isGuest: false,
   });
   const [isBlocked, setIsBlocked] = useState(false);
+  const [banReason, setBanReason] = useState<string | null>(null);
   const unsubBlockedRef = useRef<(() => void) | null>(null);
 
   // Restore auth state on mount
@@ -43,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = await authService.getCurrentUser();
       if (user) {
         if (user.blocked) {
+          setBanReason(user.banReason ?? null);
           setIsBlocked(true);
           setState({ user: null, isAuthenticated: false, isLoading: false, isGuest: false });
         } else {
@@ -64,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const unsub = onSnapshot(doc(db, 'users', state.user.id), (snap) => {
       if (snap.exists() && snap.data()?.blocked === true) {
+        setBanReason(snap.data()?.banReason ?? null);
         setIsBlocked(true);
         setState({ user: null, isAuthenticated: false, isLoading: false, isGuest: false });
         authService.logout().catch(() => {});
@@ -78,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await authService.login(email, password);
     if (result.success && result.user) {
       setIsBlocked(false);
+      setBanReason(null);
       setState({ user: result.user, isAuthenticated: true, isLoading: false, isGuest: false });
       return { success: true };
     }
@@ -105,6 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await authService.logout();
     setIsBlocked(false);
+    setBanReason(null);
     setState({ user: null, isAuthenticated: false, isLoading: false, isGuest: false });
   }, []);
 
@@ -165,7 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.user]);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, deleteAccount, enterGuestMode, exitGuestMode, refreshUser, updateUser, resetPassword, isBlocked }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, deleteAccount, enterGuestMode, exitGuestMode, refreshUser, updateUser, resetPassword, isBlocked, banReason }}>
       {children}
     </AuthContext.Provider>
   );

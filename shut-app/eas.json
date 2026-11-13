@@ -3,9 +3,23 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "development": {
+      "developmentClient": true,
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_ENV": "dev"
+      }
+    },
+    "preview": {
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_ENV": "preprod"
+      }
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_ENV": "preprod"
       }
     }
   }

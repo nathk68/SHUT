@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   Image,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -51,6 +52,8 @@ export function AdminUsersScreen({ navigation }: { navigation: Nav }) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [filterCountry, setFilterCountry] = useState<string | null>(null);
   const [filterCity, setFilterCity] = useState<string | null>(null);
+  const [banModalUser, setBanModalUser] = useState<User | null>(null);
+  const [banReason, setBanReason] = useState('');
 
   const fetchUsers = useCallback(async (isRefresh = false) => {
     try {
@@ -125,34 +128,33 @@ export function AdminUsersScreen({ navigation }: { navigation: Nav }) {
       .finally(() => setActionLoading(null));
   };
 
-  const handleToggleBlock = (user: User) => {
-    const isBlocked = !!user.blocked;
-    const confirmMsg = isBlocked
-      ? t('admin.users.confirmUnblock')
-      : t('admin.users.confirmBlock');
-
+  const handleToggleBan = (user: User) => {
+    const isBanned = !!user.blocked;
+    if (!isBanned) {
+      // Show modal to enter ban reason
+      setBanModalUser(user);
+      setBanReason('');
+      return;
+    }
+    // Unban: simple confirm
     Alert.alert(
-      isBlocked ? t('admin.users.unblock') : t('admin.users.block'),
-      confirmMsg,
+      t('admin.users.unban'),
+      t('admin.users.confirmUnban'),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
-          text: isBlocked ? t('admin.users.unblock') : t('admin.users.block'),
-          style: isBlocked ? 'default' : 'destructive',
+          text: t('admin.users.unban'),
           onPress: () => {
             setActionLoading(user.id);
             const fn = httpsCallable(functions, 'adminBlockUser');
-            fn({ userId: user.id, blocked: !isBlocked })
+            fn({ userId: user.id, blocked: false })
               .then(() => {
                 setUsers((prev) =>
                   prev.map((u) =>
-                    u.id === user.id ? { ...u, blocked: !isBlocked } : u
+                    u.id === user.id ? { ...u, blocked: false } : u
                   )
                 );
-                Alert.alert(
-                  t('common.success'),
-                  isBlocked ? t('admin.users.userUnblocked') : t('admin.users.userBlocked')
-                );
+                Alert.alert(t('common.success'), t('admin.users.userUnbanned'));
               })
               .catch(() => Alert.alert('Error', t('admin.users.actionError')))
               .finally(() => setActionLoading(null));
@@ -160,6 +162,25 @@ export function AdminUsersScreen({ navigation }: { navigation: Nav }) {
         },
       ]
     );
+  };
+
+  const confirmBan = () => {
+    if (!banModalUser) return;
+    const userId = banModalUser.id;
+    setBanModalUser(null);
+    setActionLoading(userId);
+    const fn = httpsCallable(functions, 'adminBlockUser');
+    fn({ userId, blocked: true, reason: banReason.trim() || undefined })
+      .then(() => {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === userId ? { ...u, blocked: true } : u
+          )
+        );
+        Alert.alert(t('common.success'), t('admin.users.userBanned'));
+      })
+      .catch(() => Alert.alert('Error', t('admin.users.actionError')))
+      .finally(() => setActionLoading(null));
   };
 
   const showRolePicker = (user: User) => {
@@ -215,8 +236,8 @@ export function AdminUsersScreen({ navigation }: { navigation: Nav }) {
                 {item.artistName || item.displayName}
               </Text>
               {isBlocked && (
-                <View style={styles.blockedBadge}>
-                  <Text style={styles.blockedText}>{t('admin.users.blocked')}</Text>
+                <View style={styles.bannedBadge}>
+                  <Text style={styles.bannedText}>{t('admin.users.banned')}</Text>
                 </View>
               )}
             </View>
@@ -260,8 +281,8 @@ export function AdminUsersScreen({ navigation }: { navigation: Nav }) {
                 </Pressable>
 
                 <Pressable
-                  style={[styles.actionBtn, isBlocked ? styles.actionBtnUnblock : styles.actionBtnBlock]}
-                  onPress={() => handleToggleBlock(item)}
+                  style={[styles.actionBtn, isBlocked ? styles.actionBtnUnban : styles.actionBtnBan]}
+                  onPress={() => handleToggleBan(item)}
                 >
                   <Ionicons
                     name={isBlocked ? 'lock-open-outline' : 'ban-outline'}
@@ -274,7 +295,7 @@ export function AdminUsersScreen({ navigation }: { navigation: Nav }) {
                       { color: isBlocked ? '#22c55e' : '#ef4444' },
                     ]}
                   >
-                    {isBlocked ? t('admin.users.unblock') : t('admin.users.block')}
+                    {isBlocked ? t('admin.users.unban') : t('admin.users.ban')}
                   </Text>
                 </Pressable>
               </>
@@ -386,6 +407,33 @@ export function AdminUsersScreen({ navigation }: { navigation: Nav }) {
           }
         />
       )}
+
+      {/* Ban reason modal */}
+      <Modal visible={!!banModalUser} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setBanModalUser(null)}>
+          <Pressable style={styles.modalContent} onPress={() => {}}>
+            <Text style={styles.modalTitle}>{t('admin.users.ban')}</Text>
+            <Text style={styles.modalSubtitle}>{t('admin.users.confirmBan')}</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder={t('admin.users.banReasonPlaceholder')}
+              placeholderTextColor={colors.textMuted}
+              value={banReason}
+              onChangeText={setBanReason}
+              multiline
+              numberOfLines={3}
+            />
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalCancelBtn} onPress={() => setBanModalUser(null)}>
+                <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
+              </Pressable>
+              <Pressable style={styles.modalBanBtn} onPress={confirmBan}>
+                <Text style={styles.modalBanText}>{t('admin.users.ban')}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -540,13 +588,13 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  blockedBadge: {
+  bannedBadge: {
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: borderRadius.full,
   },
-  blockedText: {
+  bannedText: {
     fontFamily: fonts.body.semiBold,
     fontSize: 9,
     color: '#ef4444',
@@ -572,10 +620,10 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     backgroundColor: 'rgba(151, 77, 251, 0.1)',
   },
-  actionBtnBlock: {
+  actionBtnBan: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
   },
-  actionBtnUnblock: {
+  actionBtnUnban: {
     backgroundColor: 'rgba(34, 197, 94, 0.1)',
   },
   actionBtnText: {
@@ -608,5 +656,72 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body.regular,
     fontSize: fontSize.md,
     color: colors.textMuted,
+  },
+  // Ban modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  modalContent: {
+    width: '100%',
+    backgroundColor: colors.backgroundElevated,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  modalTitle: {
+    fontFamily: fonts.heading.bold,
+    fontSize: fontSize.lg,
+    color: '#ef4444',
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  modalInput: {
+    backgroundColor: colors.backgroundInput,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    color: colors.textPrimary,
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.md,
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontFamily: fonts.body.semiBold,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+  },
+  modalBanBtn: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+  },
+  modalBanText: {
+    fontFamily: fonts.body.semiBold,
+    fontSize: fontSize.md,
+    color: colors.white,
   },
 });
