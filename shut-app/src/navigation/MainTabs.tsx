@@ -11,7 +11,7 @@ import { useRole } from '../contexts/RoleContext';
 import { ShutDiffusionScreen } from '../screens/ShutDiffusionScreen';
 import { LivesScreen } from '../screens/LivesScreen';
 import { LivePlayerScreen } from '../screens/viewer/LivePlayerScreen';
-import { AudioCheckScreen } from '../screens/broadcaster/AudioCheckScreen';
+import { PrepareLiveScreen } from '../screens/broadcaster/PrepareLiveScreen';
 import { QuickStreamScreen } from '../screens/broadcaster/QuickStreamScreen';
 import { PhoneCameraScreen } from '../screens/broadcaster/PhoneCameraScreen';
 import { LiveControlScreen } from '../screens/broadcaster/LiveControlScreen';
@@ -87,7 +87,7 @@ export type LiveStackParamList = {
 };
 
 export type GoLiveStackParamList = {
-  AudioCheck: undefined;
+  PrepareLive: undefined;
   QuickStream: { cameraId?: string };
   PhoneCamera: { rtmpUrl: string; streamKey: string; eventId?: string; mode?: 'phone' | 'external' };
   LiveControl: { eventId: string };
@@ -193,7 +193,7 @@ function LiveStackScreen() {
 function GoLiveStackScreen() {
   return (
     <GoLiveStack.Navigator screenOptions={{ headerShown: false }}>
-      <GoLiveStack.Screen name="AudioCheck" component={AudioCheckScreen} />
+      <GoLiveStack.Screen name="PrepareLive" component={PrepareLiveScreen} />
       <GoLiveStack.Screen name="QuickStream" component={QuickStreamScreen} />
       <GoLiveStack.Screen
         name="PhoneCamera"

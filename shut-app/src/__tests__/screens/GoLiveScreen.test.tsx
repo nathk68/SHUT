@@ -63,10 +63,10 @@ describe('GoLiveScreen', () => {
 
   // ─── Comportement DJ ──────────────────────────────────────────────────────
 
-  it('navigue vers AudioCheck au clic sur "Lancer mon live" (compte DJ)', () => {
+  it('navigue vers PrepareLive au clic sur "Lancer mon live" (compte DJ)', () => {
     render(<GoLiveScreen />);
     fireEvent.press(screen.getByText('Lancer mon live'));
-    expect(mockNavigate).toHaveBeenCalledWith('AudioCheck');
+    expect(mockNavigate).toHaveBeenCalledWith('PrepareLive');
   });
 
   // ─── Comportement non-DJ ──────────────────────────────────────────────────
@@ -79,13 +79,13 @@ describe('GoLiveScreen', () => {
     ).toBeTruthy();
   });
 
-  it('ne navigue pas vers AudioCheck si l\'utilisateur n\'est pas DJ', () => {
+  it('ne navigue pas vers PrepareLive si l\'utilisateur n\'est pas DJ', () => {
     mockUseRole.mockReturnValue({ currentRole: 'viewer' });
     render(<GoLiveScreen />);
     const button = screen.queryByText('Lancer mon live');
     if (button) {
       fireEvent.press(button);
-      expect(mockNavigate).not.toHaveBeenCalledWith('AudioCheck');
+      expect(mockNavigate).not.toHaveBeenCalledWith('PrepareLive');
     }
   });
 

@@ -279,6 +279,61 @@
     "tagline": "Partage ton univers. Inspire. Connecte."
   },
 
+  "prepareLive": {
+    "title": "Préparer mon live",
+    "stepVideo": "Vidéo",
+    "stepAudio": "Audio",
+    "continueToAudio": "Continuer vers l'audio",
+    "launchLive": "Lancer le live",
+    "launching": "Lancement...",
+    "launchError": "Impossible de lancer le live.",
+    "generateError": "Impossible de générer les identifiants.",
+    "credentialsRequired": "Identifiants requis",
+    "credentialsRequiredDesc": "Génère tes identifiants RTMP avant de lancer le live avec une caméra externe.",
+    "video": {
+      "heading": "Étape 1 — Connecte ta caméra",
+      "subtitle": "Choisis comment tu souhaites filmer ton DJ set.",
+      "smartphone": "Caméra du smartphone",
+      "smartphoneDesc": "Filme directement depuis ton téléphone.",
+      "external": "Caméra externe",
+      "externalDesc": "GoPro ou caméra compatible avec SHUT.",
+      "externalHint": "Connexion Wi-Fi ou autre liaison compatible. Le modèle de caméra doit être pris en charge par SHUT."
+    },
+    "audio": {
+      "heading": "Étape 2 — Connecte ton son",
+      "subtitle": "Le son professionnel arrive directement dans ton smartphone.",
+      "interface": "Interface audio externe",
+      "interfaceDesc": "Relie ton matériel DJ à une interface audio USB, puis au smartphone.",
+      "usbDirect": "Connexion USB directe",
+      "usbDirectDesc": "Relie un contrôleur ou mixeur USB audio compatible au smartphone.",
+      "testTitle": "Test audio / vidéo",
+      "testDesc": "Vérifier le niveau sonore, l'image et leur synchronisation avant de passer en direct."
+    },
+    "rtmp": {
+      "title": "Identifiants RTMP",
+      "generateDesc": "Génère tes identifiants pour configurer ta caméra externe (DJI Mimo, GoPro, OBS...).",
+      "generate": "Générer les identifiants",
+      "generating": "Génération...",
+      "fullUrl": "URL complète",
+      "streamKey": "Clé de stream",
+      "copy": "Copier",
+      "copied": "Copié"
+    },
+    "guide": {
+      "title": "Configurer ta caméra",
+      "subtitle": "Suis ces étapes pour connecter ta caméra externe à SHUT via RTMP.",
+      "steps": [
+        "Ouvre l'application de ta caméra (DJI Mimo, GoPro Labs, etc.)",
+        "Va dans les paramètres Live / Streaming",
+        "Sélectionne \"RTMP personnalisé\" (ou Custom RTMP)",
+        "Copie l'URL complète depuis l'écran précédent et colle-la",
+        "Vérifie que le son est bien capté par l'entrée micro/audio",
+        "Lance le stream depuis l'application caméra"
+      ],
+      "note": "L'audio doit passer par l'entrée micro de ta caméra (câble TRS 3.5mm depuis la table de mix). Règle le volume de sortie table à 30-40%."
+    }
+  },
+
   "discotheque": {
     "title": "Mes sets",
     "mySets": "Mes sets",

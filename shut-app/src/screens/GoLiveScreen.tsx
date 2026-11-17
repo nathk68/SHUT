@@ -39,7 +39,7 @@ export function GoLiveScreen() {
       {isDJ ? (
         <Pressable
           style={styles.button}
-          onPress={() => navigation.navigate('AudioCheck')}
+          onPress={() => navigation.navigate('PrepareLive')}
         >
           <Ionicons name="radio-outline" size={18} color={colors.white} />
           <Text style={styles.buttonText}>{t('goLive.startLive')}</Text>

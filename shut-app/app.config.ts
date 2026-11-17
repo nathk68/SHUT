@@ -34,6 +34,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "android.permission.FOREGROUND_SERVICE",
       "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
     ],
+    versionCode: 3,
     package: "com.nathk68.shutapp",
     intentFilters: [
       {
