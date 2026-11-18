@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { Header } from '../../components/layout/Header';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Avatar } from '../../components/ui/Avatar';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { DonationModal } from '../../components/donation/DonationModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRole } from '../../contexts/RoleContext';
 import {
@@ -20,9 +22,11 @@ import {
 export function SettingsScreen() {
   const { user, logout } = useAuth();
   const { switchRole } = useRole();
+  const { t } = useTranslation();
 
   const [pushNotifications, setPushNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(false);
+  const [donationVisible, setDonationVisible] = useState(false);
 
   return (
     <ScreenContainer>
@@ -91,6 +95,21 @@ export function SettingsScreen() {
           </View>
         </GlassCard>
 
+        {/* Donation section */}
+        <Text style={styles.sectionTitle}>{t('donation.sectionTitle')}</Text>
+        <GlassCard
+          onPress={() => setDonationVisible(true)}
+          style={styles.settingsCard}
+        >
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Ionicons name="heart" size={20} color={colors.accent} />
+              <Text style={styles.settingLabel}>{t('donation.settingsButton')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </View>
+        </GlassCard>
+
         {/* About section */}
         <Text style={styles.sectionTitle}>A propos</Text>
         <GlassCard style={styles.settingsCard}>
@@ -131,6 +150,12 @@ export function SettingsScreen() {
         {/* App version footer */}
         <Text style={styles.versionText}>SHUT v0.1.0 (MVP)</Text>
       </ScrollView>
+
+      <DonationModal
+        visible={donationVisible}
+        onClose={() => setDonationVisible(false)}
+        context="settings"
+      />
     </ScreenContainer>
   );
 }

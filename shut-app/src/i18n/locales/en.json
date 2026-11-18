@@ -355,6 +355,20 @@
     "deleteDraftError": "Unable to delete the draft."
   },
 
+  "donation": {
+    "title": "Support SHUT",
+    "subtitle": "SHUT uses costly technologies to bring you the best streaming experience. Your support helps us keep going!",
+    "sectionTitle": "Support the project",
+    "selectAmount": "Choose an amount",
+    "currency": "€",
+    "customPlaceholder": "Custom amount (€)",
+    "donate": "Support",
+    "error": "Unable to create payment session. Please try again later.",
+    "minimumAmount": "Minimum amount is €1",
+    "settingsButton": "Support SHUT",
+    "settingsDesc": "Help us fund the platform costs"
+  },
+
   "mesFavoris": {
     "title": "My favorites",
     "replayCount": "{{count}} replay",

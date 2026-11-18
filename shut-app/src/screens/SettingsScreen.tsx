@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { usePreferences } from '../contexts/PreferencesContext';
 import { streamingService } from '../services';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../config/theme';
 import { ScreenHeader } from '../components/ui/ScreenHeader';
+import { DonationModal } from '../components/donation/DonationModal';
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 
@@ -65,6 +66,8 @@ export function SettingsScreen() {
   const { user, logout, deleteAccount, resetPassword } = useAuth();
   const { language, videoQuality, notifications, recordLives, setRecordLives } = usePreferences();
   const { t } = useTranslation();
+
+  const [donationVisible, setDonationVisible] = useState(false);
 
   const displayName = user?.artistName ?? user?.firstName ?? user?.displayName ?? '';
 
@@ -298,6 +301,23 @@ export function SettingsScreen() {
         </Section>
       )}
 
+      {/* Donation */}
+      <Section title={t('donation.sectionTitle')}>
+        <Pressable
+          style={[styles.row, styles.rowLast]}
+          onPress={() => setDonationVisible(true)}
+        >
+          <View style={[styles.rowIcon, { backgroundColor: 'rgba(102,36,131,0.15)' }]}>
+            <Ionicons name="heart" size={16} color={colors.accent} />
+          </View>
+          <View style={styles.recordLabelWrap}>
+            <Text style={styles.rowLabel}>{t('donation.settingsButton')}</Text>
+            <Text style={styles.recordDesc}>{t('donation.settingsDesc')}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+        </Pressable>
+      </Section>
+
       {/* Support */}
       <Section title={t('settings.support')}>
         <Row
@@ -341,6 +361,12 @@ export function SettingsScreen() {
       </Pressable>
 
       <Text style={styles.legalNote}>{t('settings.footer')}</Text>
+
+      <DonationModal
+        visible={donationVisible}
+        onClose={() => setDonationVisible(false)}
+        context="settings"
+      />
     </ScrollView>
   );
 }

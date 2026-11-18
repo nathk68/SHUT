@@ -9,6 +9,7 @@ import {defineSecret} from "firebase-functions/params";
 import * as admin from "firebase-admin";
 import Mux from "@mux/mux-node";
 import {Resend} from "resend";
+import Stripe from "stripe";
 
 admin.initializeApp();
 
@@ -16,6 +17,10 @@ const muxTokenId = defineSecret("MUX_TOKEN_ID");
 const muxTokenSecret =
   defineSecret("MUX_TOKEN_SECRET");
 const resendApiKey = defineSecret("RESEND_API_KEY");
+const stripeSecretKey =
+  defineSecret("STRIPE_SECRET_KEY");
+const stripeWebhookSecret =
+  defineSecret("STRIPE_WEBHOOK_SECRET");
 
 setGlobalOptions({
   region: "europe-west1",
@@ -23,6 +28,14 @@ setGlobalOptions({
 });
 
 const RTMP = "rtmp://global-live.mux.com:5222/app";
+
+/**
+ * Create a Stripe client using runtime secrets.
+ * @return {Stripe} Stripe client instance.
+ */
+function getStripe(): Stripe {
+  return new Stripe(stripeSecretKey.value());
+}
 
 /**
  * Create a Mux client using runtime secrets.
@@ -2444,5 +2457,192 @@ export const cleanupStaleLives = onSchedule(
         );
       }
     }
+  }
+);
+
+// ── Stripe donation: create checkout session ──
+
+/**
+ * Create a Stripe Checkout Session for a donation.
+ * @param {object} request Cloud Function request.
+ * @return {object} { url } Checkout session URL.
+ */
+export const createDonationCheckout = onCall(
+  {secrets: [stripeSecretKey]},
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated", "Login required"
+      );
+    }
+
+    const uid = request.auth.uid;
+    const snap = await admin.firestore()
+      .doc(`users/${uid}`).get();
+    if (snap.data()?.blocked === true) {
+      throw new HttpsError(
+        "permission-denied", "Account suspended"
+      );
+    }
+
+    const {amountCents} = request.data as {
+      amountCents: number;
+    };
+
+    if (
+      !amountCents ||
+      typeof amountCents !== "number" ||
+      amountCents < 100
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "amountCents must be at least 100 (1\u20ac)"
+      );
+    }
+
+    const stripe = getStripe();
+
+    const session = await stripe.checkout
+      .sessions.create({
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "eur",
+              product_data: {
+                name: "Don SHUT",
+              },
+              unit_amount: amountCents,
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          userId: uid,
+          donationType: "support",
+        },
+        success_url:
+          "https://www.shutdiffusion.com" +
+          "/donation/success?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url:
+          "https://www.shutdiffusion.com" +
+          "/donation/cancel",
+      });
+
+    return {url: session.url};
+  }
+);
+
+// ── Stripe donation: webhook ──────────────────
+
+/**
+ * Stripe webhook endpoint for donation events.
+ * Verifies the signature and records completed
+ * donations in Firestore.
+ */
+export const stripeDonationWebhook = onRequest(
+  {secrets: [stripeSecretKey, stripeWebhookSecret]},
+  async (req, res) => {
+    const stripe = getStripe();
+    const sig = req.headers["stripe-signature"];
+
+    if (!sig) {
+      res.status(400).send("Missing signature");
+      return;
+    }
+
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        sig,
+        stripeWebhookSecret.value()
+      );
+    } catch (err: any) {
+      console.error(
+        "Stripe signature verification failed:",
+        err.message
+      );
+      res.status(400).send("Invalid signature");
+      return;
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data
+        .object as Stripe.Checkout.Session;
+
+      const userId =
+        session.metadata?.userId ?? null;
+      const amountCents =
+        session.amount_total ?? 0;
+      const currency =
+        session.currency ?? "eur";
+
+      await admin.firestore()
+        .doc(`donations/${session.id}`)
+        .set({
+          userId,
+          amountCents,
+          currency,
+          stripeSessionId: session.id,
+          status: "completed",
+          createdAt: admin.firestore
+            .FieldValue.serverTimestamp(),
+        });
+
+      console.log(
+        "Donation recorded:",
+        session.id,
+        "user:", userId,
+        "amount:", amountCents
+      );
+    }
+
+    res.status(200).send("OK");
+  }
+);
+
+// ── Donation stats (public endpoint) ─────────
+
+export const getDonationStats = onRequest(
+  {cors: true},
+  async (req, res) => {
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "GET") {
+      res.status(405).json({error: "Method not allowed"});
+      return;
+    }
+
+    const now = new Date();
+    const firstDay = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+    );
+    const month = now.getUTCMonth() + 1;
+    const monthStr =
+      `${now.getUTCFullYear()}-${String(month).padStart(2, "0")}`;
+
+    const snap = await admin.firestore()
+      .collection("donations")
+      .where("status", "==", "completed")
+      .where("createdAt", ">=", firstDay)
+      .get();
+
+    let totalCents = 0;
+    const userIds = new Set<string>();
+    snap.forEach((doc) => {
+      const d = doc.data();
+      totalCents += d.amountCents ?? 0;
+      if (d.userId) userIds.add(d.userId);
+    });
+
+    res.json({
+      totalCents,
+      supporterCount: userIds.size,
+      goalCents: 30000,
+      month: monthStr,
+    });
   }
 );

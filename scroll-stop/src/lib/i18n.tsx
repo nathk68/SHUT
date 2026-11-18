@@ -74,6 +74,21 @@ const translations = {
     footerTerms: "Conditions",
     footerContact: "Contact",
     footerCopyright: "2026 SHUT. Tous droits réservés.",
+
+    // Donation
+    donationThankTitle: "Merci pour votre soutien !",
+    donationThankSubtitle: "Chaque don compte pour faire vivre la plateforme",
+    donationMonthlyGoal: "Objectif mensuel",
+    donationSupporters: "supporters ce mois",
+    donationCollected: "collectés",
+    donationCostTitle: "Où va votre don",
+    donationCostStreaming: "Streaming (Mux)",
+    donationCostInfra: "Infrastructure (Firebase)",
+    donationCostDev: "Développement",
+    donationBackApp: "Retourner à l'app",
+    donationBackSite: "Retour au site",
+    donationCancelTitle: "Don annulé",
+    donationCancelSubtitle: "Pas de souci, vous pourrez soutenir SHUT à tout moment.",
   },
   en: {
     // Navbar
@@ -144,6 +159,21 @@ const translations = {
     footerTerms: "Terms",
     footerContact: "Contact",
     footerCopyright: "2026 SHUT. All rights reserved.",
+
+    // Donation
+    donationThankTitle: "Thank you for your support!",
+    donationThankSubtitle: "Every donation helps keep the platform alive",
+    donationMonthlyGoal: "Monthly goal",
+    donationSupporters: "supporters this month",
+    donationCollected: "collected",
+    donationCostTitle: "Where your donation goes",
+    donationCostStreaming: "Streaming (Mux)",
+    donationCostInfra: "Infrastructure (Firebase)",
+    donationCostDev: "Development",
+    donationBackApp: "Back to app",
+    donationBackSite: "Back to website",
+    donationCancelTitle: "Donation cancelled",
+    donationCancelSubtitle: "No worries, you can support SHUT anytime.",
   },
 } as const;
 

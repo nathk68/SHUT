@@ -11,6 +11,7 @@ import { FirebaseFollowService } from './follow/follow.firebase';
 import { FirebaseUserService } from './user/user.firebase';
 import { FirebaseReplaysService } from './replays/replays.firebase';
 import { FirebaseNotificationsService } from './notifications/notifications.firebase';
+import { FirebaseDonationService } from './donation/donation.firebase';
 
 // Mock service imports (for development/demo without API keys)
 import { MockAuthService } from './auth/auth.mock';
@@ -23,6 +24,7 @@ import { MockFollowService } from './follow/follow.mock';
 import { MockUserService } from './user/user.mock';
 import { MockReplaysService } from './replays/replays.mock';
 import { MockNotificationsService } from './notifications/notifications.mock';
+import { MockDonationService } from './donation/donation.mock';
 
 // ====================================================================
 // SERVICE FACTORY
@@ -68,3 +70,7 @@ export const replaysService = USE_MOCK
 export const notificationsService = USE_MOCK
   ? new MockNotificationsService()
   : new FirebaseNotificationsService();
+
+export const donationService = USE_MOCK
+  ? new MockDonationService()
+  : new FirebaseDonationService();

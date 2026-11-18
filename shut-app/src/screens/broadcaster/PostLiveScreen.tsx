@@ -21,6 +21,8 @@ import { replaysService } from '../../services';
 import { useAuth } from '../../contexts/AuthContext';
 import { Replay } from '../../types';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
+import { DonationModal } from '../../components/donation/DonationModal';
+import { useDonationPrompt } from '../../hooks/useDonationPrompt';
 
 // ── City autocomplete via Nominatim (OpenStreetMap) ──
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -75,6 +77,10 @@ export function PostLiveScreen() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [publishing, setPublishing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [donationVisible, setDonationVisible] = useState(false);
+  const { shouldPrompt, markPrompted } = useDonationPrompt();
+  // Stores the navigation action to perform after donation modal closes
+  const pendingNavRef = useRef<(() => void) | null>(null);
 
   // Location & date
   const [location, setLocation] = useState('');
@@ -295,6 +301,16 @@ export function PostLiveScreen() {
     }
   }, [replay, replayUpdates, navigation]);
 
+  const maybeShowDonation = useCallback(async (navigateFn: () => void) => {
+    const show = await shouldPrompt();
+    if (show) {
+      pendingNavRef.current = navigateFn;
+      setDonationVisible(true);
+    } else {
+      navigateFn();
+    }
+  }, [shouldPrompt]);
+
   const handlePublish = useCallback(async () => {
     if (!replay) return;
     if (!title.trim()) {
@@ -313,7 +329,7 @@ export function PostLiveScreen() {
         navigation.goBack();
       } else {
         Alert.alert(t('broadcaster.postLive.publishedTitle'), t('broadcaster.postLive.publishedMessage'), [
-          { text: 'OK', onPress: () => navigation.popToTop() },
+          { text: 'OK', onPress: () => maybeShowDonation(() => navigation.popToTop()) },
         ]);
       }
     } catch (e) {
@@ -322,7 +338,7 @@ export function PostLiveScreen() {
     } finally {
       setPublishing(false);
     }
-  }, [replay, title, replayUpdates, navigation]);
+  }, [replay, title, replayUpdates, navigation, maybeShowDonation]);
 
   const handleSaveDraft = useCallback(async () => {
     if (!replay) return;
@@ -333,14 +349,14 @@ export function PostLiveScreen() {
         status: 'draft',
       });
       Alert.alert(t('broadcaster.postLive.savedTitle'), t('broadcaster.postLive.savedMessage'), [
-        { text: 'OK', onPress: () => navigation.popToTop() },
+        { text: 'OK', onPress: () => maybeShowDonation(() => navigation.popToTop()) },
       ]);
     } catch {
       Alert.alert(t('common.error'), t('broadcaster.postLive.saveError'));
     } finally {
       setSaving(false);
     }
-  }, [replay, replayUpdates, navigation]);
+  }, [replay, replayUpdates, navigation, maybeShowDonation]);
 
   const formatDuration = (secs: number) => {
     const h = Math.floor(secs / 3600);
@@ -679,6 +695,19 @@ export function PostLiveScreen() {
           </>
         )}
       </View>
+
+      <DonationModal
+        visible={donationVisible}
+        onClose={() => {
+          setDonationVisible(false);
+          markPrompted();
+          const nav = pendingNavRef.current;
+          pendingNavRef.current = null;
+          nav?.();
+        }}
+        onDonated={() => markPrompted()}
+        context="postlive"
+      />
     </ScrollView>
   );
 }

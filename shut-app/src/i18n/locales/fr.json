@@ -355,6 +355,20 @@
     "deleteDraftError": "Impossible de supprimer le brouillon."
   },
 
+  "donation": {
+    "title": "Soutenir SHUT",
+    "subtitle": "SHUT utilise des technologies coûteuses pour vous offrir le meilleur streaming. Votre soutien nous aide à continuer !",
+    "sectionTitle": "Soutenir le projet",
+    "selectAmount": "Choisissez un montant",
+    "currency": "€",
+    "customPlaceholder": "Autre montant (€)",
+    "donate": "Soutenir",
+    "error": "Impossible de créer la session de paiement. Réessayez plus tard.",
+    "minimumAmount": "Le montant minimum est de 1€",
+    "settingsButton": "Soutenir SHUT",
+    "settingsDesc": "Aidez-nous à financer les coûts de la plateforme"
+  },
+
   "mesFavoris": {
     "title": "Mes favoris",
     "replayCount": "{{count}} rediffusion",

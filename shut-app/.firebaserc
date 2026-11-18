@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "shut-app-c0067"
-  }
+    "default": "shut-app-c0067",
+    "preprod": "shut-app-preprod"
+  },
+  "targets": {},
+  "etags": {}
 }
