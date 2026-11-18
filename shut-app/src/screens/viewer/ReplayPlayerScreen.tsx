@@ -25,10 +25,9 @@ import { useFavorites } from '../../contexts/FavoritesContext';
 import { userService, replaysService, likesService, favoritesService } from '../../services';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { ReportModal } from '../../components/report/ReportModal';
-import { DonationModal } from '../../components/donation/DonationModal';
 import { RotateDeviceOverlay } from '../../components/player/RotateDeviceOverlay';
 import { useVideoOrientation } from '../../hooks/useVideoOrientation';
-import { useDonationPrompt } from '../../hooks/useDonationPrompt';
+import { useDonationRequest } from '../../contexts/DonationPromptContext';
 import { buildShareUrl } from '../../config/linking';
 
 type ReplayPlayerParams = {
@@ -115,8 +114,7 @@ export function ReplayPlayerScreen() {
 
   const isOwner = !!(currentUser && djUserId && currentUser.id === djUserId);
   const [reportVisible, setReportVisible] = useState(false);
-  const [donationVisible, setDonationVisible] = useState(false);
-  const { shouldPrompt, markPrompted } = useDonationPrompt();
+  const { requestDonation } = useDonationRequest();
   const [isZoomed, setIsZoomed] = useState(false);
   const [showUI, setShowUI] = useState(true);
 
@@ -334,17 +332,10 @@ export function ReplayPlayerScreen() {
     }
   }, [navigation, isLandscape, lockPortrait]);
 
-  const handleGoBack = useCallback(async () => {
-    // Show donation prompt if user watched 50%+ of the replay
-    if (trimmedDuration > 0 && currentPos - trimStart >= trimmedDuration * 0.5) {
-      const show = await shouldPrompt();
-      if (show) {
-        setDonationVisible(true);
-        return;
-      }
-    }
+  const handleGoBack = useCallback(() => {
     doGoBack();
-  }, [doGoBack, shouldPrompt, trimmedDuration, currentPos, trimStart]);
+    requestDonation();
+  }, [doGoBack, requestDonation]);
 
   const handleTogglePlay = () => {
     if (isPlaying) player.pause();
@@ -603,17 +594,6 @@ export function ReplayPlayerScreen() {
           targetId={replayId}
         />
       )}
-
-      <DonationModal
-        visible={donationVisible}
-        onClose={() => {
-          setDonationVisible(false);
-          markPrompted();
-          doGoBack();
-        }}
-        onDonated={() => markPrompted()}
-        context="replay"
-      />
 
       {showRotateOverlay && <RotateDeviceOverlay />}
     </View>

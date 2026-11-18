@@ -239,8 +239,8 @@ export function SettingsScreen() {
         />
       </Section>
 
-      {/* Diffusion (DJs only) */}
-      {user?.role === 'broadcaster' && (
+      {/* Diffusion (DJs & admin impersonating) */}
+      {(user?.role === 'broadcaster' || user?.role === 'admin') && (
         <Section title={t('settings.broadcasting')}>
           <View style={[styles.row, styles.rowLast]}>
             <View style={styles.rowIcon}>

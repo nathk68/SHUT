@@ -19,6 +19,7 @@ import * as ScreenOrientation from 'expo-screen-orientation';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { eventsService, streamingService, likesService, favoritesService } from '../../services';
 import { usePreferences } from '../../contexts/PreferencesContext';
+import { useDonationRequest } from '../../contexts/DonationPromptContext';
 
 // ─── NodePublisher (RTMP streaming only, loaded dynamically) ──────────────────
 
@@ -80,6 +81,7 @@ export function PhoneCameraScreen() {
   const { t } = useTranslation();
   const { recordLives } = usePreferences();
   const insets = useSafeAreaInsets();
+  const { requestDonation } = useDonationRequest();
   const nodeRef = useRef<any>(null);
 
   const [phase, setPhase] = useState<Phase>('preview');
@@ -355,6 +357,7 @@ export function PhoneCameraScreen() {
               navigation.replace('PostLive', { eventId });
             } else {
               navigation.goBack();
+              requestDonation();
             }
           } else {
             hasStartedRef.current = false;
@@ -371,6 +374,7 @@ export function PhoneCameraScreen() {
               navigation.replace('PostLive', { eventId });
             } else {
               navigation.goBack();
+              requestDonation();
             }
           }
         },
@@ -639,6 +643,7 @@ export function PhoneCameraScreen() {
           <View style={{ width: 44 }} />
         </View>
       </View>
+
     </View>
   );
 }

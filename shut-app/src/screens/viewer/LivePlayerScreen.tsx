@@ -18,10 +18,9 @@ import { useTranslation } from 'react-i18next';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
 import { LiveActionBar } from '../../components/live/LiveActionBar';
 import { ReportModal } from '../../components/report/ReportModal';
-import { DonationModal } from '../../components/donation/DonationModal';
 import { RotateDeviceOverlay } from '../../components/player/RotateDeviceOverlay';
 import { useVideoOrientation } from '../../hooks/useVideoOrientation';
-import { useDonationPrompt } from '../../hooks/useDonationPrompt';
+import { useDonationRequest } from '../../contexts/DonationPromptContext';
 import { eventsService, userService } from '../../services';
 import type { HomeStackParamList } from '../../navigation/ViewerTabs';
 
@@ -51,9 +50,7 @@ export function LivePlayerScreen({ navigation, route }: Props) {
   const [djUserId, setDjUserId] = useState<string | null>(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [reportVisible, setReportVisible] = useState(false);
-  const [donationVisible, setDonationVisible] = useState(false);
-  const { shouldPrompt, markPrompted } = useDonationPrompt();
-  const watchStartRef = useRef(Date.now());
+  const { requestDonation } = useDonationRequest();
 
   // ── Video player: create once with null source, then use replaceAsync.
   //    This ensures the AVPlayerViewController's video layer is connected
@@ -147,7 +144,10 @@ export function LivePlayerScreen({ navigation, route }: Props) {
       setIsReconnecting(e.status === 'reconnecting');
 
       if (e.status === 'ended') {
-        lockPortrait().then(() => navigation.goBack());
+        lockPortrait().then(() => {
+          navigation.goBack();
+          requestDonation();
+        });
         return;
       }
 
@@ -210,18 +210,10 @@ export function LivePlayerScreen({ navigation, route }: Props) {
     }
   }, [navigation, isLandscape, lockPortrait]);
 
-  const handleClose = useCallback(async () => {
-    // Only show donation prompt if user watched at least 2 minutes
-    const watchedMs = Date.now() - watchStartRef.current;
-    if (watchedMs >= 2 * 60 * 1000) {
-      const show = await shouldPrompt();
-      if (show) {
-        setDonationVisible(true);
-        return;
-      }
-    }
+  const handleClose = useCallback(() => {
     doGoBack();
-  }, [doGoBack, shouldPrompt]);
+    requestDonation();
+  }, [doGoBack, requestDonation]);
 
   return (
     <View style={styles.container}>
@@ -361,17 +353,6 @@ export function LivePlayerScreen({ navigation, route }: Props) {
         onClose={() => setReportVisible(false)}
         targetType="event"
         targetId={eventId}
-      />
-
-      <DonationModal
-        visible={donationVisible}
-        onClose={() => {
-          setDonationVisible(false);
-          markPrompted();
-          doGoBack();
-        }}
-        onDonated={() => markPrompted()}
-        context="live"
       />
 
       {showRotateOverlay && <RotateDeviceOverlay />}

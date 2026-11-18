@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { FavoritesProvider } from '../contexts/FavoritesContext';
 import { NotificationProvider } from '../contexts/NotificationContext';
+import { DonationPromptProvider } from '../contexts/DonationPromptContext';
 import { AuthStack } from './AuthStack';
 import { MainTabs } from './MainTabs';
 import { BlockedScreen } from '../screens/BlockedScreen';
@@ -55,7 +56,9 @@ export function RootNavigator() {
       ) : isAuthenticated || isGuest ? (
         <FavoritesProvider>
           <NotificationProvider>
-            <MainTabs />
+            <DonationPromptProvider>
+              <MainTabs />
+            </DonationPromptProvider>
           </NotificationProvider>
         </FavoritesProvider>
       ) : (

@@ -43,7 +43,7 @@ export default function MentionsLegales() {
             <h2 className="text-xl font-semibold mb-3 text-white">2. Directeur de la publication</h2>
             <p>
               Le directeur de la publication est <strong>Selim Douib</strong>.<br />
-              Contact : <a href="mailto:selim@shutdiffusion.com" className="underline" style={{ color: "var(--color-accent-light)" }}>selim@shutdiffusion.com</a>
+              Contact : <a href="mailto:selim.douib@shutdiffusion.com" className="underline" style={{ color: "var(--color-accent-light)" }}>selim.douib@shutdiffusion.com</a>
             </p>
           </section>
 

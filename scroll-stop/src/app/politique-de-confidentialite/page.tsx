@@ -34,7 +34,7 @@ export default function PolitiqueConfidentialite() {
               Le responsable du traitement des données personnelles est :<br />
               <strong>Selim Douib</strong> (SIRET : 99392906600013)<br />
               13 rue Jean-Jacques Henner, 68390 Sausheim, France<br />
-              Email : <a href="mailto:selim@shutdiffusion.com" className="underline" style={{ color: "var(--color-accent-light)" }}>selim@shutdiffusion.com</a>
+              Email : <a href="mailto:selim.douib@shutdiffusion.com" className="underline" style={{ color: "var(--color-accent-light)" }}>selim.douib@shutdiffusion.com</a>
             </p>
           </section>
 
@@ -110,7 +110,7 @@ export default function PolitiqueConfidentialite() {
               <li><strong>Droit de retrait du consentement :</strong> retirer votre consentement à tout moment</li>
             </ul>
             <p className="mt-3">
-              Pour exercer ces droits, contactez-nous à : <a href="mailto:selim@shutdiffusion.com" className="underline" style={{ color: "var(--color-accent-light)" }}>selim@shutdiffusion.com</a>
+              Pour exercer ces droits, contactez-nous à : <a href="mailto:selim.douib@shutdiffusion.com" className="underline" style={{ color: "var(--color-accent-light)" }}>selim.douib@shutdiffusion.com</a>
             </p>
             <p className="mt-2">
               Vous pouvez également déposer une réclamation auprès de la CNIL : <a href="https://www.cnil.fr" className="underline" style={{ color: "var(--color-accent-light)" }} target="_blank" rel="noopener noreferrer">www.cnil.fr</a>
