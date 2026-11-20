@@ -108,7 +108,9 @@ export class FirebaseEventsService implements IEventsService {
   onLiveEvents(callback: (events: LiveEvent[]) => void): () => void {
     const q = query(collection(db, COLLECTION), where('status', '==', 'live'));
     return onSnapshot(q, (snapshot) => {
-      const events = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as LiveEvent));
+      const events = snapshot.docs
+        .map(d => ({ id: d.id, ...d.data() } as LiveEvent))
+        .filter(e => e.visibility !== 'private');
       callback(events);
     });
   }

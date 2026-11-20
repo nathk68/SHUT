@@ -74,7 +74,8 @@ export const createLiveStream = onCall(
       );
     }
 
-    const {eventId, record} = request.data;
+    const {eventId, record, visibility} =
+      request.data;
     const shouldRecord = record === true;
     // eventId is optional: when null, we only
     // ensure the DJ has a permanent stream key
@@ -161,6 +162,9 @@ export const createLiveStream = onCall(
         playbackUrl,
       };
       if (shouldRecord) eventUpdate.record = true;
+      if (visibility === "private") {
+        eventUpdate.visibility = "private";
+      }
       if (alreadyLive) {
         eventUpdate.status = "live";
         eventUpdate.actualStartTime =
@@ -2038,6 +2042,9 @@ export const onLiveStarted = onDocumentUpdated(
     if (before.status === "live" ||
         after.status !== "live") return;
 
+    // Skip notifications for private recordings
+    if (after.visibility === "private") return;
+
     const djUserId = after.userId;
     if (!djUserId) return;
 
@@ -2624,11 +2631,18 @@ export const getDonationStats = onRequest(
     const monthStr =
       `${now.getUTCFullYear()}-${String(month).padStart(2, "0")}`;
 
-    const snap = await admin.firestore()
-      .collection("donations")
-      .where("status", "==", "completed")
-      .where("createdAt", ">=", firstDay)
-      .get();
+    const [snap, configSnap] = await Promise.all([
+      admin.firestore()
+        .collection("donations")
+        .where("status", "==", "completed")
+        .where("createdAt", ">=", firstDay)
+        .get(),
+      admin.firestore().doc("config/donation").get(),
+    ]);
+
+    const goalCents = configSnap.exists ?
+      (configSnap.data()?.goalCents ?? 30000) :
+      30000;
 
     let totalCents = 0;
     const userIds = new Set<string>();
@@ -2641,8 +2655,109 @@ export const getDonationStats = onRequest(
     res.json({
       totalCents,
       supporterCount: userIds.size,
-      goalCents: 30000,
+      goalCents,
       month: monthStr,
     });
+  }
+);
+
+// ── Admin: donation goal management ──────────
+
+export const getDonationGoal = onCall(async (request) => {
+  await requireAdmin(request);
+  const snap = await admin.firestore().doc("config/donation").get();
+  const goalCents = snap.exists ? (snap.data()?.goalCents ?? 30000) : 30000;
+  return {goalCents};
+});
+
+export const setDonationGoal = onCall(async (request) => {
+  await requireAdmin(request);
+  const goalEuros = request.data?.goalEuros;
+  if (typeof goalEuros !== "number" || goalEuros < 1) {
+    throw new HttpsError(
+      "invalid-argument", "goalEuros must be a number >= 1"
+    );
+  }
+  const goalCents = Math.round(goalEuros * 100);
+  await admin.firestore().doc("config/donation").set(
+    {goalCents, updatedAt: new Date()},
+    {merge: true}
+  );
+  return {goalCents};
+});
+
+// ── Donation history (public endpoint) ───────
+
+export const getDonationHistory = onRequest(
+  {cors: true},
+  async (req, res) => {
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "GET") {
+      res.status(405).json({error: "Method not allowed"});
+      return;
+    }
+
+    const now = new Date();
+    // Build 12-month window (current month + 11 previous)
+    const startDate = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1)
+    );
+
+    const [donationsSnap, configSnap] = await Promise.all([
+      admin.firestore()
+        .collection("donations")
+        .where("status", "==", "completed")
+        .where("createdAt", ">=", startDate)
+        .get(),
+      admin.firestore().doc("config/donation").get(),
+    ]);
+
+    const goalCents = configSnap.exists ?
+      (configSnap.data()?.goalCents ?? 30000) :
+      30000;
+
+    // Group by month
+    const months: Record<
+      string, { totalCents: number; userIds: Set<string> }
+    > = {};
+    donationsSnap.forEach((doc) => {
+      const d = doc.data();
+      const ts = d.createdAt?.toDate?.() ??
+        new Date(d.createdAt);
+      const key = `${ts.getUTCFullYear()}-` +
+        `${String(ts.getUTCMonth() + 1).padStart(2, "0")}`;
+      if (!months[key]) {
+        months[key] = {totalCents: 0, userIds: new Set()};
+      }
+      months[key].totalCents += d.amountCents ?? 0;
+      if (d.userId) months[key].userIds.add(d.userId);
+    });
+
+    // Build sorted array (newest first), always include 12 months
+    const history: Array<{
+      month: string;
+      totalCents: number;
+      supporterCount: number;
+      goalCents: number;
+    }> = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1)
+      );
+      const key = `${d.getUTCFullYear()}-` +
+        `${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+      const bucket = months[key];
+      history.push({
+        month: key,
+        totalCents: bucket?.totalCents ?? 0,
+        supporterCount: bucket?.userIds.size ?? 0,
+        goalCents,
+      });
+    }
+
+    res.json({history});
   }
 );

@@ -284,7 +284,11 @@
     "stepVideo": "Vidéo",
     "stepAudio": "Audio",
     "continueToAudio": "Continuer vers l'audio",
+    "modeLive": "Diffuser en live",
+    "modePrivate": "Enregistrer seulement",
+    "modePrivateHint": "Ton set sera enregistré sans être diffusé en direct. Tu pourras le publier ensuite en tant que rediffusion.",
     "launchLive": "Lancer le live",
+    "launchRecord": "Lancer l'enregistrement",
     "launching": "Lancement...",
     "launchError": "Impossible de lancer le live.",
     "generateError": "Impossible de générer les identifiants.",
@@ -366,7 +370,8 @@
     "error": "Impossible de créer la session de paiement. Réessayez plus tard.",
     "minimumAmount": "Le montant minimum est de 1€",
     "settingsButton": "Soutenir SHUT",
-    "settingsDesc": "Aidez-nous à financer les coûts de la plateforme"
+    "settingsDesc": "Aidez-nous à financer les coûts de la plateforme",
+    "dontShowAgain": "Ne plus afficher ce message lors de cette session"
   },
 
   "mesFavoris": {
@@ -644,6 +649,8 @@
       "buildRequiredMessage": "Lance npx expo run:ios pour activer le streaming.",
       "stopLiveTitle": "Arrêter le live ?",
       "stopLiveMessage": "Le stream sera coupé.",
+      "stopRecordingTitle": "Arrêter l'enregistrement ?",
+      "stopRecordingMessage": "L'enregistrement sera terminé et sauvegardé.",
       "stop": "Arrêter",
       "quitTitle": "Quitter ?",
       "quitExternalMessage": "Le live continuera depuis ta camera externe.",
@@ -655,6 +662,7 @@
       "extWaitingTitle": "En attente de la camera...",
       "extWaitingDesc": "Lance le stream depuis ta camera externe.\nLe flux apparaitra automatiquement ici.",
       "statusLive": "EN DIRECT",
+      "statusRecording": "ENREGISTREMENT",
       "statusWaiting": "EN ATTENTE",
       "statusConnecting": "CONNEXION…",
       "statusReconnecting": "RECONNEXION…",
@@ -813,6 +821,14 @@
         "month": "Mois",
         "year": "Annee"
       }
+    },
+    "donationGoal": {
+      "title": "Objectif de dons",
+      "save": "Enregistrer",
+      "saved": "Objectif de dons mis à jour.",
+      "error": "Impossible de mettre à jour l'objectif.",
+      "invalid": "Le montant doit être d'au moins 1€.",
+      "hint": "Objectif mensuel affiché sur le site et dans l'app."
     },
     "applications": {
       "title": "Candidatures",

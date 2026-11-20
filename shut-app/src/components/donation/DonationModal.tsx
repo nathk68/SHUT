@@ -19,17 +19,19 @@ interface DonationModalProps {
   visible: boolean;
   onClose: () => void;
   onDonated?: () => void;
+  onSuppressSession?: () => void;
   context?: 'live' | 'replay' | 'postlive' | 'settings';
 }
 
 const PRESET_AMOUNTS = [2, 5, 10];
 
-export function DonationModal({ visible, onClose, onDonated, context }: DonationModalProps) {
+export function DonationModal({ visible, onClose, onDonated, onSuppressSession, context }: DonationModalProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [loading, setLoading] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const effectiveAmount = selectedAmount ?? (customAmount ? parseFloat(customAmount) : 0);
   const isValid = effectiveAmount >= 1;
@@ -63,9 +65,14 @@ export function DonationModal({ visible, onClose, onDonated, context }: Donation
   };
 
   const resetAndClose = () => {
+    if (dontShowAgain && onSuppressSession) {
+      onSuppressSession();
+    } else {
+      onClose();
+    }
     setSelectedAmount(null);
     setCustomAmount('');
-    onClose();
+    setDontShowAgain(false);
   };
 
   return (
@@ -120,6 +127,23 @@ export function DonationModal({ visible, onClose, onDonated, context }: Donation
             keyboardType="decimal-pad"
             returnKeyType="done"
           />
+
+          {/* Don't show again checkbox */}
+          {onSuppressSession && (
+            <Pressable
+              style={styles.checkboxRow}
+              onPress={() => setDontShowAgain((v) => !v)}
+            >
+              <View style={[styles.checkbox, dontShowAgain && styles.checkboxChecked]}>
+                {dontShowAgain && (
+                  <Ionicons name="checkmark" size={14} color={colors.white} />
+                )}
+              </View>
+              <Text style={styles.checkboxLabel}>
+                {t('donation.dontShowAgain')}
+              </Text>
+            </Pressable>
+          )}
 
           {/* Donate button */}
           <Pressable
@@ -214,6 +238,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     marginBottom: spacing.lg,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: borderRadius.xs,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  checkboxLabel: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    flex: 1,
   },
   donateBtn: {
     flexDirection: 'row',

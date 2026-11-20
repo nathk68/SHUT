@@ -251,6 +251,16 @@ function DonationSuccessContent() {
 
           <div>
             <Link
+              href="/donation"
+              className="text-sm no-underline transition-colors hover:underline"
+              style={{ color: "var(--color-accent-light)" }}
+            >
+              {t.donationViewHistory}
+            </Link>
+          </div>
+
+          <div>
+            <Link
               href="/"
               className="text-sm no-underline transition-colors hover:underline"
               style={{ color: "var(--color-text-secondary)" }}

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -132,6 +132,10 @@ export function AdminDashboardScreen({ navigation }: { navigation: Nav }) {
   const [chartData, setChartData] = useState<StatsDataPoint[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
 
+  // Donation goal state
+  const [donationGoal, setDonationGoal] = useState('');
+  const [donationGoalSaving, setDonationGoalSaving] = useState(false);
+
   const fetchStats = useCallback(async () => {
     try {
       const fn = httpsCallable<void, AdminStats>(functions, 'getAdminStats');
@@ -161,9 +165,39 @@ export function AdminDashboardScreen({ navigation }: { navigation: Nav }) {
     }
   }, [chartMetric, chartPeriod]);
 
+  const fetchDonationGoal = useCallback(async () => {
+    try {
+      const fn = httpsCallable<void, { goalCents: number }>(functions, 'getDonationGoal');
+      const result = await fn();
+      setDonationGoal(String(Math.round(result.data.goalCents / 100)));
+    } catch (e) {
+      console.error('Failed to fetch donation goal', e);
+    }
+  }, []);
+
+  const saveDonationGoal = useCallback(async () => {
+    const euros = parseFloat(donationGoal);
+    if (!euros || euros < 1) {
+      Alert.alert(t('common.error'), t('admin.donationGoal.invalid'));
+      return;
+    }
+    setDonationGoalSaving(true);
+    try {
+      const fn = httpsCallable<{ goalEuros: number }, { goalCents: number }>(functions, 'setDonationGoal');
+      await fn({ goalEuros: euros });
+      Alert.alert(t('common.success'), t('admin.donationGoal.saved'));
+    } catch (e) {
+      console.error('Failed to save donation goal', e);
+      Alert.alert(t('common.error'), t('admin.donationGoal.error'));
+    } finally {
+      setDonationGoalSaving(false);
+    }
+  }, [donationGoal, t]);
+
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+    fetchDonationGoal();
+  }, [fetchStats, fetchDonationGoal]);
 
   useEffect(() => {
     fetchChart();
@@ -173,6 +207,7 @@ export function AdminDashboardScreen({ navigation }: { navigation: Nav }) {
     setRefreshing(true);
     fetchStats();
     fetchChart();
+    fetchDonationGoal();
   };
 
   if (loading) {
@@ -288,6 +323,34 @@ export function AdminDashboardScreen({ navigation }: { navigation: Nav }) {
           <Text style={styles.actionText}>{t('admin.dashboard.apiCosts')}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textMuted} style={{ marginLeft: 'auto' }} />
         </Pressable>
+      </View>
+
+      {/* Donation goal */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('admin.donationGoal.title')}</Text>
+        <View style={styles.goalRow}>
+          <TextInput
+            style={styles.goalInput}
+            value={donationGoal}
+            onChangeText={(text) => setDonationGoal(text.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            placeholder="300"
+            placeholderTextColor={colors.textMuted}
+          />
+          <Text style={styles.goalCurrency}>€</Text>
+          <Pressable
+            style={[styles.goalSaveBtn, donationGoalSaving && styles.goalSaveBtnDisabled]}
+            onPress={saveDonationGoal}
+            disabled={donationGoalSaving}
+          >
+            {donationGoalSaving ? (
+              <ActivityIndicator color={colors.white} size="small" />
+            ) : (
+              <Text style={styles.goalSaveBtnText}>{t('admin.donationGoal.save')}</Text>
+            )}
+          </Pressable>
+        </View>
+        <Text style={styles.goalHint}>{t('admin.donationGoal.hint')}</Text>
       </View>
 
       {/* Test app as role */}
@@ -518,6 +581,50 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body.regular,
     fontSize: fontSize.sm,
     color: colors.textMuted,
+  },
+  goalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  goalInput: {
+    flex: 1,
+    backgroundColor: colors.backgroundInput,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    color: colors.textPrimary,
+    fontFamily: fonts.heading.bold,
+    fontSize: fontSize.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  goalCurrency: {
+    fontFamily: fonts.heading.bold,
+    fontSize: fontSize.lg,
+    color: colors.textSecondary,
+  },
+  goalSaveBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  goalSaveBtnDisabled: {
+    opacity: 0.5,
+  },
+  goalSaveBtnText: {
+    fontFamily: fonts.heading.bold,
+    fontSize: fontSize.sm,
+    color: colors.white,
+  },
+  goalHint: {
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
   },
   actionRow: {
     flexDirection: 'row',

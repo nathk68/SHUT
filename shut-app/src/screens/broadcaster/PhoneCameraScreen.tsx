@@ -74,10 +74,11 @@ type Phase = 'preview' | 'handoff' | 'connecting' | 'live' | 'reconnecting';
 export function PhoneCameraScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { rtmpUrl, streamKey, eventId, mode = 'phone' } = route.params as {
-    rtmpUrl: string; streamKey: string; eventId?: string; mode?: 'phone' | 'external';
+  const { rtmpUrl, streamKey, eventId, mode = 'phone', visibility = 'live' } = route.params as {
+    rtmpUrl: string; streamKey: string; eventId?: string; mode?: 'phone' | 'external'; visibility?: 'live' | 'private';
   };
   const isExternal = mode === 'external';
+  const isPrivateRecording = visibility === 'private';
   const { t } = useTranslation();
   const { recordLives } = usePreferences();
   const insets = useSafeAreaInsets();
@@ -339,7 +340,15 @@ export function PhoneCameraScreen() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStop = useCallback(() => {
-    Alert.alert(t('broadcaster.phoneCamera.stopLiveTitle'), t('broadcaster.phoneCamera.stopLiveMessage'), [
+    const stopTitle = isPrivateRecording
+      ? t('broadcaster.phoneCamera.stopRecordingTitle')
+      : t('broadcaster.phoneCamera.stopLiveTitle');
+    const stopMessage = isPrivateRecording
+      ? t('broadcaster.phoneCamera.stopRecordingMessage')
+      : t('broadcaster.phoneCamera.stopLiveMessage');
+    const shouldNavigatePostLive = (recordLives || isPrivateRecording) && !!eventId;
+
+    Alert.alert(stopTitle, stopMessage, [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('broadcaster.phoneCamera.stop'),
@@ -353,7 +362,7 @@ export function PhoneCameraScreen() {
             timerRef.current && clearInterval(timerRef.current);
             setDuration(0);
             ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-            if (recordLives && eventId) {
+            if (shouldNavigatePostLive) {
               navigation.replace('PostLive', { eventId });
             } else {
               navigation.goBack();
@@ -370,7 +379,7 @@ export function PhoneCameraScreen() {
             if (eventId) {
               streamingService.stopStream(eventId).catch(() => {});
             }
-            if (recordLives && eventId) {
+            if (shouldNavigatePostLive) {
               navigation.replace('PostLive', { eventId });
             } else {
               navigation.goBack();
@@ -380,7 +389,7 @@ export function PhoneCameraScreen() {
         },
       },
     ]);
-  }, [eventId, isExternal, navigation, recordLives]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [eventId, isExternal, isPrivateRecording, navigation, recordLives]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleFullscreen = useCallback(async () => {
     if (isFullscreen) {
@@ -514,17 +523,19 @@ export function PhoneCameraScreen() {
           {/* Status badge */}
           <View style={[
             styles.badge,
-            isLive && styles.badgeLive,
+            isLive && (isPrivateRecording ? styles.badgeRecording : styles.badgeLive),
             (isConnecting || isReconnecting) && styles.badgeConnecting,
           ]}>
             <View style={[
               styles.badgeDot,
-              isLive && styles.badgeDotLive,
+              isLive && (isPrivateRecording ? styles.badgeDotRecording : styles.badgeDotLive),
               (isConnecting || isReconnecting) && styles.badgeDotConnecting,
             ]} />
             <Text style={styles.badgeText}>
               {isLive
-                ? t('broadcaster.phoneCamera.statusLive')
+                ? isPrivateRecording
+                  ? t('broadcaster.phoneCamera.statusRecording')
+                  : t('broadcaster.phoneCamera.statusLive')
                 : isExternal
                   ? t('broadcaster.phoneCamera.statusWaiting')
                   : isConnecting || phase === 'handoff'
@@ -715,6 +726,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239,68,68,0.25)',
     borderColor: 'rgba(239,68,68,0.4)',
   },
+  badgeRecording: {
+    backgroundColor: 'rgba(239,68,68,0.25)',
+    borderColor: 'rgba(239,68,68,0.4)',
+  },
   badgeConnecting: {
     backgroundColor: 'rgba(234,179,8,0.2)',
     borderColor: 'rgba(234,179,8,0.3)',
@@ -726,6 +741,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.4)',
   },
   badgeDotLive: {
+    backgroundColor: '#ef4444',
+  },
+  badgeDotRecording: {
     backgroundColor: '#ef4444',
   },
   badgeDotConnecting: {

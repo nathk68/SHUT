@@ -22,6 +22,7 @@ import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/the
 
 type VideoSource = 'smartphone' | 'external';
 type AudioSource = 'audio-interface' | 'usb-direct';
+type BroadcastMode = 'live' | 'private';
 type Step = 1 | 2;
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -34,8 +35,10 @@ export function PrepareLiveScreen() {
   const { recordLives } = usePreferences();
 
   const [step, setStep] = useState<Step>(1);
+  const [broadcastMode, setBroadcastMode] = useState<BroadcastMode>('live');
   const [videoSource, setVideoSource] = useState<VideoSource>('smartphone');
   const [audioSource, setAudioSource] = useState<AudioSource>('audio-interface');
+  const isPrivate = broadcastMode === 'private';
 
   // ── RTMP credentials (for external camera) ──────────────────────────────
   const [rtmpUrl, setRtmpUrl] = useState<string | null>(null);
@@ -102,19 +105,23 @@ export function PrepareLiveScreen() {
         setStreamKey(creds.streamKey);
       }
       const mode = videoSource === 'external' ? 'external' : undefined;
-      const creds = await streamingService.startQuickStream(user?.id ?? 'anonymous', { record: recordLives });
+      const creds = await streamingService.startQuickStream(user?.id ?? 'anonymous', {
+        record: isPrivate ? true : recordLives,
+        visibility: broadcastMode,
+      });
       navigation.navigate('PhoneCamera', {
         rtmpUrl: creds.rtmpUrl,
         streamKey: creds.streamKey,
         eventId: creds.eventId,
         ...(mode ? { mode } : {}),
+        ...(isPrivate ? { visibility: 'private' as const } : {}),
       });
     } catch (error: any) {
       Alert.alert(t('common.error'), error?.message ?? t('prepareLive.launchError'));
     } finally {
       setLaunching(false);
     }
-  }, [videoSource, hasCredentials, user?.id, recordLives, navigation, t]);
+  }, [videoSource, hasCredentials, user?.id, recordLives, broadcastMode, isPrivate, navigation, t]);
 
   return (
     <View style={styles.root}>
@@ -128,6 +135,31 @@ export function PrepareLiveScreen() {
       >
         {/* ── Header ────────────────────────────────────────────────────── */}
         <Text style={styles.headerTitle}>{t('prepareLive.title')}</Text>
+
+        {/* ── Broadcast mode toggle ──────────────────────────────────────── */}
+        <View style={styles.modeRow}>
+          <Pressable
+            style={[styles.modeBtn, broadcastMode === 'live' && styles.modeBtnActive]}
+            onPress={() => setBroadcastMode('live')}
+          >
+            <Ionicons name="radio-outline" size={16} color={broadcastMode === 'live' ? colors.accent : colors.textMuted} />
+            <Text style={[styles.modeBtnText, broadcastMode === 'live' && styles.modeBtnTextActive]}>
+              {t('prepareLive.modeLive')}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.modeBtn, broadcastMode === 'private' && styles.modeBtnActive]}
+            onPress={() => setBroadcastMode('private')}
+          >
+            <Ionicons name="videocam-outline" size={16} color={broadcastMode === 'private' ? colors.accent : colors.textMuted} />
+            <Text style={[styles.modeBtnText, broadcastMode === 'private' && styles.modeBtnTextActive]}>
+              {t('prepareLive.modePrivate')}
+            </Text>
+          </Pressable>
+        </View>
+        {isPrivate && (
+          <Text style={styles.modeHint}>{t('prepareLive.modePrivateHint')}</Text>
+        )}
 
         {/* ── Step indicator (clickable) ─────────────────────────────────── */}
         <View style={styles.stepsRow}>
@@ -302,17 +334,21 @@ export function PrepareLiveScreen() {
           </Pressable>
         ) : (
           <Pressable
-            style={[styles.ctaButton, styles.ctaButtonLive, launching && styles.btnDisabled]}
+            style={[styles.ctaButton, isPrivate ? styles.ctaButtonRecord : styles.ctaButtonLive, launching && styles.btnDisabled]}
             onPress={handleLaunchLive}
             disabled={launching}
           >
             {launching ? (
               <ActivityIndicator size="small" color={colors.background} />
             ) : (
-              <Ionicons name="radio-outline" size={18} color={colors.background} />
+              <Ionicons name={isPrivate ? 'videocam-outline' : 'radio-outline'} size={18} color={colors.background} />
             )}
             <Text style={styles.ctaText}>
-              {launching ? t('prepareLive.launching') : t('prepareLive.launchLive')}
+              {launching
+                ? t('prepareLive.launching')
+                : isPrivate
+                  ? t('prepareLive.launchRecord')
+                  : t('prepareLive.launchLive')}
             </Text>
           </Pressable>
         )}
@@ -456,6 +492,46 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xxl,
     letterSpacing: 0.5,
     marginBottom: spacing.md,
+  },
+
+  // ── Broadcast mode toggle ────────────────────────────────────────────
+  modeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  modeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  modeBtnActive: {
+    borderColor: ACCENT,
+    backgroundColor: ACCENT_10,
+  },
+  modeBtnText: {
+    color: colors.textMuted,
+    fontFamily: fonts.heading.semiBold,
+    fontSize: fontSize.sm,
+  },
+  modeBtnTextActive: {
+    color: colors.accent,
+  },
+  modeHint: {
+    color: colors.textMuted,
+    fontFamily: fonts.body.regular,
+    fontSize: fontSize.xs,
+    lineHeight: 18,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.xs,
   },
 
   // ── Step indicator ────────────────────────────────────────────────────
@@ -734,6 +810,9 @@ const styles = StyleSheet.create({
   },
   ctaButtonLive: {
     backgroundColor: colors.accent,
+  },
+  ctaButtonRecord: {
+    backgroundColor: colors.error,
   },
   ctaText: {
     color: colors.background,

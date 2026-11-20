@@ -76,7 +76,7 @@ export class MuxStreamingService implements IStreamingService {
     await fn({ eventId });
   }
 
-  async startQuickStream(userId: string, options?: { record?: boolean }): Promise<QuickStreamCredentials> {
+  async startQuickStream(userId: string, options?: { record?: boolean; visibility?: 'live' | 'private' }): Promise<QuickStreamCredentials> {
     if (!userId) throw new Error('userId required');
 
     // If a live event already exists for this user, reuse it
@@ -113,14 +113,18 @@ export class MuxStreamingService implements IStreamingService {
     );
 
     // Create a fresh event doc
+    const visibility = options?.visibility ?? 'live';
     const eventRef = await addDoc(collection(db, 'events'), {
       userId,
       type: 'quick-stream',
       status: 'scheduled',
+      visibility,
       createdAt: now,
     });
     const fn = httpsCallable(functions, 'createLiveStream');
-    const result = await fn({ eventId: eventRef.id, cameraId: '', record: options?.record ?? false });
+    // Private mode forces recording on
+    const shouldRecord = visibility === 'private' ? true : (options?.record ?? false);
+    const result = await fn({ eventId: eventRef.id, cameraId: '', record: shouldRecord, visibility });
     const data = result.data as any;
     return {
       eventId: eventRef.id,

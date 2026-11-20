@@ -29,22 +29,43 @@ interface Props {
   onFollowersTap?: () => void;
   onFollowingTap?: () => void;
   notifToggle?: React.ReactNode;
+  isLive?: boolean;
+  onLiveTap?: () => void;
 }
 
-export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followLoading = false, onEditPress, onSharePress, onFollowPress, onAvatarPick, onFollowersTap, onFollowingTap, notifToggle }: Props) {
+export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followLoading = false, onEditPress, onSharePress, onFollowPress, onAvatarPick, onFollowersTap, onFollowingTap, notifToggle, isLive = false, onLiveTap }: Props) {
   const { t } = useTranslation();
   const displayLabel = user.artistName ?? user.firstName ?? user.displayName;
   const hasSocials = user.socialLinks && Object.values(user.socialLinks).some(Boolean);
 
+  const avatarSize = 88;
+  const borderWidth = 3;
+  const outerSize = avatarSize + borderWidth * 2;
+
   return (
     <View style={styles.container}>
-      <AvatarPicker
-        avatarUrl={user.avatarUrl ?? null}
-        displayName={displayLabel}
-        editable={isOwnProfile}
-        size={88}
-        onPick={onAvatarPick}
-      />
+      <Pressable
+        disabled={!isLive}
+        onPress={isLive ? onLiveTap : undefined}
+        style={[
+          styles.avatarWrapper,
+          { width: outerSize, height: outerSize, borderRadius: outerSize / 2 },
+          isLive && styles.avatarWrapperLive,
+        ]}
+      >
+        <AvatarPicker
+          avatarUrl={user.avatarUrl ?? null}
+          displayName={displayLabel}
+          editable={isOwnProfile && !isLive}
+          size={avatarSize}
+          onPick={onAvatarPick}
+        />
+        {isLive && (
+          <View style={styles.liveBadge}>
+            <Text style={styles.liveBadgeText}>LIVE</Text>
+          </View>
+        )}
+      </Pressable>
       <View style={styles.nameGroup}>
         <Text style={styles.name}>{displayLabel}</Text>
         {user.username ? <Text style={styles.username}>@{user.username}</Text> : null}
@@ -106,6 +127,30 @@ export function ProfileHeader({ user, isOwnProfile, isFollowing = false, followL
 
 const styles = StyleSheet.create({
   container: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
+  avatarWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'transparent',
+  },
+  avatarWrapperLive: {
+    borderColor: '#ef4444',
+  },
+  liveBadge: {
+    position: 'absolute',
+    bottom: -2,
+    alignSelf: 'center',
+    backgroundColor: '#ef4444',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  liveBadgeText: {
+    color: '#fff',
+    fontFamily: fonts.heading.bold,
+    fontSize: 10,
+    letterSpacing: 1,
+  },
   nameGroup: { alignItems: 'center', gap: 2 },
   name: { color: colors.textPrimary, fontFamily: fonts.heading.bold, fontSize: fontSize.xl },
   username: { color: colors.textMuted, fontFamily: fonts.body.regular, fontSize: fontSize.sm },

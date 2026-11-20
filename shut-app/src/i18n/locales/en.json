@@ -284,7 +284,11 @@
     "stepVideo": "Video",
     "stepAudio": "Audio",
     "continueToAudio": "Continue to audio",
+    "modeLive": "Broadcast live",
+    "modePrivate": "Record only",
+    "modePrivateHint": "Your set will be recorded without being broadcast live. You can publish it later as a replay.",
     "launchLive": "Launch live",
+    "launchRecord": "Start recording",
     "launching": "Launching...",
     "launchError": "Unable to launch the live.",
     "generateError": "Unable to generate credentials.",
@@ -366,7 +370,8 @@
     "error": "Unable to create payment session. Please try again later.",
     "minimumAmount": "Minimum amount is €1",
     "settingsButton": "Support SHUT",
-    "settingsDesc": "Help us fund the platform costs"
+    "settingsDesc": "Help us fund the platform costs",
+    "dontShowAgain": "Don't show this message again this session"
   },
 
   "mesFavoris": {
@@ -644,6 +649,8 @@
       "buildRequiredMessage": "Run npx expo run:ios to enable streaming.",
       "stopLiveTitle": "Stop the live?",
       "stopLiveMessage": "The stream will be cut.",
+      "stopRecordingTitle": "Stop recording?",
+      "stopRecordingMessage": "The recording will be saved.",
       "stop": "Stop",
       "quitTitle": "Quit?",
       "quitExternalMessage": "The live will continue from your external camera.",
@@ -655,6 +662,7 @@
       "extWaitingTitle": "Waiting for camera...",
       "extWaitingDesc": "Start the stream from your external camera.\nThe feed will appear here automatically.",
       "statusLive": "LIVE",
+      "statusRecording": "RECORDING",
       "statusWaiting": "WAITING",
       "statusConnecting": "CONNECTING…",
       "statusReconnecting": "RECONNECTING…",
@@ -813,6 +821,14 @@
         "month": "Month",
         "year": "Year"
       }
+    },
+    "donationGoal": {
+      "title": "Donation goal",
+      "save": "Save",
+      "saved": "Donation goal updated.",
+      "error": "Failed to update the goal.",
+      "invalid": "Amount must be at least €1.",
+      "hint": "Monthly goal displayed on the website and in the app."
     },
     "applications": {
       "title": "Applications",

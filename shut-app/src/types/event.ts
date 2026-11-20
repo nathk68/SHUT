@@ -30,4 +30,6 @@ export interface LiveEvent {
   muxRtmpUrl?: string | null;
   // Quick-stream events store the broadcaster's UID
   userId?: string;
+  // 'live' (default) = visible to everyone; 'private' = recording only, hidden from feed
+  visibility?: 'live' | 'private';
 }

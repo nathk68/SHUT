@@ -89,6 +89,13 @@ const translations = {
     donationBackSite: "Retour au site",
     donationCancelTitle: "Don annulé",
     donationCancelSubtitle: "Pas de souci, vous pourrez soutenir SHUT à tout moment.",
+
+    // Donation page
+    donationPageTitle: "Soutenir SHUT",
+    donationPageSubtitle: "Chaque mois, vos dons financent le streaming, l'infrastructure et le développement de la plateforme.",
+    donationHistoryTitle: "Historique des mois précédents",
+    donationHistoryEmpty: "Pas encore d'historique disponible.",
+    donationViewHistory: "Voir l'historique des dons",
   },
   en: {
     // Navbar
@@ -174,6 +181,13 @@ const translations = {
     donationBackSite: "Back to website",
     donationCancelTitle: "Donation cancelled",
     donationCancelSubtitle: "No worries, you can support SHUT anytime.",
+
+    // Donation page
+    donationPageTitle: "Support SHUT",
+    donationPageSubtitle: "Every month, your donations fund the streaming, infrastructure, and development of the platform.",
+    donationHistoryTitle: "Previous months history",
+    donationHistoryEmpty: "No history available yet.",
+    donationViewHistory: "View donation history",
   },
 } as const;
 

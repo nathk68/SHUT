@@ -8,7 +8,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { LiveStackParamList } from '../navigation/MainTabs';
 import { useAuth } from '../contexts/AuthContext';
-import { userService, followService, replaysService, likesService } from '../services';
+import { userService, followService, replaysService, likesService, eventsService } from '../services';
 import { DjNotifToggle } from '../components/profile/DjNotifToggle';
 import { ProfileHeader } from '../components/profile/ProfileHeader';
 import { GenreTagList } from '../components/profile/GenreTagList';
@@ -38,6 +38,7 @@ export function PublicProfileScreen() {
   const [followingCount, setFollowingCount] = useState(0);
   const [reportVisible, setReportVisible] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(false);
+  const [liveEventId, setLiveEventId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +76,16 @@ export function PublicProfileScreen() {
       });
     return () => { cancelled = true; };
   }, [userId, currentUser]);
+
+  // Real-time listener for DJ's public live event
+  useEffect(() => {
+    if (!profileUser || profileUser.role !== 'broadcaster') return;
+    const unsub = eventsService.onLiveEvents((events) => {
+      const publicLive = events.find((e) => e.userId === userId);
+      setLiveEventId(publicLive?.id ?? null);
+    });
+    return unsub;
+  }, [profileUser, userId]);
 
   const handleFollowPress = useCallback(async () => {
     if (!currentUser || !profileUser) return;
@@ -164,6 +175,8 @@ export function PublicProfileScreen() {
         onFollowPress={handleFollowPress}
         onFollowersTap={() => navigation.navigate('FollowList' as any, { userId: profileUser.id, mode: 'followers' })}
         onFollowingTap={() => navigation.navigate('FollowList' as any, { userId: profileUser.id, mode: 'following' })}
+        isLive={!!liveEventId}
+        onLiveTap={liveEventId ? () => (navigation as any).navigate('LivePlayer', { eventId: liveEventId }) : undefined}
         notifToggle={
           isFollowing && currentUser?.id !== profileUser.id
             ? <DjNotifToggle enabled={notifEnabled} onToggle={handleNotifToggle} />
