@@ -37,8 +37,8 @@ function DonationSuccessContent() {
       })
       .then((data: { totalCents?: number; goalCents?: number; supporterCount?: number }) => {
         setStats({
-          totalAmount: data.totalCents ? Math.round(data.totalCents / 100) : DEFAULT_STATS.totalAmount,
-          goal: data.goalCents ? Math.round(data.goalCents / 100) : DEFAULT_STATS.goal,
+          totalAmount: data.totalCents ? data.totalCents / 100 : DEFAULT_STATS.totalAmount,
+          goal: data.goalCents ? data.goalCents / 100 : DEFAULT_STATS.goal,
           supportersCount: data.supporterCount ?? DEFAULT_STATS.supportersCount,
         });
       })
@@ -114,7 +114,7 @@ function DonationSuccessContent() {
               {/* Amount / goal */}
               <div className="flex items-end justify-between mb-3">
                 <span className="font-[family-name:var(--font-syne)] font-bold text-2xl text-white">
-                  {stats.totalAmount}&nbsp;&euro; <span className="text-sm font-normal" style={{ color: "var(--color-text-muted)" }}>/ {stats.goal}&nbsp;&euro;</span>
+                  {stats.totalAmount.toFixed(2)}&nbsp;&euro; <span className="text-sm font-normal" style={{ color: "var(--color-text-muted)" }}>/ {stats.goal.toFixed(2)}&nbsp;&euro;</span>
                 </span>
                 <span
                   className="font-[family-name:var(--font-mono)] text-sm font-semibold"
@@ -189,7 +189,7 @@ function DonationSuccessContent() {
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                   </svg>
                   <span className="font-[family-name:var(--font-syne)] font-bold text-xl text-white block">
-                    {stats.totalAmount}&nbsp;&euro;
+                    {stats.totalAmount.toFixed(2)}&nbsp;&euro;
                   </span>
                   <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                     {t.donationCollected}

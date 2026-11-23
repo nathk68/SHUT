@@ -63,8 +63,8 @@ function DonationPageContent() {
   const pct = current
     ? Math.min(Math.round((current.totalCents / current.goalCents) * 100), 100)
     : 0;
-  const currentEuros = current ? Math.round(current.totalCents / 100) : 0;
-  const goalEuros = current ? Math.round(current.goalCents / 100) : 300;
+  const currentEuros = current ? (current.totalCents / 100) : 0;
+  const goalEuros = current ? (current.goalCents / 100) : 300;
 
   return (
     <div
@@ -119,10 +119,10 @@ function DonationPageContent() {
               {/* Amount */}
               <div className="flex items-end gap-2 mb-3">
                 <span className="font-[family-name:var(--font-syne)] font-bold text-3xl text-white">
-                  {currentEuros}&nbsp;&euro;
+                  {currentEuros.toFixed(2)}&nbsp;&euro;
                 </span>
                 <span className="text-sm pb-1" style={{ color: "var(--color-text-muted)" }}>
-                  / {goalEuros}&nbsp;&euro;
+                  / {goalEuros.toFixed(2)}&nbsp;&euro;
                 </span>
               </div>
 
@@ -150,7 +150,7 @@ function DonationPageContent() {
                 </div>
                 <div className="glassmorphism rounded-xl p-3 text-center">
                   <span className="font-[family-name:var(--font-syne)] font-bold text-lg text-white block">
-                    {currentEuros}&nbsp;&euro;
+                    {currentEuros.toFixed(2)}&nbsp;&euro;
                   </span>
                   <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                     {t.donationCollected}
@@ -172,8 +172,8 @@ function DonationPageContent() {
               ) : (
                 <div className="space-y-3">
                   {history.map((m) => {
-                    const euros = Math.round(m.totalCents / 100);
-                    const goal = Math.round(m.goalCents / 100);
+                    const euros = m.totalCents / 100;
+                    const goal = m.goalCents / 100;
                     const p = m.goalCents > 0
                       ? Math.min(Math.round((m.totalCents / m.goalCents) * 100), 100)
                       : 0;
@@ -203,7 +203,7 @@ function DonationPageContent() {
 
                         <div className="flex items-center justify-between text-xs" style={{ color: "var(--color-text-muted)" }}>
                           <span>
-                            {euros}&nbsp;&euro; / {goal}&nbsp;&euro;
+                            {euros.toFixed(2)}&nbsp;&euro; / {goal.toFixed(2)}&nbsp;&euro;
                           </span>
                           <span>
                             {m.supporterCount} {t.donationSupporters}
