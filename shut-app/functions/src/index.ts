@@ -2499,11 +2499,11 @@ export const createDonationCheckout = onCall(
     if (
       !amountCents ||
       typeof amountCents !== "number" ||
-      amountCents < 100
+      amountCents < 50
     ) {
       throw new HttpsError(
         "invalid-argument",
-        "amountCents must be at least 100 (1\u20ac)"
+        "amountCents must be at least 50 (0.50\u20ac)"
       );
     }
 
@@ -2534,7 +2534,8 @@ export const createDonationCheckout = onCall(
         cancel_url:
           "https://www.shutdiffusion.com" +
           "/donation/cancel",
-      });
+        managed_payments: {enabled: false},
+      } as any);
 
     return {url: session.url};
   }

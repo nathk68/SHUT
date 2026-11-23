@@ -18,6 +18,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     bundleIdentifier: "com.nathk68.shut-app",
     associatedDomains: ["applinks:shutdiffusion.com"],
+    icon: "./assets/ios-icon.png",
   },
   android: {
     adaptiveIcon: {

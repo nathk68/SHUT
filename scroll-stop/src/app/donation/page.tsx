@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 
-const API_BASE = "https://europe-west1-shut-app-c0067.cloudfunctions.net";
+const API_BASE = "https://europe-west1-shut-app-preprod.cloudfunctions.net";
 
 interface MonthData {
   month: string;

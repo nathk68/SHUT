@@ -34,7 +34,7 @@ export function DonationModal({ visible, onClose, onDonated, onSuppressSession, 
   const [dontShowAgain, setDontShowAgain] = useState(false);
 
   const effectiveAmount = selectedAmount ?? (customAmount ? parseFloat(customAmount) : 0);
-  const isValid = effectiveAmount >= 1;
+  const isValid = effectiveAmount >= 0.5;
 
   const handleSelectPreset = (amount: number) => {
     setSelectedAmount(amount);

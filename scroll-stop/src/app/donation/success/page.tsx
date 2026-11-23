@@ -30,7 +30,7 @@ function DonationSuccessContent() {
     if (sid) setSessionId(sid);
 
     // Fetch donation stats
-    fetch("https://europe-west1-shut-app-c0067.cloudfunctions.net/getDonationStats")
+    fetch("https://europe-west1-shut-app-preprod.cloudfunctions.net/getDonationStats")
       .then((res) => {
         if (!res.ok) throw new Error("Fetch failed");
         return res.json();
