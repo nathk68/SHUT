@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthStackParamList } from '../navigation/AuthStack';
 import { colors, fonts, fontSize, spacing } from '../config/theme';
 import { setStoredData } from '../utils/storage';
+import { LanguageToggle } from '../components/ui/LanguageToggle';
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'SplashLanding'>;
 
@@ -52,6 +53,11 @@ export function SplashLandingScreen() {
           },
         ]}
       >
+        {/* Language toggle */}
+        <View style={styles.langRow}>
+          <LanguageToggle />
+        </View>
+
         {/* Logo */}
         <Image
           source={require('../../assets/icon-nobg.png')}
@@ -112,6 +118,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
+  },
+  langRow: {
+    alignSelf: 'flex-end',
   },
   logo: {
     width: SCREEN_HEIGHT * 0.14,

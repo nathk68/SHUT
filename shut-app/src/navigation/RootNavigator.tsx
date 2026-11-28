@@ -20,7 +20,7 @@ const navTheme = {
     background: colors.background,
     card: colors.backgroundElevated,
     text: colors.textPrimary,
-    border: colors.border,
+    border: '#0f0f11',
     notification: colors.live,
   },
   fonts: {

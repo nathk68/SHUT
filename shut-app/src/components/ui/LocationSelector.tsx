@@ -58,17 +58,21 @@ async function searchCities(query: string, limit = 20, lang = 'fr'): Promise<Sea
   if (q.length < 2) return [];
 
   try {
-    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=${limit}&lang=${lang}&osm_tag=place:city&osm_tag=place:town&osm_tag=place:village`;
-    const res = await fetch(url);
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=${limit}&lang=${lang}`;
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'SHUT-App/1.0' },
+    });
     if (!res.ok) return [];
     const data = await res.json();
 
+    const placeTypes = new Set(['city', 'town', 'village', 'municipality']);
     const seen = new Set<string>();
     const results: SearchResult[] = [];
 
     for (const feature of data.features ?? []) {
       const p = feature.properties;
       if (!p?.name || !p?.countrycode) continue;
+      if (!placeTypes.has(p.type)) continue;
 
       const cc = p.countrycode.toUpperCase();
       const dedup = `${p.name}__${cc}`;

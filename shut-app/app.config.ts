@@ -8,17 +8,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: "default",
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
-  splash: {
-    image: "./assets/splash-icon.png",
-    resizeMode: "contain",
-    backgroundColor: "#ffffff",
-  },
   scheme: "shut",
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.nathk68.shut-app",
     associatedDomains: ["applinks:shutdiffusion.com"],
     icon: "./assets/ios-icon.png",
+    infoPlist: {
+      UIBackgroundModes: ["audio", "remote-notification", "fetch"],
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     adaptiveIcon: {
@@ -35,7 +34,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "android.permission.FOREGROUND_SERVICE",
       "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
     ],
-    versionCode: 3,
+    versionCode: 4,
     package: "com.nathk68.shutapp",
     intentFilters: [
       {
@@ -54,16 +53,36 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     favicon: "./assets/favicon.png",
   },
   plugins: [
+    [
+      "expo-build-properties",
+      {
+        ios: { newArchEnabled: false },
+        android: { newArchEnabled: false },
+      },
+    ],
     "expo-font",
     "expo-video",
     "expo-screen-orientation",
-    "expo-splash-screen",
+    [
+      "expo-splash-screen",
+      {
+        image: "./assets/splash-icon.png",
+        resizeMode: "contain",
+        backgroundColor: "#ffffff",
+      },
+    ],
     "expo-status-bar",
     "expo-audio",
     [
       "expo-image-picker",
       {
         photosPermission: "SHUT utilise tes photos pour personnaliser ton profil.",
+      },
+    ],
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/icon.png",
       },
     ],
   ],

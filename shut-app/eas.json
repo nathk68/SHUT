@@ -2,6 +2,13 @@
   "cli": {
     "appVersionSource": "remote"
   },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6838371971"
+      }
+    }
+  },
   "build": {
     "development": {
       "developmentClient": true,
@@ -15,6 +22,7 @@
       }
     },
     "production": {
+      "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
       },

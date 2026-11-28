@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ScreenContainer } from '../../components/layout/ScreenContainer';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { colors, fonts, fontSize, spacing, borderRadius } from '../../config/theme';
+import { LanguageToggle } from '../../components/ui/LanguageToggle';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'OnboardingRole'>;
@@ -20,7 +21,10 @@ export function OnboardingRoleScreen({ navigation }: Props) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>{t('onboarding.whoAreYou')}</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>{t('onboarding.whoAreYou')}</Text>
+          <LanguageToggle />
+        </View>
         <Text style={styles.subtitle}>
           {t('onboarding.bestExperience')}
         </Text>
@@ -113,6 +117,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxl,
     paddingBottom: spacing.xxl,
     gap: spacing.md,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
     fontFamily: fonts.heading.bold,
